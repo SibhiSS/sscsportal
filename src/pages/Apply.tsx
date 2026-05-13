@@ -1,0 +1,966 @@
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Send, User, Code, FileText, Phone, ArrowRight, ChevronLeft, LogIn, Trophy, Clock, XOctagon, Calendar as CalendarIcon, Video } from 'lucide-react';
+import LogoSpinner from '@/components/ui/LogoSpinner';
+import { format, parseISO, isSameDay } from 'date-fns';
+import { Link } from 'react-router-dom';
+import TechGridBackground from '@/components/ui/TechGridBackground';
+import HolographicCard from '@/components/ui/HolographicCard';
+import RevealText from '@/components/ui/RevealText';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { validateRegistrationNumber, RegNoDetails } from '@/utils/validation';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+
+const Apply = () => {
+    const { user, signInWithGoogle, loading: authLoading } = useAuth();
+    const [step, setStep] = useState(1);
+    const [formData, setFormData] = useState({
+        fullName: user?.displayName || '',
+        rollNumber: '',
+        phone: '',
+        primaryDept: '',
+        domains: [] as string[],
+        skills: '',
+        reason: '',
+        secondaryDept: '',
+        secondaryDomains: [] as string[],
+        secondarySkills: '',
+        secondaryReason: ''
+    });
+
+    // Validation State
+    const [regValidation, setRegValidation] = useState<RegNoDetails | null>(null);
+    const [regError, setRegError] = useState<string | null>(null);
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [existingApp, setExistingApp] = useState<any>(null);
+    const [checkingStatus, setCheckingStatus] = useState(true);
+    const [recruitmentStatus, setRecruitmentStatus] = useState<{ isOpen: boolean, message: string }>({ isOpen: true, message: '' });
+
+    useEffect(() => {
+        checkRecruitmentStatus();
+    }, []);
+
+    const checkRecruitmentStatus = async () => {
+        try {
+            const { data } = await supabase.from('app_settings').select('value').eq('key', 'recruitment_status').single();
+            if (data) {
+                setRecruitmentStatus(data.value);
+            }
+        } catch (error) {
+            console.error("Error checking recruitment status:", error);
+        }
+    };
+
+    useEffect(() => {
+        if (user) {
+            setCheckingStatus(true);
+            checkApplicationStatus();
+        } else {
+            setCheckingStatus(false);
+            setExistingApp(null);
+        }
+    }, [user]);
+
+    const checkApplicationStatus = async () => {
+        if (!user) return;
+        try {
+            const { data, error } = await supabase
+                .from('applications')
+                .select('*')
+                .or(`user_id.eq.${user.uid},email.eq.${user.email}`);
+
+            if (error) {
+                console.error("Error fetching application:", error);
+                throw error;
+            }
+
+            if (data && data.length > 0) {
+                setExistingApp(data[0]);
+            } else {
+                setExistingApp(null);
+            }
+        } catch (error) {
+            console.error("Error checking application status:", error);
+        } finally {
+            setCheckingStatus(false);
+        }
+    };
+
+    const domainOptions: Record<string, string[]> = {
+        'Technical': [
+            'Embedded Systems',
+            'Sensors, Actuators & Control Systems',
+            'Robotics & Automation',
+            'Edge Computing',
+            'Networking & IoT',
+            'Cybersecurity'
+        ],
+        'Management': [
+            'Operations & Logistics',
+            'Event Planning & Execution',
+            'Team Coordination & Internal Management',
+            'Documentation & Compliance'
+        ],
+        'Design & Content': [
+            'Graphic Design (Posters, Creatives)',
+            'Content Writing & Copy',
+            'Technical & Promotional Content',
+            'Branding & Visual Identity'
+        ],
+        'Visual Media': [
+            'Photography',
+            'Videography',
+            'Video Editing & Motion Graphics',
+            'Event Coverage & Reels'
+        ],
+        'Outreach & Sponsorship': [
+            'Corporate & Industry Outreach',
+            'Sponsorship Acquisition',
+            'Partnerships & Collaborations',
+            'Public Relations & Communications'
+        ]
+    };
+
+    const skillLabels: Record<string, string> = {
+        'Technical': 'Technical Skills',
+        'Design & Content': 'Design Tools & Software',
+        'Visual Media': 'Editing & Camera Tools',
+        'Management': 'Management Tools',
+        'Outreach & Sponsorship': 'Communication Skills',
+        'default': 'Relevant Skills'
+    };
+
+    const skillPlaceholders: Record<string, string> = {
+        'Technical': 'e.g. Python, C++, Arduino, React, PCB Design...',
+        'Design & Content': 'e.g. Photoshop, Illustrator, Figma...',
+        'Management': 'e.g. Asana, Trello, Leadership, Communication...',
+        'Visual Media': 'e.g. Premiere Pro, Lightroom, After Effects...',
+        'Outreach & Sponsorship': 'e.g. Public Speaking, Email Writing, Negotiation...',
+        'default': 'List your relevant skills here...'
+    };
+
+    const reasonPlaceholders: Record<string, string> = {
+        'Technical': 'Tell us about your technical projects and what you want to build...',
+        'Design & Content': 'Share your design philosophy or portfolio links...',
+        'Management': 'Describe your experience in leading teams or organizing events...',
+        'Visual Media': 'Share your portfolio links or describe your style...',
+        'Outreach & Sponsorship': 'How would you help us connect with industry experts?',
+        'default': 'Tell us about your motivation and what you hope to achieve...'
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+
+        if (name === 'phone') {
+            const val = value.replace(/\D/g, '').slice(0, 10);
+            setFormData(prev => ({ ...prev, phone: val }));
+            return;
+        }
+
+        if (name === 'primaryDept') {
+            setFormData(prev => ({ ...prev, primaryDept: value, domains: [] }));
+        } else if (name === 'secondaryDept') {
+            setFormData(prev => ({ ...prev, secondaryDept: value, secondaryDomains: [] }));
+        } else if (name === 'rollNumber') {
+            const normalized = value.toUpperCase();
+            setFormData(prev => ({ ...prev, rollNumber: normalized }));
+
+            // Validate Logic
+            const validation = validateRegistrationNumber(normalized);
+            setRegValidation(validation);
+
+            if (!validation.isValid) {
+                setRegError(validation.error || 'Invalid Registration Number');
+            } else {
+                setRegError(null);
+            }
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
+    };
+
+    const handleDomainToggle = (domain: string, isSecondary = false) => {
+        setFormData(prev => {
+            const targetList = isSecondary ? prev.secondaryDomains : prev.domains;
+            const updated = targetList.includes(domain)
+                ? targetList.filter(d => d !== domain)
+                : [...targetList, domain];
+
+            return isSecondary
+                ? { ...prev, secondaryDomains: updated }
+                : { ...prev, domains: updated };
+        });
+    };
+
+    const handleNextStep = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (regError || !regValidation?.isValid) {
+            alert("Please fix the Registration Number errors before proceeding.");
+            return;
+        }
+
+        setStep(2);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handlePrevStep = () => {
+        setStep(1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!user) return;
+
+        // Final safety check to prevent double submission
+        if (existingApp) {
+            alert("You have already submitted an application!");
+            return;
+        }
+
+        if (formData.phone.length !== 10) {
+            alert("Phone number must be exactly 10 digits.");
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            const { error } = await supabase.from('applications').insert({
+                user_id: user.uid,
+                email: user.email,
+                full_name: formData.fullName,
+                roll_number: formData.rollNumber,
+                phone: formData.phone,
+                // Passing empty strings for removed academic fields if needed by DB, otherwise depend on null
+                department: '',
+                year: '',
+                primary_dept: formData.primaryDept,
+                domains: formData.domains,
+                skills: formData.skills,
+                reason: formData.reason,
+                secondary_dept: formData.secondaryDept,
+                secondary_domains: formData.secondaryDomains,
+                secondary_skills: formData.secondarySkills,
+                secondary_reason: formData.secondaryReason,
+                status: 'pending',
+
+                // Derived Metadata
+                admission_year: regValidation?.admissionYear,
+                program_code: regValidation?.programCode,
+                program_name: regValidation?.programName,
+                batch: regValidation?.batch,
+                program_category: regValidation?.programCategory
+            });
+
+            if (error) throw error;
+
+            console.log("Application saved to Supabase successfully");
+
+            // --- SEND CONFIRMATION EMAIL ---
+            try {
+                const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwsz5EIGmR_a6Wa1m01Z56DcWefUuZla_rsVI_8ma6N_T90eM3v9CQ89E712zt939oH5w/exec";
+
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: user.email,
+                        subject: "Application Received - IEEE SSCS",
+                        message: `
+                            <div style="font-family: 'Raleway', sans-serif; background-color: #0a0a0a; color: #e5e5e5; max-width: 600px; margin: 0 auto; border: 1px solid #333; border-radius: 8px; overflow: hidden;">
+                                <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=Raleway:wght@400;600&display=swap" rel="stylesheet">
+                                <div style="background-color: #000000; padding: 40px 20px; border-bottom: 2px solid #FFE100; text-align: center;">
+                                    <img src="https://bqtqhtpbyunzcwxyxdhx.supabase.co/storage/v1/object/public/asset/IEEE%20SSCS%20Logo.png" alt="IEEE SSCS Logo" style="height: 120px; width: auto; display: block; margin: 0 auto;">
+                                </div>
+                                <div style="padding: 40px 30px;">
+                                    <h2 style="color: #FFE100; font-family: 'Orbitron', sans-serif; margin-top: 0;">Application Received</h2>
+                                    <p>Hi <strong>${formData.fullName}</strong>,</p>
+                                    <p>Thank you for your interest in joining IEEE SSCS.</p>
+                                    <p>We have successfully received your application for <strong style="color: #FFE100;">${formData.primaryDept}</strong>.</p>
+
+                                    <div style="background-color: #1a1a1a; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #FFE100;">
+                                        <p style="margin: 0; font-size: 14px; color: #fff;"><strong>Registration Number:</strong> ${formData.rollNumber}</p>
+                                        <p style="margin: 8px 0 0; font-size: 14px; color: #fff;"><strong>Status:</strong> Under Review</p>
+                                    </div>
+
+                                    <p>Our team will review your profile and get back to you shortly. Please join our WhatsApp group below for updates regarding the interview process.</p>
+
+                                    <div style="text-align: center; margin: 35px 0;">
+                                        <a href="https://chat.whatsapp.com/FDMlBGlnzrc7qlwqSp2hDe" style="display: inline-block; background-color: #FFE100; color: #000; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 1px;">Join WhatsApp Group</a>
+                                    </div>
+
+                                    <p style="margin-top: 30px; border-top: 1px solid #333; pt: 20px;">Best Regards,<br><strong>IEEE SSCS Team</strong></p>
+                                </div>
+                                <div style="background-color: #000000; padding: 30px 20px; text-align: center; border-top: 1px solid #333;">
+                                    <div style="margin-bottom: 20px;">
+                                        <span style="color: #FFE100; font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 16px; letter-spacing: 2px;">IEEE SSCS</span>
+                                        <span style="color: #333; margin: 0 15px;">|</span>
+                                        <span style="color: #e5e5e5; font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 16px;">VIT Chennai</span>
+                                    </div>
+
+                                    <div style="margin-bottom: 15px;">
+                                        <a href="https://linkedin.com/company/IEEE-SSCS" style="color: #888; text-decoration: none; margin: 0 10px; font-size: 13px;">LinkedIn</a>
+                                        <a href="https://instagram.com/IEEESSCS.vitc" style="color: #888; text-decoration: none; margin: 0 10px; font-size: 13px;">Instagram</a>
+                                    </div>
+                                    <p style="color: #555; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">
+                                        For queries: <a href="mailto:IEEE.SSCSc@gmail.com" style="color: #FFE100; text-decoration: none;">IEEE.SSCSc@gmail.com</a>
+                                    </p>
+                                </div>
+                            </div>
+                        `
+                    })
+                });
+                console.log("Confirmation email sent");
+            } catch (emailErr) {
+                console.error("Failed to send email", emailErr);
+                // Don't block success UI if email fails
+            }
+            // -------------------------------
+
+            setIsSubmitting(false);
+            // Don't set isSubmitted - let existingApp trigger the status view directly
+            setExistingApp({
+                ...formData,
+                full_name: formData.fullName,
+                primary_dept: formData.primaryDept,
+                status: 'pending'
+            });
+        } catch (error: any) {
+            console.error('Error submitting application:', error);
+            if (error?.code === '23505' || error?.message?.includes('duplicate key')) {
+                console.log("Duplicate application detected. Fetching existing record...");
+                const { data } = await supabase
+                    .from('applications')
+                    .select('*')
+                    .eq('user_id', user.uid);
+
+                if (data && data.length > 0) {
+                    setExistingApp(data[0]);
+
+                    // --- OPTIONAL: SEND EMAIL FOR DUPLICATE CHECK RECOVERY IF NEEDED
+                    // But usually we don't send "Received" again if it's just a re-login
+                } else {
+                    setExistingApp({
+                        ...formData,
+                        full_name: formData.fullName,
+                        primary_dept: formData.primaryDept,
+                        status: 'pending'
+                    });
+                }
+                setIsSubmitting(false);
+                return;
+            }
+            alert("Warning: Application could not be saved to the database. Please check console/admin settings.");
+            setIsSubmitting(false);
+        }
+    };
+
+    const currentDomains = formData.primaryDept ? domainOptions[formData.primaryDept] || [] : [];
+    const currentSkillLabel = formData.primaryDept ? (skillLabels[formData.primaryDept] || skillLabels['default']) : skillLabels['default'];
+    const currentSkillPlaceholder = formData.primaryDept ? (skillPlaceholders[formData.primaryDept] || skillPlaceholders['default']) : skillPlaceholders['default'];
+    const currentReasonPlaceholder = formData.primaryDept ? (reasonPlaceholders[formData.primaryDept] || reasonPlaceholders['default']) : reasonPlaceholders['default'];
+
+    const secondaryDomainsList = formData.secondaryDept ? domainOptions[formData.secondaryDept] || [] : [];
+    const secondarySkillLabel = formData.secondaryDept ? (skillLabels[formData.secondaryDept] || skillLabels['default']) : skillLabels['default'];
+    const secondarySkillPlaceholder = formData.secondaryDept ? (skillPlaceholders[formData.secondaryDept] || skillPlaceholders['default']) : skillPlaceholders['default'];
+    const secondaryReasonPlaceholder = formData.secondaryDept ? (reasonPlaceholders[formData.secondaryDept] || reasonPlaceholders['default']) : reasonPlaceholders['default'];
+
+    if (authLoading || checkingStatus) {
+        return (
+            <div className="min-h-screen bg-black flex items-center justify-center">
+                <LogoSpinner size="md" />
+            </div>
+        );
+    }
+
+    if (!recruitmentStatus.isOpen) {
+        return (
+            <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground">
+                <TechGridBackground />
+                <div className="absolute inset-0 bg-background/80 pointer-events-none -z-10" />
+
+                <div className="container mx-auto px-4 py-8">
+                    <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors mb-8 absolute top-8 left-8">
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back to Home
+                    </Link>
+
+                    <HolographicCard className="p-12 max-w-lg w-full text-center mx-auto mt-12 bg-black/40 backdrop-blur-xl border-red-500/20 shadow-[0_0_30px_rgba(239,68,68,0.1)]">
+                        <div className="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500/30">
+                            <Clock className="w-12 h-12 text-red-500" />
+                        </div>
+                        <h2 className="text-3xl font-heading font-bold mb-4 text-white">Recruitment Closed</h2>
+                        <p className="text-gray-300 mb-8 leading-relaxed">
+                            {recruitmentStatus.message || "We are currently not accepting new applications. Please check back later for our next recruitment cycle."}
+                        </p>
+                        <Button asChild variant="outline" className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300">
+                            <Link to="/">Return to Home</Link>
+                        </Button>
+                    </HolographicCard>
+                </div>
+            </div>
+        );
+    }
+
+    if (existingApp) {
+        return (
+            <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground">
+                <TechGridBackground />
+                <div className="absolute inset-0 bg-background/80 pointer-events-none -z-10" />
+
+                <div className="container mx-auto px-4 py-8">
+                    <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors mb-8 absolute top-8 left-8">
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back to Home
+                    </Link>
+
+                    <HolographicCard className="p-12 max-w-3xl w-full text-center mx-auto mt-12 bg-black/40 backdrop-blur-xl border-primary/20">
+                        {existingApp.status === 'selected' ? (
+                            <>
+                                <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/50 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
+                                    <Trophy className="w-12 h-12 text-green-500" />
+                                </div>
+                                <h2 className="text-3xl font-heading font-bold mb-2 text-white">Congratulations!</h2>
+                                <div className="inline-block px-4 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 mb-6 text-sm font-medium">
+                                    Application Selected
+                                </div>
+                                <p className="text-gray-300 mb-8 leading-relaxed">
+                                    We are thrilled to welcome you to the team! Your application stood out, and we can't wait to see what you'll build with us.
+                                </p>
+                                <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12 text-lg shadow-lg">
+                                    Join the Community
+                                </Button>
+                            </>
+                        ) : existingApp.status === 'rejected' ? (
+                            <>
+                                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <XOctagon className="w-10 h-10 text-red-500/70" />
+                                </div>
+                                <h2 className="text-2xl font-heading font-bold mb-2 text-white">Application Status</h2>
+                                <div className="inline-block px-3 py-1 rounded-full bg-red-500/10 text-red-500/80 border border-red-500/20 mb-6 text-xs uppercase tracking-wider">
+                                    Not Selected
+                                </div>
+                                <p className="text-muted-foreground mb-6 text-sm">
+                                    Thank you for your interest in IEEE SSCS. Due to the high volume of applications, we are unfortunately unable to offer you a position at this time.
+                                </p>
+                                <p className="text-muted-foreground mb-8 text-sm">
+                                    We encourage you to keep building and apply again in our next recruitment cycle.
+                                </p>
+                            </>
+                        ) : existingApp.status === 'shortlisted' ? (
+                            <div className="text-center animate-in fade-in duration-500">
+                                <div className="w-20 h-20 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-purple-500/40 animate-pulse">
+                                    <CalendarIcon className="w-10 h-10 text-purple-400" />
+                                </div>
+                                <h2 className="text-3xl font-heading font-bold mb-2 text-white">Application Shortlisted!</h2>
+                                <p className="text-gray-300 mb-8">
+                                    You've moved to the next round. Please book an interview slot immediately.
+                                    <br />
+                                    <span className="text-sm text-yellow-500/80">Slots are First Come First Serve.</span>
+                                </p>
+
+                                <Button asChild className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold h-12 text-lg shadow-lg animate-bounce">
+                                    <Link to="/schedule">Book Interview Slot</Link>
+                                </Button>
+                            </div>
+                        ) : existingApp.status === 'interview_scheduled' ? (
+                            <>
+                                <div className="w-20 h-20 bg-purple-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <Video className="w-10 h-10 text-purple-500" />
+                                </div>
+                                <h2 className="text-3xl font-heading font-bold mb-2 text-white">Interview Scheduled</h2>
+                                <div className="inline-block px-4 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 mb-6 text-sm font-medium">
+                                    Confirmed
+                                </div>
+                                <p className="text-gray-300 mb-8 leading-relaxed">
+                                    Your interview has been booked. You will receive a meeting link via email shortly before the interview.
+                                    <br />
+                                    Please check your spam folder as well.
+                                </p>
+                                <div className="p-4 bg-white/5 rounded-lg border border-white/5 text-left mb-6 max-w-sm mx-auto">
+                                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Status</div>
+                                    <div className="font-medium text-purple-400">Scheduled</div>
+                                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1 mt-3">Note</div>
+                                    <div className="text-sm text-white">Please be ready 5 minutes before your slot.</div>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+                                    <Clock className="w-10 h-10 text-primary" />
+                                </div>
+                                <h2 className="text-3xl font-heading font-bold mb-2 text-white">Under Review</h2>
+                                <div className="inline-block px-4 py-1 rounded-full bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 mb-6 text-sm font-medium">
+                                    Status: Pending
+                                </div>
+                                <p className="text-gray-300 mb-8 leading-relaxed">
+                                    We have received your application and it is currently being reviewed by our team.
+                                    Hold tight! We will update you soon.
+                                </p>
+                                <div className="p-4 bg-white/5 rounded-lg border border-white/5 text-left mb-6">
+                                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Applicant</div>
+                                    <div className="font-medium text-white">{existingApp.full_name}</div>
+                                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1 mt-3">Primary Choice</div>
+                                    <div className="font-medium text-primary">{existingApp.primary_dept}</div>
+                                </div>
+
+                                <div className="bg-white/5 p-6 rounded-xl border border-white/10 mb-8 flex flex-col items-center">
+                                    <img
+                                        src="/whatsapp-qr.png"
+                                        alt="WhatsApp Group QR Code"
+                                        className="w-48 h-48 rounded-lg mb-4 border border-white/10"
+                                    />
+                                    <p className="text-sm text-muted-foreground mb-4">Please join our WhatsApp group for updates.</p>
+
+                                    <a
+                                        href="https://chat.whatsapp.com/FDMlBGlnzrc7qlwqSp2hDe"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center justify-center h-10 px-6 rounded-md bg-[#25D366] text-white font-bold hover:bg-[#128C7E] transition-colors w-full"
+                                    >
+                                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M17.472 14.382c-.297-.149-1.758-0.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                                        </svg>
+                                        Join WhatsApp Group
+                                    </a>
+                                </div>
+                            </>
+                        )}
+
+                        <Button asChild variant="outline" className="w-full border-white/10 hover:bg-white/5">
+                            <Link to="/">Return to Home</Link>
+                        </Button>
+                    </HolographicCard>
+                </div>
+            </div>
+        );
+    }
+
+    if (isSubmitted) {
+        return (
+            <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground">
+                <TechGridBackground />
+                <div className="absolute inset-0 bg-background/80 pointer-events-none -z-10" />
+
+                <HolographicCard className="p-10 max-w-lg w-full text-center">
+                    <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Send className="w-8 h-8 text-green-500" />
+                    </div>
+                    <h2 className="text-3xl font-heading font-bold mb-2">Application Received</h2>
+                    <p className="text-muted-foreground mb-6">
+                        Thank you for applying to IEEE SSCS. Please join our WhatsApp group for further updates.
+                    </p>
+
+                    <div className="bg-white/5 p-6 rounded-xl border border-white/10 mb-8 flex flex-col items-center">
+                        <img
+                            src="/whatsapp-qr.png"
+                            alt="WhatsApp Group QR Code"
+                            className="w-48 h-48 rounded-lg mb-4 border border-white/10"
+                        />
+                        <p className="text-sm text-muted-foreground mb-4">Scan the QR code or click the button below to join.</p>
+
+                        <a
+                            href="https://chat.whatsapp.com/FDMlBGlnzrc7qlwqSp2hDe"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center h-10 px-6 rounded-md bg-[#25D366] text-white font-bold hover:bg-[#128C7E] transition-colors w-full"
+                        >
+                            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M17.472 14.382c-.297-.149-1.758-0.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                            </svg>
+                            Join WhatsApp Group
+                        </a>
+                    </div>
+
+                    <Button
+                        onClick={() => window.location.reload()}
+                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 font-bold mb-3"
+                    >
+                        <Clock className="w-4 h-4 mr-2" />
+                        Check Application Status
+                    </Button>
+
+                    <Button asChild variant="outline" className="border-white/10 hover:bg-white/5 w-full">
+                        <Link to="/">Return to Home</Link>
+                    </Button>
+                </HolographicCard>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen relative text-foreground">
+            <TechGridBackground />
+            <div className="absolute inset-0 bg-background/80 pointer-events-none -z-10" />
+
+            <div className="container mx-auto px-6 py-12 relative z-10">
+                <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors mb-8">
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Home
+                </Link>
+
+                {authLoading ? (
+                    <div className="flex justify-center items-center h-64">
+                        <LogoSpinner size="md" />
+                    </div>
+                ) : !user ? (
+                    <div className="max-w-lg mx-auto mt-20">
+                        <HolographicCard className="p-10 text-center">
+                            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 text-primary">
+                                <User className="w-10 h-10" />
+                            </div>
+                            <h2 className="text-2xl font-heading font-bold mb-4">Authentication Required</h2>
+                            <p className="text-muted-foreground mb-8">
+                                To apply for IEEE SSCS, you must sign in with your VIT Student email address (@vitstudent.ac.in).
+                            </p>
+                            <Button
+                                onClick={() => signInWithGoogle()}
+                                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 font-bold"
+                            >
+                                <LogIn className="w-4 h-4 mr-2" />
+                                Sign In with Google
+                            </Button>
+                        </HolographicCard>
+                    </div>
+                ) : (
+
+                    <motion.div
+                        key={step}
+                        initial={{ opacity: 0, x: step === 1 ? -20 : 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="max-w-4xl mx-auto"
+                    >
+                        <div className="text-center mb-8">
+                            <h1 className="font-heading text-4xl md:text-5xl font-bold mb-4">
+                                <RevealText text={step === 1 ? "Membership Application" : "Second Preference"} />
+                            </h1>
+                            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                                {step === 1
+                                    ? "Step 1: Personal Details & Primary Choice"
+                                    : "Step 2: Backup Department Choice"}
+                            </p>
+                            {/* Step Indicator */}
+                            <div className="flex justify-center gap-2 mt-4">
+                                <div className={`h-2 rounded-full transition-all duration-300 ${step === 1 ? 'w-8 bg-primary' : 'w-2 bg-primary/30'}`} />
+                                <div className={`h-2 rounded-full transition-all duration-300 ${step === 2 ? 'w-8 bg-primary' : 'w-2 bg-primary/30'}`} />
+                            </div>
+                        </div>
+
+                        <HolographicCard className="p-8 md:p-10">
+                            <form onSubmit={step === 1 ? handleNextStep : handleSubmit} className="space-y-8">
+                                {step === 1 && (
+                                    <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
+                                        <div className="space-y-6">
+                                            <h3 className="text-xl font-heading font-semibold flex items-center gap-2 text-primary/80">
+                                                <User className="w-5 h-5" /> Personal Details
+                                            </h3>
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-muted-foreground">Full Name</label>
+                                                    <input
+                                                        required
+                                                        type="text"
+                                                        name="fullName"
+                                                        value={formData.fullName}
+                                                        onChange={handleInputChange}
+                                                        className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
+                                                        placeholder=""
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-muted-foreground">Registration Number</label>
+                                                    <input
+                                                        required
+                                                        type="text"
+                                                        name="rollNumber"
+                                                        value={formData.rollNumber}
+                                                        onChange={handleInputChange}
+                                                        className={`w-full bg-background/50 border rounded-lg px-4 py-3 focus:ring-1 outline-none transition-all ${regError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/50' :
+                                                            regValidation?.isValid ? 'border-green-500/50 focus:border-green-500 focus:ring-green-500/50' :
+                                                                'border-white/10 focus:border-primary/50 focus:ring-primary/50'
+                                                            }`}
+                                                        placeholder="e.g. 24BPS1104"
+                                                    />
+                                                    {regError && (
+                                                        <div className="text-xs text-red-500 mt-1 flex items-center animate-in slide-in-from-top-1">
+                                                            <XOctagon className="w-3 h-3 mr-1" /> {regError}
+                                                        </div>
+                                                    )}
+                                                    {regValidation?.isValid && (
+                                                        <div className="text-xs text-green-500 mt-1 flex flex-col gap-1 animate-in slide-in-from-top-1">
+                                                            <div className="flex items-center font-medium">
+                                                                <Trophy className="w-3 h-3 mr-1" /> Valid Format
+                                                            </div>
+                                                            <div className="pl-4 text-green-400/70">
+                                                                {regValidation.programName} • Batch {regValidation.batch}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-muted-foreground">Phone Number</label>
+                                                    <div className="relative">
+                                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
+                                                        <input
+                                                            required
+                                                            type="tel"
+                                                            name="phone"
+                                                            value={formData.phone}
+                                                            onChange={handleInputChange}
+                                                            className="w-full bg-background/50 border border-white/10 rounded-lg pl-10 pr-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
+                                                            placeholder="98765 43210"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-6 pt-6 border-t border-white/10">
+                                            <h3 className="text-xl font-heading font-semibold flex items-center gap-2 text-primary">
+                                                <Code className="w-5 h-5" /> Primary Choice (Dept 1)
+                                            </h3>
+
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-muted-foreground">Department of Interest</label>
+                                                <Select
+                                                    required
+                                                    value={formData.primaryDept}
+                                                    onValueChange={(value) => setFormData(prev => ({ ...prev, primaryDept: value, domains: [] }))}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select Primary Department" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Technical">Technical</SelectItem>
+                                                        <SelectItem value="Management">Management</SelectItem>
+                                                        <SelectItem value="Design & Content">Design & Content</SelectItem>
+                                                        <SelectItem value="Visual Media">Visual Media</SelectItem>
+                                                        <SelectItem value="Outreach & Sponsorship">Outreach & Sponsorship</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                <label className="text-sm font-medium text-muted-foreground">
+                                                    {formData.primaryDept ? `Specific Roles for ${formData.primaryDept}` : 'Select a Department above to see roles'}
+                                                </label>
+
+                                                {currentDomains.length > 0 ? (
+                                                    <div className="grid sm:grid-cols-2 gap-3">
+                                                        {currentDomains.map(domain => (
+                                                            <div
+                                                                key={domain}
+                                                                onClick={() => handleDomainToggle(domain)}
+                                                                className={`cursor-pointer px-4 py-3 rounded-lg border transition-all duration-200 flex items-center gap-3
+                                    ${formData.domains.includes(domain)
+                                                                        ? 'bg-primary/20 border-primary text-primary'
+                                                                        : 'bg-background/30 border-white/5 hover:border-white/20 text-muted-foreground'
+                                                                    }`}
+                                                            >
+                                                                <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0
+                                    ${formData.domains.includes(domain) ? 'border-primary bg-primary' : 'border-current'}
+            `}>
+                                                                    {formData.domains.includes(domain) && <div className="w-2 h-2 bg-background rounded-sm" />}
+                                                                </div>
+                                                                <span className="text-sm font-medium">{domain}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-4 rounded-lg bg-white/5 border border-white/10 text-center text-muted-foreground text-sm italic">
+                                                        Please select a Department of Interest first.
+                                                    </div>
+                                                )}
+                                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm text-blue-200 mt-2">
+                                                    <strong>Heads-up:</strong> These roles represent your core strength or interest, not a fixed boundary.
+                                                    SSCS projects are cross-disciplinary by nature, and members are encouraged (and expected) to explore and contribute across different technical domains.
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-muted-foreground">{currentSkillLabel}</label>
+                                                <input
+                                                    type="text"
+                                                    name="skills"
+                                                    value={formData.skills}
+                                                    onChange={handleInputChange}
+                                                    className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
+                                                    placeholder={currentSkillPlaceholder}
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-muted-foreground">Why do you want to join this department?</label>
+                                                <textarea
+                                                    required
+                                                    name="reason"
+                                                    value={formData.reason}
+                                                    onChange={handleInputChange}
+                                                    rows={4}
+                                                    className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all resize-none"
+                                                    placeholder={currentReasonPlaceholder}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 flex justify-end">
+                                            <Button
+                                                type="submit"
+                                                className="h-12 px-8 bg-primary text-primary-foreground hover:bg-primary/90 font-heading text-lg group"
+                                            >
+                                                Next Step
+                                                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {step === 2 && (
+                                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                                        <div className="flex items-center gap-3 p-4 bg-primary/10 border border-primary/20 rounded-lg text-primary mb-6">
+                                            <span className="text-sm font-medium">✨ Why a second preference?</span>
+                                            <span className="text-xs text-muted-foreground">If slots in your primary department are full, we will consider you for this role.</span>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                            <h3 className="text-xl font-heading font-semibold flex items-center gap-2 text-primary">
+                                                <Code className="w-5 h-5" /> Secondary Choice (Dept 2)
+                                            </h3>
+
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-muted-foreground">Department of Interest</label>
+                                                <Select
+                                                    required
+                                                    value={formData.secondaryDept}
+                                                    onValueChange={(value) => setFormData(prev => ({ ...prev, secondaryDept: value, secondaryDomains: [] }))}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select Secondary Department" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="Technical" disabled={formData.primaryDept === 'Technical'}>Technical</SelectItem>
+                                                        <SelectItem value="Management" disabled={formData.primaryDept === 'Management'}>Management</SelectItem>
+                                                        <SelectItem value="Design & Content" disabled={formData.primaryDept === 'Design & Content'}>Design & Content</SelectItem>
+                                                        <SelectItem value="Visual Media" disabled={formData.primaryDept === 'Visual Media'}>Visual Media</SelectItem>
+                                                        <SelectItem value="Outreach & Sponsorship" disabled={formData.primaryDept === 'Outreach & Sponsorship'}>Outreach & Sponsorship</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                {formData.primaryDept && (
+                                                    <p className="text-xs text-muted-foreground">Your primary choice <b>{formData.primaryDept}</b> is disabled here.</p>
+                                                )}
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                <label className="text-sm font-medium text-muted-foreground">
+                                                    {formData.secondaryDept ? `Specific Roles for ${formData.secondaryDept}` : 'Select a Department above to see roles'}
+                                                </label>
+
+                                                {secondaryDomainsList.length > 0 ? (
+                                                    <div className="grid sm:grid-cols-2 gap-3">
+                                                        {secondaryDomainsList.map(domain => (
+                                                            <div
+                                                                key={domain}
+                                                                onClick={() => handleDomainToggle(domain, true)}
+                                                                className={`cursor-pointer px-4 py-3 rounded-lg border transition-all duration-200 flex items-center gap-3
+                                    ${formData.secondaryDomains.includes(domain)
+                                                                        ? 'bg-primary/20 border-primary text-primary'
+                                                                        : 'bg-background/30 border-white/5 hover:border-white/20 text-muted-foreground'
+                                                                    }`}
+                                                            >
+                                                                <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0
+                                    ${formData.secondaryDomains.includes(domain) ? 'border-primary bg-primary' : 'border-current'}
+            `}>
+                                                                    {formData.secondaryDomains.includes(domain) && <div className="w-2 h-2 bg-background rounded-sm" />}
+                                                                </div>
+                                                                <span className="text-sm font-medium">{domain}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-4 rounded-lg bg-white/5 border border-white/10 text-center text-muted-foreground text-sm italic">
+                                                        Please select a Secondary Department of Interest first.
+                                                    </div>
+                                                )}
+                                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm text-blue-200 mt-2">
+                                                    <strong>Heads-up:</strong> These roles represent your core strength or interest, not a fixed boundary.
+                                                    SSCS projects are cross-disciplinary by nature, and members are encouraged (and expected) to explore and contribute across different technical domains.
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-muted-foreground">{secondarySkillLabel}</label>
+                                                <input
+                                                    type="text"
+                                                    name="secondarySkills"
+                                                    value={formData.secondarySkills}
+                                                    onChange={handleInputChange}
+                                                    className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
+                                                    placeholder={secondarySkillPlaceholder}
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-muted-foreground">Why this secondary choice?</label>
+                                                <textarea
+                                                    required
+                                                    name="secondaryReason"
+                                                    value={formData.secondaryReason}
+                                                    onChange={handleInputChange}
+                                                    rows={4}
+                                                    className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all resize-none"
+                                                    placeholder={secondaryReasonPlaceholder}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 flex gap-4">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={handlePrevStep}
+                                                className="h-12 px-6 border-white/10 hover:bg-white/5"
+                                            >
+                                                <ChevronLeft className="w-4 h-4 mr-2" />
+                                                Back
+                                            </Button>
+                                            <Button
+                                                type="submit"
+                                                disabled={isSubmitting}
+                                                className="flex-1 h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-heading text-lg"
+                                            >
+                                                {isSubmitting ? (
+                                                    <span className="flex items-center">
+                                                        <div className="w-5 h-5 border-2 border-background border-t-transparent rounded-full animate-spin mr-2" />
+                                                        Submitting...
+                                                    </span>
+                                                ) : (
+                                                    'Submit Application'
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </form>
+                        </HolographicCard>
+                    </motion.div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default Apply;

@@ -1,0 +1,316 @@
+import React from 'react';
+import { Badge } from "@/components/ui/badge";
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Star, CheckCircle, XCircle, MinusCircle, Trash2, Calendar, Clock, Lock, Save } from 'lucide-react';
+import LogoSpinner from '@/components/ui/LogoSpinner';
+import { Application, ApplicationStatus, RecruitmentPhase } from '@/types';
+import { canTransition } from '@/lib/fsm';
+
+import { useAuth } from '@/contexts/AuthContext';
+
+interface ApplicationModalProps {
+    application: Application | null;
+    open: boolean;
+    onClose: () => void;
+    onUpdate: (id: string, updates: Partial<Application>) => Promise<void>;
+    onDelete: (id: string) => Promise<void>;
+}
+
+const ApplicationModal: React.FC<ApplicationModalProps> = ({
+    application,
+    open,
+    onClose,
+    onUpdate,
+    onDelete
+}) => {
+    const { user } = useAuth();
+    const [localNotes, setLocalNotes] = React.useState(application?.notes || '');
+    const [isSaving, setIsSaving] = React.useState(false);
+
+    React.useEffect(() => {
+        if (application) {
+            setLocalNotes(application.notes || '');
+        }
+    }, [application]);
+
+    const handleSave = async () => {
+        if (!application) return;
+        setIsSaving(true);
+        try {
+            await onUpdate(application.id, { notes: localNotes });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+    // Logic duplicated from Admin.tsx for consistency
+    const ADMIN_EMAILS = [
+        'sibhi.s2024@vitstudent.ac.in',
+        'sibhis5223@gmail.com',
+        'santhosh.v2024d@vitstudent.ac.in',
+        'tspradeepkumar@vit.ac.in'
+    ];
+    const isSuperAdmin = user?.role === 'super_admin' || (user?.email && ADMIN_EMAILS.includes(user.email) && !user?.role);
+
+    if (!application) return null;
+
+    return (
+        <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+            <DialogContent className="max-w-3xl bg-black/90 border-white/10 text-foreground backdrop-blur-xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+                                <span>{application.fullName}</span>
+                                <Badge variant="outline" className="text-base font-normal">{application.rollNumber}</Badge>
+                            </DialogTitle>
+                            <DialogDescription className="text-muted-foreground mt-1 flex items-center gap-2">
+                                <Calendar className="w-3 h-3" />
+                                Applied on {application.submittedAt ? new Date(application.submittedAt).toLocaleDateString() : 'Unknown Date'}
+                                <span className="mx-1">•</span>
+                                <Clock className="w-3 h-3" />
+                                {application.submittedAt ? new Date(application.submittedAt).toLocaleTimeString() : ''}
+                            </DialogDescription>
+
+                            {/* Derived Metadata Badge Block */}
+                            <div className="flex gap-2 mt-3">
+                                {application.programCode && (
+                                    <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/20">
+                                        {application.programCode}
+                                    </Badge>
+                                )}
+                                {application.batch && (
+                                    <Badge variant="secondary" className="bg-purple-500/10 text-purple-400 border-purple-500/20">
+                                        Batch {application.batch}
+                                    </Badge>
+                                )}
+                                {application.programCategory && (
+                                    <Badge variant="secondary" className="bg-white/5 text-muted-foreground border-white/10">
+                                        {application.programCategory}
+                                    </Badge>
+                                )}
+                            </div>
+                        </div>
+                        {/* Status Badge in Header */}
+                        <Badge variant="outline" className={`capitalize px-3 py-1 text-sm ${application.status === 'selected' ? 'text-green-500 border-green-500/50 bg-green-500/10' :
+                            application.status === 'shortlisted' ? 'text-cyan-500 border-cyan-500/50 bg-cyan-500/10' :
+                                application.status === 'rejected' ? 'text-red-500 border-red-500/50 bg-red-500/10' :
+                                    application.status === 'rejected_pending' ? 'text-orange-500 border-orange-500/50 bg-orange-500/10' :
+                                        application.status === 'neutral' ? 'text-yellow-500 border-yellow-500/50 bg-yellow-500/10' :
+                                            'text-blue-500 border-blue-500/50 bg-blue-500/10'
+                            }`}>
+                            {application.status === 'rejected_pending' ? 'To Reject' : application.status}
+                        </Badge>
+                    </div>
+                </DialogHeader>
+
+                <div className="space-y-8 mt-4">
+                    {/* Rating & Actions Bar */}
+                    <div className="flex flex-col sm:flex-row justify-between items-center bg-white/5 p-4 rounded-xl border border-white/10 gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-muted-foreground mr-2">Rating:</span>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                    key={star}
+                                    onClick={() => onUpdate(application.id, { rating: star })}
+                                    className={`transition-transform hover:scale-110 focus:outline-none`}
+                                >
+                                    <Star
+                                        className={`w-6 h-6 ${star <= (application.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-700 hover:text-yellow-400/50'}`}
+                                    />
+                                </button>
+                            ))}
+                        </div>
+                        {isSuperAdmin && (
+                            <div className="flex gap-2 flex-wrap justify-end">
+                                <Button
+                                    size="sm"
+                                    variant={application.status === 'rejected_pending' ? 'destructive' : 'outline'}
+                                    onClick={() => onUpdate(application.id, { status: 'rejected_pending' })}
+                                    disabled={!canTransition(application.status, 'rejected_pending')}
+                                    className={application.status === 'rejected_pending' ? '' : 'border-red-500/50 text-red-500 hover:bg-red-500/10 hover:border-red-500'}
+                                >
+                                    <XCircle className="w-4 h-4 mr-2" />
+                                    {application.status === 'rejected_pending' ? 'Marked to Reject' : 'Reject'}
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant={application.status === 'under_review' ? 'secondary' : 'outline'}
+                                    onClick={() => onUpdate(application.id, { status: 'under_review' })}
+                                    disabled={!canTransition(application.status, 'under_review')}
+                                    className={application.status === 'under_review' ? 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30' : 'border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10 hover:border-yellow-500'}
+                                >
+                                    <MinusCircle className="w-4 h-4 mr-2" />
+                                    Reviewing
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant={application.status === 'shortlisted' ? 'default' : 'outline'}
+                                    onClick={() => onUpdate(application.id, { status: 'shortlisted' })}
+                                    disabled={!canTransition(application.status, 'shortlisted')}
+                                    className={application.status === 'shortlisted'
+                                        ? 'bg-cyan-600 hover:bg-cyan-700 text-white'
+                                        : 'border-cyan-500/50 text-cyan-500 hover:bg-cyan-500/10 hover:border-cyan-500'
+                                    }
+                                >
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    {application.status === 'shortlisted' ? 'Shortlisted' : 'Shortlist'}
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-8">
+                        {/* Personal Info */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-primary border-b border-primary/20 pb-2">Personal Details</h3>
+                            <div className="grid grid-cols-[100px_1fr] gap-x-2 gap-y-4 text-sm">
+                                <span className="text-muted-foreground">Email:</span>
+                                <span className="break-all">{application.email}</span>
+                                <span className="text-muted-foreground">Phone:</span>
+                                <span>{application.phone}</span>
+                                <span className="text-muted-foreground">Department:</span>
+                                <span>{application.department}</span>
+                                <span className="text-muted-foreground">Year:</span>
+                                <span>{application.year}</span>
+                            </div>
+                        </div>
+
+                        {/* Primary Choice */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-primary border-b border-primary/20 pb-2">Primary Choice</h3>
+                            <div>
+                                <Badge className="bg-primary hover:bg-primary/90 mb-2">{application.primaryDept}</Badge>
+                                <div className="flex flex-wrap gap-1 mb-3">
+                                    {application.domains.map(d => (
+                                        <Badge key={d} variant="outline" className="text-xs">{d}</Badge>
+                                    ))}
+                                </div>
+                                <div className="space-y-3">
+                                    <div>
+                                        <span className="text-xs uppercase tracking-wider text-muted-foreground block mb-1">Skills</span>
+                                        <p className="text-sm bg-white/5 p-3 rounded-md border border-white/5 leading-relaxed">{application.skills}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-xs uppercase tracking-wider text-muted-foreground block mb-1">Reason</span>
+                                        <p className="text-sm bg-white/5 p-3 rounded-md border border-white/5 max-h-[150px] overflow-y-auto leading-relaxed whitespace-pre-wrap">{application.reason}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Secondary Choice */}
+                        {application.secondaryDept && (
+                            <div className="space-y-4 md:col-span-2">
+                                <h3 className="text-lg font-semibold text-primary/70 border-b border-primary/20 pb-2">Secondary Choice</h3>
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <Badge variant="secondary" className="mb-2">{application.secondaryDept}</Badge>
+                                        <div className="flex flex-wrap gap-1 mb-3">
+                                            {application.secondaryDomains.map(d => (
+                                                <Badge key={d} variant="outline" className="text-xs">{d}</Badge>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <span className="text-xs uppercase tracking-wider text-muted-foreground block mb-1">Skills</span>
+                                            <p className="text-sm bg-white/5 p-3 rounded-md border border-white/5">{application.secondarySkills || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-xs uppercase tracking-wider text-muted-foreground block mb-1">Reason</span>
+                                            <p className="text-sm bg-white/5 p-3 rounded-md border border-white/5">{application.secondaryReason || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Suggestion 5: Activity Log / Timeline Placeholder */}
+                        <div className="md:col-span-2 border-t border-dashed border-white/10 pt-6 mt-2">
+                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Application History</h4>
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3 text-sm text-foreground/80">
+                                    <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
+                                    <span>Applied on <span className="font-mono">{application.submittedAt ? new Date(application.submittedAt).toLocaleString() : 'N/A'}</span></span>
+                                </div>
+                                {application.rating > 0 && (
+                                    <div className="flex items-center gap-3 text-sm text-foreground/80">
+                                        <div className="w-2 h-2 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]"></div>
+                                        <span>Rated <span className="font-bold text-yellow-500">{application.rating} stars</span></span>
+                                    </div>
+                                )}
+                                {application.status !== 'pending' && (
+                                    <div className="flex items-center gap-3 text-sm text-foreground/80">
+                                        <div className={`w-2 h-2 rounded-full shadow-[0_0_8px_currentColor] ${application.status === 'selected' ? 'bg-green-500 text-green-500' :
+                                            application.status === 'rejected' ? 'bg-red-500 text-red-500' :
+                                                'bg-foreground text-foreground'
+                                            }`}></div>
+                                        <span>Status marked as <span className="font-bold uppercase">{application.status}</span></span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="md:col-span-2 space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-primary border-b border-primary/20 pb-2 flex-grow">Interview Notes</h3>
+                                <Button
+                                    size="sm"
+                                    onClick={handleSave}
+                                    disabled={isSaving || localNotes === (application.notes || '')}
+                                    className={`ml-4 transition-all ${isSaving ? 'bg-zinc-800' : localNotes !== (application.notes || '') ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_15px_rgba(255,225,0,0.3)]' : 'bg-zinc-800 text-zinc-500'}`}
+                                >
+                                    {isSaving ? (
+                                        <LogoSpinner size="sm" className="mr-2" />
+                                    ) : (
+                                        <Save className="w-4 h-4 mr-2" />
+                                    )}
+                                    {isSaving ? 'Saving...' : 'Save Notes'}
+                                </Button>
+                            </div>
+                            <div className="relative">
+                                <textarea
+                                    className="w-full min-h-[120px] bg-black/40 border border-white/10 rounded-lg p-4 text-sm focus:outline-none focus:border-primary/50 text-foreground transition-all placeholder:text-muted-foreground/30 resize-y font-sans leading-relaxed"
+                                    placeholder="Type interview observations, key strengths, or concerns here..."
+                                    value={localNotes}
+                                    onChange={(e) => setLocalNotes(e.target.value)}
+                                />
+                                <div className="flex justify-between items-center mt-2 px-1">
+                                    <p className="text-[10px] text-muted-foreground italic">
+                                        Last saved: {application.submittedAt ? new Date().toLocaleTimeString() : 'Not yet'}
+                                    </p>
+                                    {localNotes !== (application.notes || '') && (
+                                        <p className="text-[10px] text-primary/70 font-medium animate-pulse">
+                                            Unsaved changes
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Delete Action */}
+                        <div className="md:col-span-2 pt-4 border-t border-white/10 flex justify-end">
+                            <Button
+                                variant="destructive"
+                                onClick={() => onDelete(application.id)}
+                                className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50"
+                            >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete Application
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+export default ApplicationModal;
