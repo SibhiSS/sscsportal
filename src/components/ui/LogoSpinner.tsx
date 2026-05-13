@@ -20,7 +20,7 @@ const LogoSpinner = ({ size = 'md', className }: LogoSpinnerProps) => {
         <div className={cn("relative flex items-center justify-center", sizeClasses[size], className)}>
             {/* Rotating Logo Icon */}
             <motion.img
-                src={logoIcon}
+                src="/logo.png"
                 alt="Loading..."
                 className="w-full h-full object-contain relative z-20 select-none"
                 animate={{ rotate: 360 }}
@@ -43,7 +43,7 @@ const LogoSpinner = ({ size = 'md', className }: LogoSpinnerProps) => {
                 style={{ width: '140%', height: '140%' }}
             >
                 {/* Glowing focal point */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full shadow-[0_0_10px_rgba(255,225,0,0.8)]" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full shadow-[0_0_10px_rgba(220,20,60,0.8)]" />
             </motion.div>
         </div>
     );

@@ -19,7 +19,7 @@ const CircuitBoardBackground = () => {
         const gridSize = 30; // Closer grid for more dense circuit look
         const nodeProbability = 0.15; // Chance of a node at intersection
         const pulseCount = 10;
-        const color = "234, 179, 8"; // Yellow RGB
+        const color = "220, 20, 60"; // SSCS Red RGB
 
         // State
         const mouse = { x: -100, y: -100 };

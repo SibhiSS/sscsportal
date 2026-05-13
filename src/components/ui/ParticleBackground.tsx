@@ -56,10 +56,10 @@ const ParticleBackground = () => {
                     },
                     particles: {
                         color: {
-                            value: "#eab308", // Yellow/Primary
+                            value: "#dc143c", // SSCS Red/Primary
                         },
                         links: {
-                            color: "#eab308",
+                            color: "#dc143c",
                             distance: 150,
                             enable: true,
                             opacity: 0.2,
