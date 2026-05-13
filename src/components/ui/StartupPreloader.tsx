@@ -94,7 +94,7 @@ const StartupPreloader = ({ onComplete }: { onComplete: () => void }) => {
                         style={{ width: '130%', height: '130%' }}
                     >
                         {/* Spinning focal point on the ring */}
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rounded-full shadow-[0_0_15px_rgba(255,225,0,0.8)]" />
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rounded-full shadow-[0_0_15px_rgba(220,20,60,0.8)]" />
                     </motion.div>
                 </motion.div>
             </div>

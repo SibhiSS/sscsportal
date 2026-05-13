@@ -4,35 +4,35 @@
 
 @layer base {
   :root {
-    /* Yellow & Black Dark Theme */
+    /* IEEE SSCS Red Theme */
     --background: 0 0% 4%;
-    --foreground: 45 100% 96%;
+    --foreground: 0 0% 98%;
     
-    /* Electric Yellow */
-    --primary: 50 100% 50%;
-    --primary-foreground: 0 0% 4%;
+    /* SSCS Red */
+    --primary: 345 85% 45%;
+    --primary-foreground: 0 0% 100%;
     
-    /* Muted Gold */
-    --secondary: 45 80% 40%;
-    --secondary-foreground: 0 0% 4%;
+    /* Deep Maroon */
+    --secondary: 345 85% 25%;
+    --secondary-foreground: 0 0% 100%;
     
-    /* Warm Amber Accent */
-    --accent: 40 100% 55%;
-    --accent-foreground: 0 0% 4%;
+    /* Bright Accent */
+    --accent: 345 85% 60%;
+    --accent-foreground: 0 0% 100%;
     
     /* UI Colors */
     --muted: 0 0% 12%;
-    --muted-foreground: 45 20% 60%;
+    --muted-foreground: 0 0% 65%;
     
     --card: 0 0% 7%;
-    --card-foreground: 45 100% 96%;
+    --card-foreground: 0 0% 98%;
     
     --popover: 0 0% 7%;
-    --popover-foreground: 45 100% 96%;
+    --popover-foreground: 0 0% 98%;
     
-    --border: 45 30% 15%;
+    --border: 0 0% 15%;
     --input: 0 0% 12%;
-    --ring: 50 100% 50%;
+    --ring: 345 85% 45%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -41,18 +41,18 @@
     
     /* Sidebar */
     --sidebar-background: 0 0% 6%;
-    --sidebar-foreground: 45 100% 96%;
-    --sidebar-primary: 50 100% 50%;
-    --sidebar-primary-foreground: 0 0% 4%;
-    --sidebar-accent: 45 80% 40%;
-    --sidebar-accent-foreground: 0 0% 4%;
-    --sidebar-border: 45 30% 15%;
-    --sidebar-ring: 50 100% 50%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 345 85% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 345 85% 25%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 345 85% 45%;
   }
 
   .dark {
     --background: 0 0% 4%;
-    --foreground: 45 100% 96%;
+    --foreground: 0 0% 98%;
   }
 }
 
