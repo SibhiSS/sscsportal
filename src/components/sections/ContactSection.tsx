@@ -79,7 +79,7 @@ const ContactSection = () => {
         >
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <img src="https://bqtqhtpbyunzcwxyxdhx.supabase.co/storage/v1/object/public/asset/IEEE%20SSCS%20Logo.png" alt="IEEE SSCS" className="w-8 h-8 object-contain" />
+              <img src="/logo.png" alt="IEEE SSCS" className="w-8 h-8 object-contain" />
               <span className="font-heading font-bold text-sm">
                 <span className="text-primary">IEEE</span>
                 <span className="text-foreground"> SSCS</span>
@@ -87,11 +87,7 @@ const ContactSection = () => {
             </div>
 
             <p className="text-xs text-muted-foreground text-center font-mono">
-              <span className="inline-flex items-center gap-1.5 mx-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                SYSTEM: ONLINE
-              </span>
-              | © 2026 IEEE SSCS
+              © 2026 IEEE SSCS
             </p>
 
             <p className="text-xs text-muted-foreground">

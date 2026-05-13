@@ -49,7 +49,7 @@ const HolographicCard: React.FC<HolographicCardProps> = ({ children, className =
                 className="pointer-events-none absolute inset-0 transition-opacity duration-300"
                 style={{
                     opacity,
-                    background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(234, 179, 8, 0.15), transparent 40%)`
+                    background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(220, 38, 38, 0.15), transparent 40%)`
                 }}
             />
 
@@ -58,7 +58,7 @@ const HolographicCard: React.FC<HolographicCardProps> = ({ children, className =
                 className="pointer-events-none absolute inset-0 rounded-xl transition-opacity duration-300"
                 style={{
                     opacity,
-                    background: `radial-gradient(400px circle at ${position.x}px ${position.y}px, rgba(234, 179, 8, 0.3), transparent 40%)`,
+                    background: `radial-gradient(400px circle at ${position.x}px ${position.y}px, rgba(220, 38, 38, 0.3), transparent 40%)`,
                     zIndex: -1
                 }}
             />
