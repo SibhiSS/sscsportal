@@ -141,9 +141,9 @@ const DomainsSection = () => {
     <section id="domains" className="relative py-32">
       {/* Smooth Background Glow (No clipping) */}
       <div 
-        className="absolute inset-0 pointer-events-none opacity-40"
+        className="absolute -inset-y-32 inset-x-0 pointer-events-none opacity-40"
         style={{
-          background: 'radial-gradient(circle at 20% 0%, rgba(220, 20, 60, 0.08), transparent 50%)'
+          background: 'radial-gradient(circle at 20% 30%, rgba(220, 20, 60, 0.08), transparent 60%)'
         }}
       />
       
