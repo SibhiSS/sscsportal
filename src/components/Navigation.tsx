@@ -25,7 +25,7 @@ const Navigation = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      setIsScrolled(window.scrollY > 20);
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -84,173 +84,175 @@ const Navigation = () => {
 
   return (
     <>
-      <motion.nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-          ? 'bg-background/90 backdrop-blur-md border-b border-border'
-          : 'bg-transparent'
-          }`}
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <a href="#" className="flex items-center gap-2">
-              <img src="/logo.png" alt="IEEE SSCS Logo" className="w-8 h-8 object-contain" />
-              <span className="font-heading font-bold text-lg">
-                <span className="text-primary">IEEE</span>
-                <span className="text-foreground"> SSCS</span>
-              </span>
-            </a>
+      <div className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none pt-6 px-6">
+        <motion.nav
+          initial={{ y: -100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className={`
+            pointer-events-auto flex items-center justify-between px-6 py-3 transition-all duration-500
+            ${isScrolled 
+              ? 'w-full max-w-5xl rounded-full bg-white/5 border border-white/10 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]' 
+              : 'w-full max-w-7xl bg-transparent border-transparent'
+            }
+          `}
+        >
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="relative">
+              <img src="/logo.png" alt="IEEE SSCS Logo" className="w-8 h-8 object-contain relative z-10 transition-transform group-hover:scale-110" />
+              <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <span className="font-heading font-bold text-lg hidden sm:block">
+              <span className="text-primary tracking-tight">IEEE</span>
+              <span className="text-foreground tracking-tight"> SSCS</span>
+            </span>
+          </Link>
 
-            {/* Desktop Nav */}
-            <div className="hidden md:flex items-center gap-6">
-              {navLinks.map((link) => (
-                <button
-                  key={link.name}
-                  onClick={() => handleNavClick(link.href)}
-                  className="relative group px-3 py-1 text-sm text-foreground/80 hover:text-primary transition-colors"
-                >
-                  <span className="relative z-10">{link.name}</span>
-                  <span className="absolute inset-0 rounded bg-primary/10 scale-0 group-hover:scale-100 transition-transform duration-200" />
-                  <span className="absolute bottom-0 left-0 w-full h-[1px] bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-                </button>
-              ))}
+          {/* Desktop Nav Links */}
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map((link) => (
+              <button
+                key={link.name}
+                onClick={() => handleNavClick(link.href)}
+                className="px-4 py-2 text-sm font-medium text-foreground/70 hover:text-primary transition-all rounded-full hover:bg-white/5 relative overflow-hidden group"
+              >
+                <span className="relative z-10">{link.name}</span>
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+            ))}
+          </div>
 
+          {/* Actions */}
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-3">
               {hasApplied ? (
-                <Button size="sm" variant="outline" className="border-primary/20 text-primary/50 cursor-not-allowed" disabled>
+                <Button size="sm" variant="outline" className="border-white/10 text-primary/60 backdrop-blur-md rounded-full bg-white/5 cursor-not-allowed px-6" disabled>
                   Applied
                 </Button>
               ) : (
                 <Link to="/apply">
-                  <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 shadow-[0_0_15px_rgba(220,20,60,0.2)]">
                     Join Us
                   </Button>
                 </Link>
               )}
+            </div>
 
-              {user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.photoURL} alt={user.displayName} />
-                        <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end" forceMount>
-                    <DropdownMenuLabel className="font-normal">
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{user.displayName}</p>
-                        <p className="text-xs leading-none text-muted-foreground">
-                          {user.email}
-                        </p>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full border border-white/10 p-0 overflow-hidden hover:bg-white/10">
+                    <Avatar className="h-full w-full">
+                      <AvatarImage src={user.photoURL} alt={user.displayName} />
+                      <AvatarFallback className="bg-primary/20 text-primary text-xs">{user.displayName?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-64 bg-black/80 backdrop-blur-2xl border-white/10 text-foreground p-2 rounded-2xl mt-4" align="end">
+                  <DropdownMenuLabel className="font-normal p-4">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-bold">{user.displayName}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-white/5" />
+                  <div className="p-1">
                     {hasApplied && (
-                      <DropdownMenuItem onClick={() => navigate('/apply')}>
-                        <Eye className="mr-2 h-4 w-4" />
+                      <DropdownMenuItem onClick={() => navigate('/apply')} className="rounded-xl focus:bg-white/10 cursor-pointer p-3">
+                        <Eye className="mr-3 h-4 w-4 text-primary" />
                         <span>Application Status</span>
                       </DropdownMenuItem>
                     )}
-                    {/* ONLY show dashboard link if user has an admin role */}
                     {user.role && ['super_admin', 'admin', 'interviewer'].includes(user.role) && (
                       <DropdownMenuItem onClick={() => {
-                        if (user.role === 'super_admin' || user.role === 'admin') {
-                          navigate('/admin');
-                        } else {
-                          navigate('/interviewer');
-                        }
-                      }}>
-                        <UserIcon className="mr-2 h-4 w-4" />
+                        if (user.role === 'super_admin' || user.role === 'admin') navigate('/admin');
+                        else navigate('/interviewer');
+                      }} className="rounded-xl focus:bg-white/10 cursor-pointer p-3">
+                        <UserIcon className="mr-3 h-4 w-4 text-primary" />
                         <span>{user.role === 'super_admin' || user.role === 'admin' ? 'Admin Dashboard' : 'Interviewer Dashboard'}</span>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={logout}>
-                      <LogOut className="mr-2 h-4 w-4" />
+                    <DropdownMenuItem onClick={logout} className="rounded-xl focus:bg-red-500/20 text-red-400 cursor-pointer p-3">
+                      <LogOut className="mr-3 h-4 w-4" />
                       <span>Log out</span>
                     </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-primary/20 hover:bg-primary/10"
-                  onClick={signInWithGoogle}
-                >
-                  <LogIn className="w-4 h-4 mr-2" />
-                  Sign In
-                </Button>
-              )}
-            </div>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="hidden sm:flex border-white/10 hover:bg-white/10 text-foreground backdrop-blur-md rounded-full px-6"
+                onClick={signInWithGoogle}
+              >
+                <LogIn className="w-4 h-4 mr-2" />
+                Sign In
+              </Button>
+            )}
 
             {/* Mobile Menu Button */}
             <button
-              className="md:hidden p-2 text-foreground"
+              className="md:hidden p-2 text-foreground hover:bg-white/10 rounded-full transition-colors"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
-        </div>
-      </motion.nav>
+        </motion.nav>
+      </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            className="fixed inset-0 z-40 md:hidden bg-background"
+            className="fixed inset-0 z-40 md:hidden bg-black/60 backdrop-blur-2xl"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="flex flex-col items-center justify-center h-full gap-8 pt-16">
-              {navLinks.map((link) => (
-                <button
+            <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
+              {navLinks.map((link, idx) => (
+                <motion.button
                   key={link.name}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
                   onClick={() => handleNavClick(link.href)}
-                  className="font-heading text-xl text-foreground hover:text-primary transition-colors"
+                  className="font-heading text-3xl font-bold text-foreground hover:text-primary transition-colors"
                 >
                   {link.name}
-                </button>
+                </motion.button>
               ))}
-              {hasApplied ? (
-                <Button variant="outline" className="border-primary/20 text-primary/50 cursor-not-allowed w-[120px]" disabled>
-                  Applied
-                </Button>
-              ) : (
-                <Link to="/apply" onClick={() => setIsMobileMenuOpen(false)}>
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                    Join Us
-                  </Button>
-                </Link>
-              )}
+              
+              <motion.div 
+                className="w-full h-[1px] bg-white/10 my-4"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+              />
 
               {user ? (
-                <div className="flex flex-col items-center gap-4">
-                  <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="flex flex-col items-center gap-6">
+                  <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 border border-white/10">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={user.photoURL} />
                       <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <span>{user.displayName}</span>
+                    <span className="font-bold">{user.displayName}</span>
                   </div>
-                  <Button variant="outline" onClick={() => { logout(); setIsMobileMenuOpen(false); }}>
+                  <Button variant="outline" className="rounded-full px-8 border-red-500/30 text-red-400 hover:bg-red-500/10" onClick={() => { logout(); setIsMobileMenuOpen(false); }}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Log Out
                   </Button>
                 </div>
               ) : (
-                <Button variant="outline" onClick={() => { signInWithGoogle(); setIsMobileMenuOpen(false); }}>
-                  <LogIn className="w-4 h-4 mr-2" />
+                <Button className="w-full max-w-xs bg-primary text-primary-foreground rounded-full h-14 text-lg font-bold" onClick={() => { signInWithGoogle(); setIsMobileMenuOpen(false); }}>
+                  <LogIn className="w-5 h-5 mr-3" />
                   Sign In
                 </Button>
               )}
-
             </div>
           </motion.div>
         )}

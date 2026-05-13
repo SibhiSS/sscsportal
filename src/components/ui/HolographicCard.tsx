@@ -38,8 +38,11 @@ const HolographicCard: React.FC<HolographicCardProps> = ({ children, className =
             onMouseMove={handleMouseMove}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            className={`relative group rounded-xl bg-card/40 border border-white/5 backdrop-blur-sm overflow-hidden transition-all duration-300 hover:-translate-y-1 ${className}`}
+            className={`relative group rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-2xl overflow-hidden transition-all duration-500 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] hover:bg-white/[0.08] hover:border-white/20 hover:shadow-[0_8px_32px_0_rgba(220,20,60,0.15)] ${className}`}
         >
+            {/* Glass Inner Glow */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
             <div className="relative z-10 h-full">
                 {children}
             </div>
@@ -49,7 +52,7 @@ const HolographicCard: React.FC<HolographicCardProps> = ({ children, className =
                 className="pointer-events-none absolute inset-0 transition-opacity duration-300"
                 style={{
                     opacity,
-                    background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(220, 38, 38, 0.15), transparent 40%)`
+                    background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(220, 20, 60, 0.15), transparent 40%)`
                 }}
             />
 
@@ -58,7 +61,7 @@ const HolographicCard: React.FC<HolographicCardProps> = ({ children, className =
                 className="pointer-events-none absolute inset-0 rounded-xl transition-opacity duration-300"
                 style={{
                     opacity,
-                    background: `radial-gradient(400px circle at ${position.x}px ${position.y}px, rgba(220, 38, 38, 0.3), transparent 40%)`,
+                    background: `radial-gradient(400px circle at ${position.x}px ${position.y}px, rgba(220, 20, 60, 0.4), transparent 40%)`,
                     zIndex: -1
                 }}
             />

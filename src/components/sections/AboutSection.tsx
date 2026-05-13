@@ -6,7 +6,8 @@ import RevealText from '@/components/ui/RevealText';
 
 const AboutSection = () => {
   return (
-    <section id="about" className="py-24 bg-card/50">
+    <section id="about" className="py-24 relative overflow-hidden">
+      <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-3xl -z-10" />
       <div className="container mx-auto px-6">
         {/* Section Header */}
         <motion.div
