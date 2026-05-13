@@ -19,9 +19,9 @@ const AboutSection = () => {
             About Us
           </span>
           <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground">
-            <RevealText text="About the Committee" />
+            <RevealText text="About the Club" />
           </h2>
-          <div className="max-w-3xl mx-auto px-4 mt-6">
+          <div className="max-w-6xl mx-auto px-4 mt-6">
             <p className="font-heading text-xs md:text-base text-muted-foreground border-l-2 border-primary/50 pl-4 py-2 bg-primary/5 rounded-r-lg text-left">
               <span className="text-primary font-bold">IEEE SSCS</span> <span className="mx-2">→</span>
               IEEE Solid-State Circuits Society Student Branch Chapter
@@ -30,7 +30,7 @@ const AboutSection = () => {
         </motion.div>
 
         {/* Vision & Mission Cards */}
-        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-6 max-w-6xl mx-auto">
           {/* Vision Card */}
           <HolographicCard className="p-8 h-full">
             <div className="flex items-center gap-4 mb-4">

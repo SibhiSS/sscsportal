@@ -37,7 +37,7 @@ const JoinSection = () => {
     <section id="join" className="py-24 relative">
       <div className="container mx-auto px-6">
         <motion.div
-          className="max-w-4xl mx-auto text-center"
+          className="max-w-6xl mx-auto text-center"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
