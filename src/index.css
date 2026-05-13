@@ -61,8 +61,17 @@
     @apply border-border;
   }
   
+  html {
+    background-color: #020202;
+  }
+  
   body {
-    @apply bg-background text-foreground font-body antialiased relative min-h-screen overflow-x-hidden;
+    @apply bg-transparent text-foreground antialiased relative min-h-screen overflow-x-hidden;
+    caret-color: transparent;
+  }
+
+  input, textarea, [contenteditable="true"] {
+    caret-color: auto;
   }
 
   /* Noise Texture Overlay */

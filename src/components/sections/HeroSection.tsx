@@ -35,51 +35,43 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#050505]">
-      {/* 1. Base Tech Grid */}
-      <TechGridBackground />
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-transparent">
+      {/* Content Container */}
 
-      {/* 2. Glassmorphism Background Blobs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          animate={{
-            x: [0, 100, 0],
-            y: [0, 50, 0],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px]"
-        />
-        <motion.div
-          animate={{
-            x: [0, -80, 0],
-            y: [0, 120, 0],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-          className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[100px]"
-        />
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-      </div>
-
-      {/* 3. Main Content Container */}
+      {/* 3. Main Content Container (No more 'box' container to avoid coinciding boxes) */}
       <div className="relative z-10 container mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="max-w-5xl mx-auto p-12 md:p-20 rounded-[2.5rem] bg-white/5 border border-white/10 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.8)] relative overflow-hidden group"
+          className="relative py-20"
         >
-          {/* Decorative Inner Glow */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-50 pointer-events-none" />
-          
-          {/* Logo Background (Glassy Watermark) */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] opacity-[0.07] pointer-events-none -z-10">
-            <img
-              src="/logo.png"
-              alt="IEEE SSCS Logo"
-              className="w-full h-full object-contain mix-blend-screen"
-            />
+          {/* Logo Background (Abstract Glassy Watermark - Pulsing) */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] md:w-[500px] md:h-[500px] pointer-events-none -z-10 select-none">
+            <motion.div
+              animate={{ 
+                scale: [1, 1.05, 1],
+                opacity: [0.03, 0.06, 0.03]
+              }}
+              transition={{ 
+                scale: { duration: 8, repeat: Infinity, ease: "easeInOut" },
+                opacity: { duration: 8, repeat: Infinity, ease: "easeInOut" }
+              }}
+              className="w-full h-full relative"
+            >
+              <img
+                src="/logo.png"
+                alt=""
+                className="w-full h-full object-contain brightness-200 invert opacity-15"
+              />
+              {/* Radial Fade to avoid sharp edges - Using inline style for reliability */}
+              <div 
+                className="absolute inset-0" 
+                style={{ 
+                  background: 'radial-gradient(circle, transparent 30%, #050505 70%)' 
+                }} 
+              />
+            </motion.div>
           </div>
 
           <div className="relative z-10 flex flex-col items-center text-center">
@@ -88,33 +80,33 @@ const HeroSection = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="flex items-center gap-4 mb-8"
+              className="flex items-center gap-5 mb-10"
             >
-              <div className="h-[1px] w-8 bg-gradient-to-r from-transparent to-primary/50" />
-              <span className="text-xs md:text-sm text-primary/80 tracking-[0.3em] uppercase font-medium">
+              <div className="h-[1px] w-10 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+              <span className="text-[11px] md:text-sm text-primary/90 tracking-[0.35em] uppercase font-bold px-4 py-1 rounded-full border border-primary/10 bg-primary/5 backdrop-blur-sm">
                 Design • Fabricate • Test
               </span>
-              <div className="h-[1px] w-8 bg-gradient-to-l from-transparent to-primary/50" />
+              <div className="h-[1px] w-10 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
             </motion.div>
-
+ 
             {/* Main Title */}
-            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-8 font-heading text-6xl md:text-8xl lg:text-9xl font-bold tracking-tight">
+            <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 mb-8 font-heading text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.1 }}
               >
-                <GlitchText text="IEEE" className="text-primary" />
+                <GlitchText text="IEEE" className="text-primary select-none" />
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
               >
-                <GlitchText text="SSCS" className="text-foreground" />
+                <GlitchText text="SSCS" className="text-foreground select-none" />
               </motion.div>
             </div>
-
+ 
             {/* Subtitle / Tagline */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -188,4 +180,4 @@ const HeroSection = () => {
   );
 };
 
-export default HeroSection;ion;
+export default HeroSection;

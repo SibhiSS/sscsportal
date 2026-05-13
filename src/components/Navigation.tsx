@@ -91,7 +91,7 @@ const Navigation = () => {
           className={`
             pointer-events-auto flex items-center justify-between px-6 py-3 transition-all duration-500
             ${isScrolled 
-              ? 'w-full max-w-5xl rounded-full bg-white/5 border border-white/10 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]' 
+              ? 'w-full max-w-4xl rounded-full bg-white/5 border border-white/10 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]' 
               : 'w-full max-w-7xl bg-transparent border-transparent'
             }
           `}
@@ -144,7 +144,7 @@ const Navigation = () => {
                   <Button variant="ghost" className="relative h-9 w-9 rounded-full border border-white/10 p-0 overflow-hidden hover:bg-white/10">
                     <Avatar className="h-full w-full">
                       <AvatarImage src={user.photoURL} alt={user.displayName} />
-                      <AvatarFallback className="bg-primary/20 text-primary text-xs">{user.displayName?.charAt(0)}</AvatarFallback>
+                      <AvatarFallback className="bg-white/10 text-foreground text-xs">{user.displayName?.charAt(0)}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>

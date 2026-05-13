@@ -34,45 +34,45 @@ const JoinSection = () => {
   }, [user]);
 
   return (
-    <section id="join" className="py-24">
+    <section id="join" className="py-24 relative">
       <div className="container mx-auto px-6">
         <motion.div
-          className="max-w-3xl mx-auto text-center"
+          className="max-w-4xl mx-auto text-center"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 mb-6">
-            <Rocket className="w-4 h-4 text-primary" />
-            <span className="text-sm text-primary">Now Recruiting</span>
+          <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-primary/10 border border-primary/20 mb-10 backdrop-blur-xl">
+            <Rocket className="w-5 h-5 text-primary" />
+            <span className="text-sm text-primary font-bold tracking-widest uppercase">Now Recruiting</span>
           </div>
 
           {/* Heading */}
-          <h2 className="font-heading text-3xl md:text-4xl font-bold mb-4">
-            <span className="text-foreground inline-block mr-2"><RevealText text="Join" /></span>
+          <h2 className="font-heading text-5xl md:text-6xl font-bold mb-8 tracking-tight">
+            <span className="text-foreground inline-block mr-3"><RevealText text="Join" /></span>
             <span className="text-primary inline-block"><RevealText text="IEEE SSCS" delay={0.1} /></span>
           </h2>
 
-          <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-            Ready to prototype, connect, and perform? Join our community of
-            inIEEEtors and shape the future of cyber-physical systems.
+          <p className="text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
+            Ready to design, fabricate, and test? Join our community of
+            innovators and shape the future of integrated circuits.
           </p>
 
           {/* Benefits */}
-          <div className="grid sm:grid-cols-3 gap-4 mb-10">
+          <div className="grid sm:grid-cols-3 gap-6 mb-16">
             {benefits.map((benefit) => (
               <HolographicCard
                 key={benefit.title}
-                className="p-6 flex flex-col items-center hover:border-primary/30"
+                className="p-8 flex flex-col items-center group transition-all duration-500"
               >
-                <div className="p-3 rounded-full bg-primary/10 mb-4 group-hover:bg-primary/20 transition-colors">
-                  <benefit.icon className="w-6 h-6 text-primary" />
+                <div className="p-4 rounded-2xl bg-primary/10 mb-6 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
+                  <benefit.icon className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="font-heading font-bold text-foreground text-sm mb-2">
+                <h3 className="font-heading font-bold text-foreground text-lg mb-3">
                   {benefit.title}
                 </h3>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground/80 font-medium">
                   {benefit.description}
                 </p>
               </HolographicCard>
@@ -80,30 +80,32 @@ const JoinSection = () => {
           </div>
 
           {/* CTA Button */}
-          {hasApplied ? (
-            <Button
-              size="lg"
-              className="bg-primary/20 text-primary/50 border border-primary/20 font-heading cursor-not-allowed"
-              disabled
-            >
-              Application Received
-            </Button>
-          ) : (
-            <Button
-              size="lg"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 font-heading"
-              asChild
-            >
-              <Link to="/apply">
-                Apply Now
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
-            </Button>
-          )}
+          <div className="flex flex-col items-center">
+            {hasApplied ? (
+              <Button
+                size="lg"
+                className="px-10 h-14 bg-primary/20 text-primary/50 border border-primary/20 font-heading cursor-not-allowed rounded-full"
+                disabled
+              >
+                Application Received
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                className="px-12 h-16 bg-primary text-primary-foreground hover:bg-primary/90 font-heading rounded-full shadow-[0_0_25px_rgba(220,20,60,0.3)] transition-all hover:scale-105 text-lg"
+                asChild
+              >
+                <Link to="/apply">
+                  Apply Now
+                  <ArrowRight className="w-6 h-6 ml-2" />
+                </Link>
+              </Button>
+            )}
 
-          <p className="text-xs text-muted-foreground mt-4">
-            Applications are reviewed on a rolling basis
-          </p>
+            <p className="text-sm text-muted-foreground mt-8 font-medium">
+              Applications are reviewed on a rolling basis
+            </p>
+          </div>
         </motion.div>
       </div>
     </section>

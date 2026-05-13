@@ -16,7 +16,7 @@ const events = [
 
 const EventsSection = () => {
   return (
-    <section id="events" className="py-24 bg-card/50">
+    <section id="events" className="py-24 relative">
       <div className="container mx-auto px-6">
         {/* Section Header */}
         <motion.div

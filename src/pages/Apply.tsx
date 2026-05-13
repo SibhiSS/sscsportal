@@ -388,25 +388,30 @@ const Apply = () => {
 
     if (!recruitmentStatus.isOpen) {
         return (
-            <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground">
+            <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground bg-[#050505]">
                 <TechGridBackground />
-                <div className="absolute inset-0 bg-background/80 pointer-events-none -z-10" />
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-none -z-10" />
+                
+                {/* Background Blobs */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none -z-20">
+                    <div className="absolute top-[20%] left-[20%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px]" />
+                </div>
 
-                <div className="container mx-auto px-4 py-8">
-                    <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors mb-8 absolute top-8 left-8">
-                        <ArrowLeft className="w-4 h-4 mr-2" />
+                <div className="container mx-auto px-4 py-8 relative z-10">
+                    <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-all mb-8 absolute top-8 left-8 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl group">
+                        <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
                         Back to Home
                     </Link>
 
-                    <HolographicCard className="p-12 max-w-lg w-full text-center mx-auto mt-12 bg-black/40 backdrop-blur-xl border-red-500/20 shadow-[0_0_30px_rgba(239,68,68,0.1)]">
-                        <div className="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500/30">
-                            <Clock className="w-12 h-12 text-red-500" />
+                    <HolographicCard className="p-16 max-w-xl w-full text-center mx-auto mt-12 relative overflow-hidden">
+                        <div className="w-24 h-24 bg-red-500/10 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-red-500/30 rotate-12">
+                            <Clock className="w-12 h-12 text-red-500 -rotate-12" />
                         </div>
-                        <h2 className="text-3xl font-heading font-bold mb-4 text-white">Recruitment Closed</h2>
-                        <p className="text-gray-300 mb-8 leading-relaxed">
+                        <h2 className="text-4xl font-heading font-bold mb-6 text-white tracking-tight">Recruitment Closed</h2>
+                        <p className="text-muted-foreground/80 mb-10 leading-relaxed text-lg font-medium">
                             {recruitmentStatus.message || "We are currently not accepting new applications. Please check back later for our next recruitment cycle."}
                         </p>
-                        <Button asChild variant="outline" className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300">
+                        <Button asChild variant="outline" className="w-full h-14 rounded-2xl border-white/10 hover:bg-white/10 transition-all font-bold">
                             <Link to="/">Return to Home</Link>
                         </Button>
                     </HolographicCard>
@@ -417,17 +422,23 @@ const Apply = () => {
 
     if (existingApp) {
         return (
-            <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground">
+            <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground bg-[#050505]">
                 <TechGridBackground />
-                <div className="absolute inset-0 bg-background/80 pointer-events-none -z-10" />
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-none -z-10" />
+                
+                {/* Background Blobs */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none -z-20">
+                    <div className="absolute top-[10%] left-[20%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[120px]" />
+                    <div className="absolute bottom-[10%] right-[20%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[100px]" />
+                </div>
 
-                <div className="container mx-auto px-4 py-8">
-                    <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors mb-8 absolute top-8 left-8">
-                        <ArrowLeft className="w-4 h-4 mr-2" />
+                <div className="container mx-auto px-4 py-8 relative z-10">
+                    <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-all mb-8 absolute top-8 left-8 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl group">
+                        <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
                         Back to Home
                     </Link>
 
-                    <HolographicCard className="p-12 max-w-3xl w-full text-center mx-auto mt-12 bg-black/40 backdrop-blur-xl border-primary/20">
+                    <HolographicCard className="p-12 max-w-3xl w-full text-center mx-auto mt-12 relative overflow-hidden">
                         {existingApp.status === 'selected' ? (
                             <>
                                 <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/50 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
@@ -602,13 +613,34 @@ const Apply = () => {
     }
 
     return (
-        <div className="min-h-screen relative text-foreground">
+        <div className="min-h-screen relative text-foreground bg-[#050505] overflow-hidden">
             <TechGridBackground />
-            <div className="absolute inset-0 bg-background/80 pointer-events-none -z-10" />
+            
+            {/* Glass Background Blobs */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <motion.div
+                    animate={{
+                        x: [0, 100, 0],
+                        y: [0, 50, 0],
+                        scale: [1, 1.2, 1],
+                    }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    className="absolute top-[10%] left-[10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px]"
+                />
+                <motion.div
+                    animate={{
+                        x: [0, -80, 0],
+                        y: [0, 120, 0],
+                        scale: [1, 1.1, 1],
+                    }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                    className="absolute bottom-[10%] right-[10%] w-[30%] h-[30%] bg-primary/5 rounded-full blur-[100px]"
+                />
+            </div>
 
             <div className="container mx-auto px-6 py-12 relative z-10">
-                <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors mb-8">
-                    <ArrowLeft className="w-4 h-4 mr-2" />
+                <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-all mb-8 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl group">
+                    <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
                     Back to Home
                 </Link>
 
@@ -644,14 +676,23 @@ const Apply = () => {
                         transition={{ duration: 0.5 }}
                         className="max-w-4xl mx-auto"
                     >
-                        <div className="text-center mb-8">
-                            <h1 className="font-heading text-4xl md:text-5xl font-bold mb-4">
-                                <RevealText text={step === 1 ? "Membership Application" : "Second Preference"} />
+                        <div className="text-center mb-12">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="mb-4"
+                            >
+                                <span className="text-xs text-primary tracking-[0.4em] uppercase font-bold px-4 py-1 rounded-full border border-primary/20 bg-primary/5">
+                                    Join the Team
+                                </span>
+                            </motion.div>
+                            <h1 className="font-heading text-5xl md:text-6xl font-bold tracking-tight mb-4">
+                                <RevealText text={step === 1 ? "Membership" : "Backup Choice"} />
                             </h1>
-                            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                            <p className="text-muted-foreground text-lg max-w-2xl mx-auto font-medium">
                                 {step === 1
                                     ? "Step 1: Personal Details & Primary Choice"
-                                    : "Step 2: Backup Department Choice"}
+                                    : "Step 2: Second Preference (Optional)"}
                             </p>
                             {/* Step Indicator */}
                             <div className="flex justify-center gap-2 mt-4">
