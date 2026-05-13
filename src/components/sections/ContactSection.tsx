@@ -3,8 +3,8 @@ import { Mail, MapPin, Linkedin, Instagram } from 'lucide-react';
 import RevealText from '@/components/ui/RevealText';
 
 const socialLinks = [
-  { icon: Linkedin, href: 'https://linkedin.com/company/ieee-sscs', label: 'LinkedIn' },
-  { icon: Instagram, href: 'https://instagram.com/ieee.sscs', label: 'Instagram' },
+  { icon: Linkedin, href: 'https://in.linkedin.com/company/ieee-sscs-vitc', label: 'LinkedIn' },
+  { icon: Instagram, href: 'https://www.instagram.com/ieee_sscs_vitcc/', label: 'Instagram' },
 ];
 
 const ContactSection = () => {
