@@ -17,6 +17,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StartupPreloader from '@/components/ui/StartupPreloader';
 
+import CustomCursor from '@/components/ui/CustomCursor';
+
 function App() {
   const [showPreloader, setShowPreloader] = useState(true);
 
@@ -32,6 +34,7 @@ function App() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
+            <CustomCursor />
             <Router>
               <Routes>
                 <Route path="/" element={<Index />} />
