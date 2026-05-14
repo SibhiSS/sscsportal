@@ -65,7 +65,7 @@ const leads = [
   {
     name: 'Sibhi S',
     role: 'Operations Lead',
-    quote: 'Anbe Shivam'
+    quote: 'Anbe Sivam'
   },
   {
     name: 'Neyalakshmi',
