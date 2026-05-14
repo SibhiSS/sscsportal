@@ -119,34 +119,34 @@ const ScheduleInterview = () => {
                                     subject: "URGENT: Last Minute Interview Booking - IEEE SSCS",
                                     message: `
                                         <div style="font-family: 'Raleway', sans-serif; background-color: #050505; color: #e5e5e5; max-width: 600px; margin: 0 auto; border: 1px solid #ff4444; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
-                                            <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=Raleway:wght@400;600&display=swap" rel="stylesheet">
+                                            <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Raleway:wght@400;600&display=swap" rel="stylesheet">
                                             
                                             <!-- Top Accent Bar -->
                                             <div style="height: 4px; background-color: #ff4444;"></div>
 
                                             <div style="background-color: #000000; padding: 30px 20px; border-bottom: 1px solid #1a1a1a; text-align: center;">
-                                                <h1 style="color: #ff4444; font-family: 'Orbitron', sans-serif; margin: 0; text-transform: uppercase; letter-spacing: 4px; font-size: 18px;">IEEE SSCS</h1>
+                                                <h1 style="color: #ff4444; font-family: 'Syne', sans-serif; margin: 0; text-transform: uppercase; letter-spacing: 4px; font-size: 18px; font-weight: 800;">IEEE SSCS</h1>
                                             </div>
                                             <div style="padding: 40px 35px;">
-                                                <h2 style="color: #ff4444; font-family: 'Orbitron', sans-serif; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 20px;">⚠️ URGENT NOTICE</h2>
+                                                <h2 style="color: #ff4444; font-family: 'Syne', sans-serif; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 20px; font-weight: 800;">⚠️ URGENT NOTICE</h2>
                                                 <p style="font-size: 15px; line-height: 1.6;">A candidate has booked a last-minute interview slot that starts in <strong>${Math.round(diffMins)} minutes</strong>.</p>
                                                 
                                                 <div style="background: rgba(255, 68, 68, 0.05); border: 1px solid rgba(255, 68, 68, 0.2); padding: 25px; border-radius: 10px; margin: 25px 0;">
-                                                    <p style="margin: 0; font-size: 14px; color: #e5e5e5; font-family: 'Orbitron', sans-serif;"><span style="color: #ff4444;">[CANDIDATE]:</span> ${existingApp.full_name}</p>
-                                                    <p style="margin: 12px 0 0; font-size: 14px; color: #e5e5e5; font-family: 'Orbitron', sans-serif;"><span style="color: #ff4444;">[PANEL]:</span> ${panelId}</p>
-                                                    <p style="margin: 12px 0 0; font-size: 14px; color: #e5e5e5; font-family: 'Orbitron', sans-serif;"><span style="color: #ff4444;">[TIME]:</span> ${format(startTime, 'h:mm a')}</p>
+                                                    <p style="margin: 0; font-size: 14px; color: #e5e5e5; font-family: 'Syne', sans-serif;"><span style="color: #ff4444;">[CANDIDATE]:</span> ${existingApp.full_name}</p>
+                                                    <p style="margin: 12px 0 0; font-size: 14px; color: #e5e5e5; font-family: 'Syne', sans-serif;"><span style="color: #ff4444;">[PANEL]:</span> ${panelId}</p>
+                                                    <p style="margin: 12px 0 0; font-size: 14px; color: #e5e5e5; font-family: 'Syne', sans-serif;"><span style="color: #ff4444;">[TIME]:</span> ${format(startTime, 'h:mm a')}</p>
                                                 </div>
 
                                                 <p style="color: #ff4444; font-weight: bold; font-size: 15px; text-transform: uppercase; letter-spacing: 1px;">CRITICAL: No Google Meet link provided.</p>
                                                 <p style="font-size: 14px; line-height: 1.6; color: #a1a1aa;">Please log in to the admin dashboard immediately to provide a link or join the session manually.</p>
                                                 
                                                 <div style="text-align: center; margin: 35px 0;">
-                                                    <a href="https://IEEESSCS.vercel.app/admin" style="display: inline-block; background-color: #ff4444; color: #fff; padding: 16px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 1.5px; font-size: 13px;">Open Admin Dashboard</a>
+                                                    <a href="https://IEEESSCS.vercel.app/admin" style="display: inline-block; background-color: #ff4444; color: #fff; padding: 16px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; font-family: 'Syne', sans-serif; text-transform: uppercase; letter-spacing: 1.5px; font-size: 13px; font-weight: 700;">Open Admin Dashboard</a>
                                                 </div>
                                                 
                                                 <p style="margin-top: 40px; border-top: 1px solid #1a1a1a; padding-top: 25px; font-size: 14px; color: #888;">
                                                     System Alert,<br>
-                                                    <strong style="color: #e5e5e5; font-family: 'Orbitron', sans-serif;">IEEE SSCS System</strong>
+                                                    <strong style="color: #e5e5e5; font-family: 'Syne', sans-serif;">IEEE SSCS System</strong>
                                                 </p>
                                             </div>
                                             <div style="background-color: #000000; padding: 25px; text-align: center; border-top: 1px solid #1a1a1a;">

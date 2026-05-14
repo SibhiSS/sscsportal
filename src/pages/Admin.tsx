@@ -246,39 +246,39 @@ const Admin = () => {
                                 subject: "Congratulations! You're in - IEEE SSCS",
                                 message: `
                                     <div style="font-family: 'Raleway', sans-serif; background-color: #050505; color: #e5e5e5; max-width: 600px; margin: 0 auto; border: 1px solid #1a1a1a; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
-                                        <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=Raleway:wght@400;600&display=swap" rel="stylesheet">
+                                        <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Raleway:wght@400;600&display=swap" rel="stylesheet">
                                         
                                         <!-- Top Accent Bar -->
                                         <div style="height: 4px; background: linear-gradient(90deg, #7c3aed, #FFE100);"></div>
 
                                         <div style="background-color: #000000; padding: 30px 20px; border-bottom: 1px solid #1a1a1a; text-align: center;">
-                                            <h1 style="color: #FFE100; font-family: 'Orbitron', sans-serif; margin: 0; text-transform: uppercase; letter-spacing: 4px; font-size: 18px;">IEEE SSCS</h1>
+                                            <h1 style="color: #FFE100; font-family: 'Syne', sans-serif; margin: 0; text-transform: uppercase; letter-spacing: 4px; font-size: 18px; font-weight: 800;">IEEE SSCS</h1>
                                         </div>
                                         <div style="padding: 40px 35px;">
-                                            <h2 style="color: #FFE100; font-family: 'Orbitron', sans-serif; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 20px;">Congratulations!</h2>
+                                            <h2 style="color: #FFE100; font-family: 'Syne', sans-serif; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 20px; font-weight: 800;">Congratulations!</h2>
                                             <p style="font-size: 15px; line-height: 1.6;">Hi <strong>${app.fullName}</strong>,</p>
                                             <p style="font-size: 15px; line-height: 1.6;">We are thrilled to inform you that you have been selected to join the <strong style="color: #FFE100;">${app.primaryDept}</strong> team at **IEEE SSCS VIT Chennai**!</p>
                                             
                                             <div style="background: rgba(255, 225, 0, 0.05); border: 1px solid rgba(255, 225, 0, 0.2); padding: 25px; border-radius: 10px; margin: 25px 0;">
-                                                <p style="margin: 0; font-size: 14px; color: #e5e5e5; font-family: 'Orbitron', sans-serif;"><span style="color: #FFE100;">[ROLE]:</span> COMMITTEE_MEMBER</p>
-                                                <p style="margin: 12px 0 0; font-size: 14px; color: #e5e5e5; font-family: 'Orbitron', sans-serif;"><span style="color: #FFE100;">[DEPT]:</span> ${app.primaryDept}</p>
-                                                <p style="margin: 12px 0 0; font-size: 14px; color: #e5e5e5; font-family: 'Orbitron', sans-serif;"><span style="color: #FFE100;">[STATUS]:</span> <span style="color: #7c3aed;">ACTIVE_MEMBER</span></p>
+                                                <p style="margin: 0; font-size: 14px; color: #e5e5e5; font-family: 'Syne', sans-serif;"><span style="color: #FFE100;">[ROLE]:</span> COMMITTEE_MEMBER</p>
+                                                <p style="margin: 12px 0 0; font-size: 14px; color: #e5e5e5; font-family: 'Syne', sans-serif;"><span style="color: #FFE100;">[DEPT]:</span> ${app.primaryDept}</p>
+                                                <p style="margin: 12px 0 0; font-size: 14px; color: #e5e5e5; font-family: 'Syne', sans-serif;"><span style="color: #FFE100;">[STATUS]:</span> <span style="color: #7c3aed;">ACTIVE_MEMBER</span></p>
                                             </div>
 
                                             <p style="font-size: 14px; line-height: 1.6; color: #a1a1aa;">Your journey with the Solid-State Circuits Society begins now. Stay tuned to our official channels for onboarding details and your first meeting schedule.</p>
 
                                             <p style="margin-top: 40px; border-top: 1px solid #1a1a1a; padding-top: 25px; font-size: 14px; color: #888;">
                                                 Welcome to the Family,<br>
-                                                <strong style="color: #e5e5e5; font-family: 'Orbitron', sans-serif;">IEEE SSCS Executive Committee</strong>
+                                                <strong style="color: #e5e5e5; font-family: 'Syne', sans-serif;">IEEE SSCS Executive Committee</strong>
                                             </p>
                                         </div>
                                         <div style="background-color: #000000; padding: 35px 25px; text-align: center; border-top: 1px solid #1a1a1a;">
                                             <div style="margin-bottom: 15px;">
                                                 <img src="https://sscsportal.vercel.app/ieee-sscs-logo.png" alt="SSCS Mini" style="height: 30px; opacity: 0.8; margin-bottom: 15px;">
                                                 <br/>
-                                                <span style="color: #FFE100; font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 14px; letter-spacing: 3px;">IEEE SSCS</span>
+                                                <span style="color: #FFE100; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 3px;">IEEE SSCS</span>
                                                 <span style="color: #27272a; margin: 0 10px;">|</span>
-                                                <span style="color: #71717a; font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 14px;">VIT CHENNAI</span>
+                                                <span style="color: #71717a; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px;">VIT CHENNAI</span>
                                             </div>
                                         </div>
                                     </div>
