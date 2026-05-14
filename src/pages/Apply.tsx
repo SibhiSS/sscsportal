@@ -551,7 +551,7 @@ const Apply = () => {
 
                                 <div className="bg-white/5 p-6 rounded-xl border border-white/10 mb-8 flex flex-col items-center">
                                     <img
-                                        src="/whatsapp-qr.png"
+                                        src="/whatsapp-qr.jpg"
                                         alt="WhatsApp Group QR Code"
                                         className="w-48 h-48 rounded-lg mb-4 border border-white/10"
                                     />
