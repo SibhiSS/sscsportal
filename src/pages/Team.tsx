@@ -173,7 +173,7 @@ const Team = () => {
                         </h1>
                     </div>
 
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-24">
+                    <div className="flex flex-wrap justify-center gap-6 mb-24">
                         {coreTeam.map((member, index) => (
                             <motion.div
                                 key={member.name}
@@ -181,6 +181,7 @@ const Team = () => {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: index * 0.1 }}
+                                className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.33%-16px)]"
                             >
                                 <HolographicCard className="p-6 text-center h-full flex flex-col items-center">
                                     <div className="w-20 h-20 rounded-2xl bg-white/5 grid place-items-center mb-6 text-primary/50 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors">
@@ -220,7 +221,7 @@ const Team = () => {
                         </h1>
                     </div>
 
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-24">
+                    <div className="flex flex-wrap justify-center gap-6 mb-24">
                         {leads.map((member, index) => (
                             <motion.div
                                 key={member.name}
@@ -228,6 +229,7 @@ const Team = () => {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: index * 0.1 }}
+                                className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.33%-16px)]"
                             >
                                 <HolographicCard className="p-6 text-center h-full flex flex-col items-center">
                                     <div className="w-16 h-16 rounded-2xl bg-white/5 grid place-items-center mb-6 text-primary/30 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors">
