@@ -5,8 +5,7 @@ Technical documentation for the official recruitment and administrative platform
 The IEEE SSCS Portal is a centralized recruitment engine designed to streamline candidate applications, automate interview scheduling, and facilitate administrative oversight. The platform is engineered for high reliability, institutional security, and process automation.
 
 ## Core Capabilities
-- **Institutional Authentication**: Google OAuth integration restricted to authorized domains.
-- **Academic Validation**: Intelligent parsing and validation for 30+ academic branch codes.
+- **Institutional Authentication**: Google OAuth integration restricted to authorized domains(@vitstudent.ac.in).
 - **Administrative Interface**: Real-time management of candidate pipelines and departmental assignments.
 - **Automated Scheduling**: Conflict-aware interview booking system for candidates and panels.
 - **Notification Engine**: Professional email communication via Google Apps Script integration.
