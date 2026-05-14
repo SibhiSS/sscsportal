@@ -50,10 +50,10 @@ const PROGRAM_MAP: Record<string, { name: string, category: RegNoDetails['progra
     'BOE': { name: 'B.Tech Bioengineering', category: 'Engineering', duration: 4 },
 
     // Integrated M.Tech (5 Years)
-    'MCA': { name: 'Integrated M.Tech Computer Science & Engineering', category: 'Computer Science', duration: 5 },
-    'MIA': { name: 'Integrated M.Tech CSE (Specialisation in AIML)', category: 'Computer Science', duration: 5 },
-    'MDT': { name: 'Integrated M.Tech CSE (Specialisation in Data Science)', category: 'Computer Science', duration: 5 },
-    'MIS': { name: 'Integrated M.Tech CSE (Specialisation in Information Security)', category: 'Computer Science', duration: 5 }
+    'MCA': { name: 'Integrated M.Tech', category: 'Computer Science', duration: 5 },
+    'MIA': { name: 'Integrated M.Tech', category: 'Computer Science', duration: 5 },
+    'MDT': { name: 'Integrated M.Tech', category: 'Computer Science', duration: 5 },
+    'MIS': { name: 'Integrated M.Tech', category: 'Computer Science', duration: 5 }
 };
 
 export const validateRegistrationNumber = (regNo: string): RegNoDetails => {
