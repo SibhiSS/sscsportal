@@ -5,12 +5,11 @@ const CustomCursor = () => {
     const [isHovering, setIsHovering] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
 
-    // Primary mouse position
     const mouseX = useMotionValue(-100);
     const mouseY = useMotionValue(-100);
 
-    // Lagged positions for the "Trace" joints
-    const springConfig = { damping: 30, stiffness: 150 };
+    // Faster, tighter spring for a "short" snappy trace
+    const springConfig = { damping: 35, stiffness: 400 };
     const trailX = useSpring(mouseX, springConfig);
     const trailY = useSpring(mouseY, springConfig);
 
@@ -41,27 +40,34 @@ const CustomCursor = () => {
         };
     }, [isVisible]);
 
-    // Construct the path string using a transform
     const pathData = useTransform(
         [mouseX, mouseY, trailX, trailY],
         ([mx, my, tx, ty]) => {
-            const dx = (mx as number) - (tx as number);
-            const dy = (my as number) - (ty as number);
+            const m_x = mx as number;
+            const m_y = my as number;
+            const t_x = tx as number;
+            const t_y = ty as number;
+
+            const dx = m_x - t_x;
+            const dy = m_y - t_y;
             const absDx = Math.abs(dx);
             const absDy = Math.abs(dy);
             
-            let cornerX = tx as number;
-            let cornerY = ty as number;
+            // Routing logic for a sharp 45-degree PCB trace
+            let cornerX = t_x;
+            let cornerY = t_y;
             
             if (absDx > absDy) {
-                cornerX = (mx as number) - ((dy as number) > 0 ? absDy : -absDy);
-                cornerY = my as number;
+                // Horizontal dominant: bend at 45 deg
+                cornerX = m_x - (dy > 0 ? absDy : -absDy);
+                cornerY = m_y;
             } else {
-                cornerX = mx as number;
-                cornerY = (my as number) - ((dx as number) > 0 ? absDx : -absDx);
+                // Vertical dominant: bend at 45 deg
+                cornerX = m_x;
+                cornerY = m_y - (dx > 0 ? absDx : -absDx);
             }
 
-            return `M ${tx} ${ty} L ${cornerX} ${cornerY} L ${mx} ${my}`;
+            return `M ${t_x} ${t_y} L ${cornerX} ${cornerY} L ${m_x} ${m_y}`;
         }
     );
 
@@ -71,8 +77,8 @@ const CustomCursor = () => {
         <div className="pointer-events-none fixed inset-0 z-[9999] hidden lg:block overflow-hidden">
             <svg className="absolute inset-0 h-full w-full">
                 <defs>
-                    <filter id="cursorGlow">
-                        <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                    <filter id="traceGlow">
+                        <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
                         <feMerge>
                             <feMergeNode in="coloredBlur" />
                             <feMergeNode in="SourceGraphic" />
@@ -80,22 +86,24 @@ const CustomCursor = () => {
                     </filter>
                     <linearGradient id="traceGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stopColor="rgba(220, 20, 60, 0)" />
-                        <stop offset="50%" stopColor="rgba(220, 20, 60, 0.8)" />
+                        <stop offset="60%" stopColor="rgba(220, 20, 60, 0.9)" />
                         <stop offset="100%" stopColor="rgba(255, 255, 255, 1)" />
                     </linearGradient>
                 </defs>
                 
+                {/* Snappy Short Trace */}
                 <motion.path
                     d={pathData}
                     fill="none"
                     stroke="url(#traceGradient)"
-                    strokeWidth={isHovering ? "2" : "1.5"}
+                    strokeWidth={isHovering ? "2.5" : "1.8"}
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    filter="url(#cursorGlow)"
+                    filter="url(#traceGlow)"
                 />
             </svg>
 
+            {/* Small PCB Via (trailing point) */}
             <motion.div
                 style={{
                     x: trailX,
@@ -103,11 +111,10 @@ const CustomCursor = () => {
                     translateX: '-50%',
                     translateY: '-50%',
                 }}
-                className="absolute h-2 w-2 border border-primary/40 bg-background shadow-[0_0_8px_rgba(220,20,60,0.5)]"
-            >
-                <div className="absolute inset-0.5 bg-primary/20" />
-            </motion.div>
+                className="absolute h-1.5 w-1.5 border border-primary/60 bg-background shadow-[0_0_5px_rgba(220,20,60,0.4)]"
+            />
 
+            {/* Active Cursor Dot */}
             <motion.div
                 style={{
                     x: mouseX,
@@ -116,21 +123,20 @@ const CustomCursor = () => {
                     translateY: '-50%',
                 }}
                 animate={{
-                    scale: isHovering ? 2 : 1,
+                    scale: isHovering ? 1.5 : 1,
                 }}
                 className="absolute flex items-center justify-center"
             >
-                <div className="absolute h-4 w-4 rounded-full border border-white/20" />
-                <div className="h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,1)]" />
+                <div className="absolute h-3 w-3 rounded-full border border-white/10" />
+                <div className="h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,1)]" />
                 
                 {isHovering && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="absolute left-6 top-6 flex flex-col gap-0.5 font-mono text-[8px] text-primary"
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="absolute left-4 top-4 font-mono text-[7px] font-bold text-primary whitespace-nowrap"
                     >
-                        <span>NODE_ACTIVE</span>
-                        <span className="text-white/40">SIGNAL_HIGH</span>
+                        [TRACE_LOCKED]
                     </motion.div>
                 )}
             </motion.div>
