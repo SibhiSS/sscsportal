@@ -20,6 +20,7 @@ import StartupPreloader from '@/components/ui/StartupPreloader';
 import CustomCursor from '@/components/ui/CustomCursor';
 
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function App() {
   const [showPreloader, setShowPreloader] = useState(true);
@@ -38,6 +39,7 @@ function App() {
           >
             <CustomCursor />
             <Analytics />
+            <SpeedInsights />
             <Router>
               <Routes>
                 <Route path="/" element={<Index />} />
