@@ -58,8 +58,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             .eq('email', email)
             .single();
 
-          // Force super_admin for these two emails regardless of DB state
-          const role = isHardcodedAdmin ? 'super_admin' : (adminData?.role || 'viewer');
+          // Use DB role if present, fallback to super_admin for exception email
+          const role = adminData?.role || (isHardcodedAdmin ? 'super_admin' : 'viewer');
 
           setUser({
             ...mapSupabaseUser(session.user),
