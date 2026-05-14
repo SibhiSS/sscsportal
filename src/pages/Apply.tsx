@@ -735,26 +735,24 @@ const Apply = () => {
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium text-muted-foreground">Full Name</label>
                                                     <input
-                                                        disabled={!!formData.fullName}
                                                         required
                                                         type="text"
                                                         name="fullName"
                                                         value={formData.fullName}
                                                         onChange={handleInputChange}
-                                                        className={`w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all ${formData.fullName ? 'cursor-not-allowed opacity-70' : ''}`}
+                                                        className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
                                                         placeholder=""
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium text-muted-foreground">Registration Number</label>
                                                     <input
-                                                        disabled={!!formData.rollNumber}
                                                         required
                                                         type="text"
                                                         name="rollNumber"
                                                         value={formData.rollNumber}
                                                         onChange={handleInputChange}
-                                                        className={`w-full bg-background/50 border rounded-lg px-4 py-3 outline-none transition-all ${formData.rollNumber ? 'cursor-not-allowed opacity-70' : 'focus:ring-1 focus:border-primary/50 focus:ring-primary/50'} ${regError ? 'border-red-500' :
+                                                        className={`w-full bg-background/50 border rounded-lg px-4 py-3 outline-none transition-all focus:ring-1 focus:border-primary/50 focus:ring-primary/50 ${regError ? 'border-red-500' :
                                                             regValidation?.isValid ? 'border-green-500/50' :
                                                                 'border-white/10'
                                                             }`}
