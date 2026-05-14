@@ -2,12 +2,12 @@
 import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 
-interface HolographicCardProps {
+interface HolographicCardProps extends React.HTMLAttributes<HTMLDivElement> {
     children: React.ReactNode;
     className?: string;
 }
 
-const HolographicCard: React.FC<HolographicCardProps> = ({ children, className = '' }) => {
+const HolographicCard: React.FC<HolographicCardProps> = ({ children, className = '', ...props }) => {
     const divRef = useRef<HTMLDivElement>(null);
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [opacity, setOpacity] = useState(0);
@@ -31,13 +31,20 @@ const HolographicCard: React.FC<HolographicCardProps> = ({ children, className =
 
     return (
         <motion.div
+            {...props}
             ref={divRef}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             onMouseMove={handleMouseMove}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
+            onMouseEnter={(e) => {
+                handleMouseEnter();
+                props.onMouseEnter?.(e);
+            }}
+            onMouseLeave={(e) => {
+                handleMouseLeave();
+                props.onMouseLeave?.(e);
+            }}
             className={`relative group rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-2xl overflow-hidden transition-all duration-500 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] hover:bg-white/[0.08] hover:border-white/20 hover:shadow-[0_8px_32px_0_rgba(220,20,60,0.15)] ${className}`}
         >
             {/* Glass Inner Glow */}
