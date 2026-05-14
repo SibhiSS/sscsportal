@@ -183,7 +183,7 @@ const Team = () => {
                                 transition={{ delay: index * 0.1 }}
                             >
                                 <HolographicCard className="p-6 text-center h-full flex flex-col items-center">
-                                    <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mb-6 text-primary/50 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors">
+                                    <div className="w-20 h-20 rounded-2xl bg-white/5 grid place-items-center mb-6 text-primary/50 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors">
                                         <User className="w-8 h-8" />
                                     </div>
 
@@ -230,7 +230,7 @@ const Team = () => {
                                 transition={{ delay: index * 0.1 }}
                             >
                                 <HolographicCard className="p-6 text-center h-full flex flex-col items-center">
-                                    <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-6 text-primary/30 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors">
+                                    <div className="w-16 h-16 rounded-2xl bg-white/5 grid place-items-center mb-6 text-primary/30 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors">
                                         <User className="w-6 h-6" />
                                     </div>
 
