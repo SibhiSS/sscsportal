@@ -65,7 +65,7 @@ const ScheduleInterview = () => {
         if (data) setSlots(data);
     };
 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwsz5EIGmR_a6Wa1m01Z56DcWefUuZla_rsVI_8ma6N_T90eM3v9CQ89E712zt939oH5w/exec";
+    const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
     const ADMIN_EMAILS = [
         'sibhi.s2024@vitstudent.ac.in',
         'sibhis5223@gmail.com',
@@ -118,31 +118,39 @@ const ScheduleInterview = () => {
                                     email: email,
                                     subject: "URGENT: Last Minute Interview Booking - IEEE SSCS",
                                     message: `
-                                        <div style="font-family: 'Raleway', sans-serif; background-color: #0a0a0a; color: #e5e5e5; max-width: 600px; margin: 0 auto; border: 2px solid #ff4444; border-radius: 8px; overflow: hidden;">
-                                            <div style="background-color: #000000; padding: 30px 20px; border-bottom: 2px solid #ff4444; text-align: center;">
-                                                <img src="https://bqtqhtpbyunzcwxyxdhx.supabase.co/storage/v1/object/public/asset/IEEE%20SSCS%20Logo.png" alt="IEEE SSCS Logo" style="height: 80px; width: auto; display: block; margin: 0 auto;">
+                                        <div style="font-family: 'Raleway', sans-serif; background-color: #050505; color: #e5e5e5; max-width: 600px; margin: 0 auto; border: 1px solid #ff4444; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+                                            <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=Raleway:wght@400;600&display=swap" rel="stylesheet">
+                                            
+                                            <!-- Top Accent Bar -->
+                                            <div style="height: 4px; background-color: #ff4444;"></div>
+
+                                            <div style="background-color: #000000; padding: 30px 20px; border-bottom: 1px solid #1a1a1a; text-align: center;">
+                                                <h1 style="color: #ff4444; font-family: 'Orbitron', sans-serif; margin: 0; text-transform: uppercase; letter-spacing: 4px; font-size: 18px;">IEEE SSCS</h1>
                                             </div>
-                                            <div style="padding: 30px;">
-                                                <h2 style="color: #ff4444; font-family: 'Orbitron', sans-serif; margin-top: 0;">⚠️ URGENT NOTICE</h2>
-                                                <p>A candidate has booked a last-minute interview slot that starts in <strong>${Math.round(diffMins)} minutes</strong>.</p>
+                                            <div style="padding: 40px 35px;">
+                                                <h2 style="color: #ff4444; font-family: 'Orbitron', sans-serif; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 20px;">⚠️ URGENT NOTICE</h2>
+                                                <p style="font-size: 15px; line-height: 1.6;">A candidate has booked a last-minute interview slot that starts in <strong>${Math.round(diffMins)} minutes</strong>.</p>
                                                 
-                                                <div style="background: #1a1a1a; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ff4444;">
-                                                    <p style="margin: 0; color: #fff;"><strong>Candidate:</strong> ${existingApp.full_name}</p>
-                                                    <p style="margin: 5px 0 0; color: #fff;"><strong>Panel:</strong> ${panelId}</p>
-                                                    <p style="margin: 5px 0 0; color: #fff;"><strong>Time:</strong> ${format(startTime, 'h:mm a')}</p>
+                                                <div style="background: rgba(255, 68, 68, 0.05); border: 1px solid rgba(255, 68, 68, 0.2); padding: 25px; border-radius: 10px; margin: 25px 0;">
+                                                    <p style="margin: 0; font-size: 14px; color: #e5e5e5; font-family: 'Orbitron', sans-serif;"><span style="color: #ff4444;">[CANDIDATE]:</span> ${existingApp.full_name}</p>
+                                                    <p style="margin: 12px 0 0; font-size: 14px; color: #e5e5e5; font-family: 'Orbitron', sans-serif;"><span style="color: #ff4444;">[PANEL]:</span> ${panelId}</p>
+                                                    <p style="margin: 12px 0 0; font-size: 14px; color: #e5e5e5; font-family: 'Orbitron', sans-serif;"><span style="color: #ff4444;">[TIME]:</span> ${format(startTime, 'h:mm a')}</p>
                                                 </div>
 
-                                                <p style="color: #ff4444; font-weight: bold; font-size: 16px;">CRITICAL: No Google Meet link has been provided for this panel yet.</p>
-                                                <p>Please log in to the admin dashboard immediately to provide a link or join the session.</p>
+                                                <p style="color: #ff4444; font-weight: bold; font-size: 15px; text-transform: uppercase; letter-spacing: 1px;">CRITICAL: No Google Meet link provided.</p>
+                                                <p style="font-size: 14px; line-height: 1.6; color: #a1a1aa;">Please log in to the admin dashboard immediately to provide a link or join the session manually.</p>
                                                 
-                                                <div style="text-align: center; margin: 25px 0;">
-                                                    <a href="https://IEEESSCS.vercel.app/admin" style="display: inline-block; background-color: #ff4444; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; font-family: 'Orbitron', sans-serif; text-transform: uppercase;">Open Admin Dashboard</a>
+                                                <div style="text-align: center; margin: 35px 0;">
+                                                    <a href="https://IEEESSCS.vercel.app/admin" style="display: inline-block; background-color: #ff4444; color: #fff; padding: 16px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 1.5px; font-size: 13px;">Open Admin Dashboard</a>
                                                 </div>
                                                 
-                                                <p style="margin-top: 30px; border-top: 1px solid #333; padding-top: 20px;">Best regards,<br><strong>IEEE SSCS System</strong></p>
+                                                <p style="margin-top: 40px; border-top: 1px solid #1a1a1a; padding-top: 25px; font-size: 14px; color: #888;">
+                                                    System Alert,<br>
+                                                    <strong style="color: #e5e5e5; font-family: 'Orbitron', sans-serif;">IEEE SSCS System</strong>
+                                                </p>
                                             </div>
-                                            <div style="background-color: #000000; padding: 20px; text-align: center; border-top: 1px solid #333;">
-                                                <p style="color: #444; font-size: 10px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Automated Administrative Notification</p>
+                                            <div style="background-color: #000000; padding: 25px; text-align: center; border-top: 1px solid #1a1a1a;">
+                                                <p style="color: #3f3f46; font-size: 10px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Automated Administrative Notification</p>
                                             </div>
                                         </div>
                                     `
