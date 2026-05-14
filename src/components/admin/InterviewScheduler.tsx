@@ -17,6 +17,8 @@ import LogoSpinner from '@/components/ui/LogoSpinner';
 import { logAction } from '@/services/auditService';
 import { useAuth } from '@/contexts/AuthContext';
 import emailjs from '@emailjs/browser';
+import HolographicCard from '@/components/ui/HolographicCard';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // CONFIG (Should match Admin.tsx)
 const EMAILJS_PUBLIC_KEY = "bj3DbINQas11jOWqr";
@@ -323,65 +325,107 @@ const InterviewScheduler = () => {
     const myPanelIds = myAssignments.map(a => a.panel_id);
 
     return (
-        <div className="flex flex-col gap-6 h-[calc(100vh-150px)]">
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">
-                    Interview Management
-                </h2>
-                <div className="flex items-center gap-4">
+        <div className="space-y-10">
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div>
+                    <h2 className="text-3xl font-bold font-heading tracking-tight mb-2">
+                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-primary to-primary/50">
+                            Interview Management
+                        </span>
+                    </h2>
+                    <p className="text-muted-foreground flex items-center gap-2 text-sm uppercase tracking-widest font-bold opacity-60">
+                        <CalendarIcon className="w-3.5 h-3.5 text-primary" />
+                        Scheduling Engine • {slots.filter(s => s.is_booked).length} Active Sessions
+                    </p>
+                </div>
+                
+                <div className="flex items-center gap-4 bg-white/5 p-1 rounded-2xl border border-white/10 backdrop-blur-xl group">
+                    <div className="px-4 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
+                        View Date
+                    </div>
                     <Input
                         type="date"
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        className="bg-black/20 border-white/10 text-white w-40"
+                        className="bg-white/5 border-white/10 text-white w-44 h-10 rounded-xl focus:ring-primary/20 focus:border-primary/40 font-mono text-xs"
                     />
                 </div>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-                <TabsList className="bg-white/5 border border-white/10 w-fit">
-                    <TabsTrigger value="my-interviews" className="data-[state=active]:bg-purple-600">My Interviews</TabsTrigger>
-                    {isSuperAdmin && <TabsTrigger value="assignments">Assign Panels</TabsTrigger>}
-                    {isSuperAdmin && <TabsTrigger value="slots">Slot Generator</TabsTrigger>}
-                </TabsList>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <div className="flex justify-start mb-8 overflow-x-auto pb-2 scrollbar-hide">
+                    <TabsList className="bg-white/5 border border-white/10 p-1 h-auto backdrop-blur-xl rounded-2xl">
+                        <TabsTrigger 
+                            value="my-interviews" 
+                            className="px-6 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all text-xs font-bold tracking-wider"
+                        >
+                            <User className="w-4 h-4 mr-2" />
+                            MY INTERVIEWS
+                        </TabsTrigger>
+                        {isSuperAdmin && (
+                            <>
+                                <TabsTrigger 
+                                    value="assignments" 
+                                    className="px-6 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all text-xs font-bold tracking-wider"
+                                >
+                                    <ShieldCheck className="w-4 h-4 mr-2" />
+                                    ASSIGN PANELS
+                                </TabsTrigger>
+                                <TabsTrigger 
+                                    value="slots" 
+                                    className="px-6 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all text-xs font-bold tracking-wider"
+                                >
+                                    <Clock className="w-4 h-4 mr-2" />
+                                    SLOT GENERATOR
+                                </TabsTrigger>
+                            </>
+                        )}
+                    </TabsList>
+                </div>
 
                 {/* --- MY INTERVIEWS TAB --- */}
-                <TabsContent value="my-interviews" className="flex-1 space-y-6 mt-6 overflow-auto">
+                <TabsContent value="my-interviews" className="space-y-8 outline-none animate-in fade-in slide-in-from-bottom-4 duration-500">
                     {myAssignments.length === 0 ? (
-                        <div className="text-center p-10 border border-dashed border-white/10 rounded-xl">
-                            <User className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                            <h3 className="text-xl font-bold text-white mb-2">No Interviews Scheduled</h3>
-                            <p className="text-muted-foreground">
-                                You are not assigned to any panels on {format(parseISO(selectedDate), 'MMM d, yyyy')}.
-                            </p>
-                        </div>
+                        <HolographicCard className="p-20 text-center border-dashed border-white/10">
+                            <div className="max-w-xs mx-auto space-y-4">
+                                <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-6">
+                                    <CalendarIcon className="w-8 h-8 text-muted-foreground" />
+                                </div>
+                                <h3 className="text-xl font-bold text-white tracking-tight">No Interviews Scheduled</h3>
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                    You have not been assigned to any panels for {format(parseISO(selectedDate), 'MMMM do')}.
+                                </p>
+                            </div>
+                        </HolographicCard>
                     ) : (
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
                             {myPanelIds.map(panelId => {
-                                // Get slots for this panel and date
                                 const panelSlots = slots.filter(s =>
                                     s.panel_id === panelId &&
                                     isSameDay(parseISO(s.start_time), parseISO(selectedDate))
                                 );
 
                                 return (
-                                    <Card key={panelId} className="bg-white/5 border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.1)]">
-                                        <CardHeader className="bg-purple-500/10 border-b border-purple-500/20 pb-3">
-                                            <CardTitle className="flex justify-between items-center">
-                                                <span>Panel {panelId}</span>
-                                                <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/50">
-                                                    My Panel
-                                                </Badge>
-                                            </CardTitle>
-                                            <div className="mt-3 space-y-2">
-                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                    <Video className="w-3 h-3" />
-                                                    <span>Your Meeting Link for Today:</span>
+                                    <HolographicCard key={panelId} className="flex flex-col border-primary/20 overflow-hidden group">
+                                        <div className="p-6 bg-primary/5 border-b border-primary/10 relative overflow-hidden">
+                                            <div className="absolute -top-12 -right-12 w-24 h-24 bg-primary/10 rounded-full blur-3xl"></div>
+                                            <div className="flex justify-between items-center relative z-10">
+                                                <div>
+                                                    <h4 className="text-xl font-heading font-bold text-white mb-1">Panel {panelId}</h4>
+                                                    <p className="text-[10px] text-primary font-bold uppercase tracking-[0.2em]">{panelSlots.length} Total Slots</p>
                                                 </div>
-                                                <div className="flex gap-2">
+                                                <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-[10px] font-bold uppercase tracking-widest px-3 py-1">
+                                                    ACTIVE
+                                                </Badge>
+                                            </div>
+
+                                            <div className="mt-6 space-y-2 relative z-10">
+                                                <Label className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Session Link</Label>
+                                                <div className="flex gap-2 group/link">
                                                     <Input
-                                                        placeholder="Enter GMeet Link..."
-                                                        className="h-8 bg-black/20 text-xs"
+                                                        placeholder="Enter Virtual Meeting Link..."
+                                                        className="h-9 bg-black/40 border-white/5 focus:border-primary/50 text-[11px] font-medium"
                                                         defaultValue={myAssignments.find(a => a.panel_id === panelId)?.meeting_link || ''}
                                                         onBlur={(e) => {
                                                             const assign = myAssignments.find(a => a.panel_id === panelId);
@@ -392,38 +436,42 @@ const InterviewScheduler = () => {
                                                     />
                                                 </div>
                                             </div>
-                                        </CardHeader>
-                                        <CardContent className="p-0">
+                                        </div>
+
+                                        <div className="flex-1 overflow-auto max-h-[400px] scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent">
                                             <div className="divide-y divide-white/5">
-                                                {panelSlots.length === 0 && <div className="p-4 text-sm text-muted-foreground italic">No slots.</div>}
+                                                {panelSlots.length === 0 && <div className="p-10 text-center text-xs text-muted-foreground uppercase tracking-widest font-medium opacity-40">No slots available</div>}
                                                 {panelSlots.map(slot => {
-                                                    const app = slot.applications; // joined data
+                                                    const app = slot.applications;
                                                     const existingFeedback = app ? feedbacks.find(f => f.application_id === app.id && f.interviewer_email === user?.email) : null;
 
                                                     return (
-                                                        <div key={slot.id} className="p-4 hover:bg-white/5 transition-colors">
-                                                            <div className="flex justify-between items-start mb-2">
-                                                                <Badge variant="outline" className="border-white/10 font-mono text-xs">
-                                                                    {format(parseISO(slot.start_time), 'HH:mm')}
-                                                                </Badge>
+                                                        <div key={slot.id} className={`p-5 transition-all duration-300 ${slot.is_booked ? 'bg-white/[0.02]' : 'hover:bg-white/[0.04]'}`}>
+                                                            <div className="flex justify-between items-center mb-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(220,20,60,0.5)]"></div>
+                                                                    <span className="font-mono text-sm font-bold text-white tracking-tighter">
+                                                                        {format(parseISO(slot.start_time), 'HH:mm')} — {format(parseISO(slot.end_time), 'HH:mm')}
+                                                                    </span>
+                                                                </div>
                                                                 {slot.is_booked ? (
-                                                                    <Badge className={`${existingFeedback ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                                                                        {existingFeedback ? 'Evaluated' : 'Booked'}
+                                                                    <Badge className={`text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md ${existingFeedback ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                                                                        {existingFeedback ? 'COMPLETED' : 'UPCOMING'}
                                                                     </Badge>
                                                                 ) : (
-                                                                    <Badge variant="secondary" className="text-muted-foreground opacity-50">Empty</Badge>
+                                                                    <span className="text-[9px] font-bold text-muted-foreground tracking-[0.2em] uppercase opacity-40">Available</span>
                                                                 )}
                                                             </div>
 
                                                             {slot.is_booked && app ? (
-                                                                <div className="space-y-3">
+                                                                <div className="space-y-4 animate-in slide-in-from-right-2 duration-300">
                                                                     <div>
-                                                                        <div className="font-bold text-white text-lg">{app.full_name}</div>
-                                                                        <div className="text-xs text-muted-foreground">{app.roll_number} • {app.primary_dept}</div>
+                                                                        <div className="font-heading text-sm text-white group-hover:text-primary transition-colors">{app.full_name}</div>
+                                                                        <div className="text-[10px] text-muted-foreground font-mono mt-1 opacity-70 uppercase tracking-tighter">{app.roll_number} • {app.primary_dept}</div>
                                                                     </div>
                                                                     <Button
                                                                         size="sm"
-                                                                        className="w-full bg-white/10 hover:bg-white/20 border border-white/10"
+                                                                        className={`w-full h-9 rounded-xl transition-all duration-300 text-[10px] font-bold tracking-widest uppercase ${existingFeedback ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20'}`}
                                                                         onClick={() => {
                                                                             setEvalApp(app as Application);
                                                                             setEvalForm({
@@ -433,18 +481,24 @@ const InterviewScheduler = () => {
                                                                             });
                                                                         }}
                                                                     >
-                                                                        {existingFeedback ? 'Edit Feedback' : 'Evaluate Candidate'}
+                                                                        {existingFeedback ? (
+                                                                            <><CheckCircle className="w-3 h-3 mr-2 text-green-500" /> EDIT FEEDBACK</>
+                                                                        ) : (
+                                                                            'START EVALUATION'
+                                                                        )}
                                                                     </Button>
                                                                 </div>
                                                             ) : (
-                                                                <div className="text-sm text-muted-foreground py-2">Available Slot</div>
+                                                                <div className="py-2">
+                                                                    <div className="h-1 w-full bg-white/5 rounded-full"></div>
+                                                                </div>
                                                             )}
                                                         </div>
                                                     )
                                                 })}
                                             </div>
-                                        </CardContent>
-                                    </Card>
+                                        </div>
+                                    </HolographicCard>
                                 )
                             })}
                         </div>
@@ -453,43 +507,45 @@ const InterviewScheduler = () => {
 
                 {/* --- ASSIGNMENTS TAB (SUPER ADMIN) --- */}
                 {isSuperAdmin && (
-                    <TabsContent value="assignments" className="flex-1 space-y-6 mt-6">
-                        <Card className="bg-white/5 border-white/10">
-                            <CardHeader>
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <CardTitle>Assign Interviewers</CardTitle>
-                                        <CardDescription>Managing assignments for {format(parseISO(selectedDate), 'MMM d, yyyy')}</CardDescription>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            variant="secondary"
-                                            size="sm"
-                                            onClick={() => {
-                                                const shortlisted = applications.filter(app => app.status === 'shortlisted');
-                                                if (shortlisted.length === 0) {
-                                                    alert("No shortlisted candidates found to notify.");
-                                                    return;
-                                                }
-                                                // Default selections: only those NOT already notified
-                                                setSelectedCandidateIds(shortlisted.filter(app => !app.shortlistNotified).map(app => app.id));
-                                                setIsNotifyDialogOpen(true);
-                                            }}
-                                            disabled={isSending}
-                                            className="bg-purple-600/20 text-purple-400 border border-purple-500/30 hover:bg-purple-600/30"
-                                        >
-                                            <Send className="w-3 h-3 mr-2" />
-                                            Notify Shortlisted
-                                        </Button>
-                                        <div className="w-[1px] h-6 bg-white/10 mx-2" />
-                                        <Button variant="outline" size="sm" onClick={() => setVisiblePanels(Math.max(1, visiblePanels - 1))}><User className="w-3 h-3 mr-2" />Remove Panel</Button>
-                                        <Badge variant="secondary" className="text-lg px-4">{visiblePanels} Panels</Badge>
-                                        <Button variant="outline" size="sm" onClick={() => setVisiblePanels(visiblePanels + 1)}><Plus className="w-3 h-3 mr-2" />Add Panel</Button>
+                    <TabsContent value="assignments" className="space-y-8 outline-none animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <HolographicCard className="p-8 border-white/5 overflow-visible">
+                            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 mb-10">
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-bold font-heading text-white">Assignment Control</h3>
+                                    <p className="text-sm text-muted-foreground uppercase tracking-widest font-bold opacity-60">Deploying panels for {format(parseISO(selectedDate), 'MMMM do, yyyy')}</p>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-4">
+                                    <Button
+                                        variant="outline"
+                                        size="lg"
+                                        onClick={() => {
+                                            const shortlisted = applications.filter(app => app.status === 'shortlisted');
+                                            if (shortlisted.length === 0) {
+                                                alert("No shortlisted candidates found to notify.");
+                                                return;
+                                            }
+                                            setSelectedCandidateIds(shortlisted.filter(app => !app.shortlistNotified).map(app => app.id));
+                                            setIsNotifyDialogOpen(true);
+                                        }}
+                                        disabled={isSending}
+                                        className="rounded-2xl bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 h-12 px-6 font-bold tracking-widest text-xs uppercase transition-all shadow-lg shadow-primary/5"
+                                    >
+                                        <Send className="w-4 h-4 mr-2" />
+                                        NOTIFY SHORTLISTED
+                                    </Button>
+                                    
+                                    <div className="flex items-center gap-2 bg-white/5 p-1 rounded-2xl border border-white/10 h-12">
+                                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-white/10" onClick={() => setVisiblePanels(Math.max(1, visiblePanels - 1))}><Trash2 className="w-4 h-4 text-muted-foreground" /></Button>
+                                        <div className="px-4 text-sm font-heading font-bold text-white min-w-[120px] text-center border-x border-white/10">
+                                            {visiblePanels} PANELS
+                                        </div>
+                                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-white/10" onClick={() => setVisiblePanels(visiblePanels + 1)}><Plus className="w-4 h-4 text-primary" /></Button>
                                     </div>
                                 </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                                <AnimatePresence mode="popLayout">
                                     {Array.from({ length: visiblePanels }, (_, i) => i + 1).map(panelId => {
                                         const panelAssignments = assignments.filter(a =>
                                             a.panel_id === panelId &&
@@ -497,22 +553,45 @@ const InterviewScheduler = () => {
                                         );
 
                                         return (
-                                            <div key={panelId} className="p-4 rounded-xl bg-black/40 border border-white/10">
-                                                <h4 className="font-bold text-purple-400 mb-4">PANEL {panelId}</h4>
-                                                <div className="space-y-3">
+                                            <motion.div
+                                                key={panelId}
+                                                layout
+                                                initial={{ opacity: 0, scale: 0.95 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.95 }}
+                                                className="p-6 rounded-[2rem] bg-white/[0.03] border border-white/5 backdrop-blur-xl relative group/panel hover:border-primary/30 transition-all duration-500"
+                                            >
+                                                <div className="flex justify-between items-center mb-6">
+                                                    <h4 className="text-sm font-heading font-bold text-white tracking-widest uppercase">PANEL {panelId}</h4>
+                                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                                                        <User className="w-3.5 h-3.5 text-primary" />
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-4">
                                                     {panelAssignments.map(assign => (
-                                                        <div key={assign.id} className="bg-white/5 p-3 rounded space-y-2">
-                                                            <div className="flex justify-between items-center text-sm">
-                                                                <span className="truncate max-w-[150px] font-medium" title={assign.interviewer_email}>{assign.interviewer_email}</span>
-                                                                <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:bg-red-500/10" onClick={() => unassignInterviewer(assign.id)}>
-                                                                    <Trash2 className="w-3 h-3" />
+                                                        <div key={assign.id} className="bg-white/5 p-4 rounded-2xl border border-white/5 space-y-3 group/assign">
+                                                            <div className="flex justify-between items-start">
+                                                                <div className="min-w-0 flex-1">
+                                                                    <div className="text-[11px] font-bold text-white truncate uppercase tracking-tighter" title={assign.interviewer_email}>
+                                                                        {assign.interviewer_email.split('@')[0]}
+                                                                    </div>
+                                                                    <div className="text-[9px] text-muted-foreground truncate opacity-60">{assign.interviewer_email}</div>
+                                                                </div>
+                                                                <Button 
+                                                                    variant="ghost" 
+                                                                    size="icon" 
+                                                                    className="h-7 w-7 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 opacity-0 group-assign:opacity-100 transition-opacity" 
+                                                                    onClick={() => unassignInterviewer(assign.id)}
+                                                                >
+                                                                    <Trash2 className="w-3.5 h-3.5" />
                                                                 </Button>
                                                             </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <Video className="w-3 h-3 text-muted-foreground" />
+                                                            <div className="relative">
+                                                                <Video className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
                                                                 <Input
-                                                                    className="h-7 text-[10px] bg-black/20"
-                                                                    placeholder="Link"
+                                                                    className="h-8 pl-8 pr-3 text-[10px] bg-black/40 border-white/5 rounded-lg focus:border-primary/40"
+                                                                    placeholder="Add Virtual Link"
                                                                     defaultValue={assign.meeting_link || ''}
                                                                     onBlur={(e) => {
                                                                         if (e.target.value !== (assign.meeting_link || '')) {
@@ -523,148 +602,194 @@ const InterviewScheduler = () => {
                                                             </div>
                                                         </div>
                                                     ))}
-                                                    <div className="flex gap-2">
+
+                                                    <div className="pt-2">
                                                         <Select onValueChange={(val) => assignInterviewer(panelId, val)}>
-                                                            <SelectTrigger className="h-8 bg-white/5 border-white/10 text-xs">
-                                                                <SelectValue placeholder="Add Interviewer" />
+                                                            <SelectTrigger className="h-10 bg-white/5 border-dashed border-white/10 hover:border-primary/30 rounded-2xl text-[10px] font-bold tracking-widest transition-all">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Plus className="w-3 h-3 text-primary" />
+                                                                    <span>ADD INTERVIEWER</span>
+                                                                </div>
                                                             </SelectTrigger>
-                                                            <SelectContent>
+                                                            <SelectContent className="bg-zinc-900 border-white/10 backdrop-blur-xl">
                                                                 {admins.length > 0 ? (
                                                                     admins.map(admin => (
-                                                                        <SelectItem key={admin.id} value={admin.email}>{admin.email}</SelectItem>
+                                                                        <SelectItem key={admin.id} value={admin.email} className="text-xs">{admin.email}</SelectItem>
                                                                     ))
                                                                 ) : (
                                                                     ADMIN_EMAILS.map(email => (
-                                                                        <SelectItem key={email} value={email}>{email}</SelectItem>
+                                                                        <SelectItem key={email} value={email} className="text-xs">{email}</SelectItem>
                                                                     ))
                                                                 )}
                                                             </SelectContent>
                                                         </Select>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            </motion.div>
                                         )
                                     })}
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </AnimatePresence>
+                            </div>
+                        </HolographicCard>
                     </TabsContent>
                 )}
 
                 {/* --- SLOT GENERATOR TAB (SUPER ADMIN) --- */}
                 {isSuperAdmin && (
-                    <TabsContent value="slots" className="flex-1 space-y-6 mt-6">
-                        <Card className="bg-white/5 border-white/10">
-                            <CardHeader><CardTitle>Generate Slots</CardTitle></CardHeader>
-                            <CardContent className="grid md:grid-cols-5 gap-4 items-end">
-                                {/* Generator Inputs */}
+                    <TabsContent value="slots" className="space-y-8 outline-none animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <HolographicCard className="p-10 border-white/5">
+                            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-10 mb-12">
                                 <div className="space-y-2">
-                                    <label className="text-xs text-muted-foreground">Date</label>
-                                    <Input type="date" value={genConfig.date} onChange={e => setGenConfig({ ...genConfig, date: e.target.value })} className="bg-black/20" />
+                                    <h3 className="text-2xl font-bold font-heading text-white">Batch Generator</h3>
+                                    <p className="text-sm text-muted-foreground uppercase tracking-widest font-bold opacity-60">Automated Slot Allocation Engine</p>
+                                </div>
+                                <div className="flex gap-4">
+                                    <Button variant="outline" onClick={clearAllSlots} className="h-12 px-6 rounded-2xl bg-destructive/5 border-destructive/20 text-destructive hover:bg-destructive/10 font-bold tracking-widest text-xs uppercase">
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        PURGE ALL SLOTS
+                                    </Button>
+                                    <Button onClick={generateSlots} disabled={isGenerating} className="h-12 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold tracking-[0.2em] uppercase text-[10px] shadow-lg shadow-primary/20">
+                                        {isGenerating ? <LogoSpinner size="sm" /> : 'GENERATE MATRIX'}
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-12">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Target Date</Label>
+                                    <Input type="date" value={genConfig.date} onChange={e => setGenConfig({ ...genConfig, date: e.target.value })} className="h-12 bg-white/5 border-white/5 rounded-xl font-mono text-xs" />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs text-muted-foreground">Start Time</label>
-                                    <Input type="time" value={genConfig.startTime} onChange={e => setGenConfig({ ...genConfig, startTime: e.target.value })} className="bg-black/20" />
+                                    <Label className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Start Time</Label>
+                                    <Input type="time" value={genConfig.startTime} onChange={e => setGenConfig({ ...genConfig, startTime: e.target.value })} className="h-12 bg-white/5 border-white/5 rounded-xl font-mono text-xs" />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs text-muted-foreground">End Time</label>
-                                    <Input type="time" value={genConfig.endTime} onChange={e => setGenConfig({ ...genConfig, endTime: e.target.value })} className="bg-black/20" />
+                                    <Label className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">End Time</Label>
+                                    <Input type="time" value={genConfig.endTime} onChange={e => setGenConfig({ ...genConfig, endTime: e.target.value })} className="h-12 bg-white/5 border-white/5 rounded-xl font-mono text-xs" />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs text-muted-foreground">Duration (mins)</label>
-                                    <Input type="number" value={genConfig.duration} onChange={e => setGenConfig({ ...genConfig, duration: parseInt(e.target.value) })} className="bg-black/20" />
+                                    <Label className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Unit Duration</Label>
+                                    <div className="relative">
+                                        <Input type="number" value={genConfig.duration} onChange={e => setGenConfig({ ...genConfig, duration: parseInt(e.target.value) })} className="h-12 bg-white/5 border-white/5 rounded-xl font-mono text-xs pr-12" />
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-bold">MIN</span>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs text-muted-foreground">No. of Panels</label>
-                                    <Input type="number" value={genConfig.panels} onChange={e => setGenConfig({ ...genConfig, panels: parseInt(e.target.value) })} className="bg-black/20" />
+                                    <Label className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Panel Count</Label>
+                                    <Input type="number" value={genConfig.panels} onChange={e => setGenConfig({ ...genConfig, panels: parseInt(e.target.value) })} className="h-12 bg-white/5 border-white/5 rounded-xl font-mono text-xs" />
                                 </div>
-                                <Button onClick={generateSlots} disabled={isGenerating} className="bg-purple-600 hover:bg-purple-700">
-                                    {isGenerating ? <LogoSpinner size="sm" /> : 'Generate'}
-                                </Button>
-                            </CardContent>
-                        </Card>
-                        <div className="flex justify-end">
-                            <Button variant="destructive" size="sm" onClick={clearAllSlots}><Trash2 className="w-4 h-4 mr-2" />Clear All Slots</Button>
-                        </div>
-                        <div className="grid md:grid-cols-3 gap-4 overflow-auto max-h-[500px]">
-                            {Array.from({ length: visiblePanels }, (_, i) => i + 1).map(panelId => {
-                                const panelSlots = slots.filter(s => s.panel_id === panelId && isSameDay(parseISO(s.start_time), new Date(genConfig.date)));
-                                return (
-                                    <Card key={panelId} className="bg-white/5 border-white/10 h-fit">
-                                        <CardHeader className="py-3"><CardTitle className="text-sm font-mono text-purple-400">PANEL {panelId}</CardTitle></CardHeader>
-                                        <CardContent className="space-y-1 p-3">
-                                            {panelSlots.map(slot => (
-                                                <div key={slot.id} className={`flex justify-between p-2 rounded text-xs border ${slot.is_booked ? 'bg-green-900/20 border-green-800' : 'bg-black/20 border-white/5'}`}>
-                                                    <span>{format(parseISO(slot.start_time), 'HH:mm')}</span>
-                                                    {!slot.is_booked && <Trash2 className="w-3 h-3 text-red-500 cursor-pointer" onClick={() => deleteSlot(slot.id)} />}
-                                                </div>
-                                            ))}
-                                        </CardContent>
-                                    </Card>
-                                )
-                            })}
-                        </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 overflow-auto max-h-[600px] p-2 scrollbar-thin scrollbar-thumb-white/10">
+                                {Array.from({ length: visiblePanels }, (_, i) => i + 1).map(panelId => {
+                                    const panelSlots = slots.filter(s => s.panel_id === panelId && isSameDay(parseISO(s.start_time), new Date(genConfig.date)));
+                                    return (
+                                        <div key={panelId} className="space-y-4">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="text-[10px] font-heading font-bold text-primary tracking-widest uppercase">PANEL {panelId}</div>
+                                                <Badge variant="outline" className="text-[8px] border-white/5 text-muted-foreground">{panelSlots.length}</Badge>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {panelSlots.map(slot => (
+                                                    <div key={slot.id} className={`flex justify-between items-center p-3 rounded-xl border transition-all ${slot.is_booked ? 'bg-primary/5 border-primary/20 shadow-lg shadow-primary/5' : 'bg-white/[0.02] border-white/5 hover:bg-white/5 hover:border-white/10'}`}>
+                                                        <span className={`text-[11px] font-mono font-bold ${slot.is_booked ? 'text-primary' : 'text-zinc-400'}`}>{format(parseISO(slot.start_time), 'HH:mm')}</span>
+                                                        {!slot.is_booked && (
+                                                            <button onClick={() => deleteSlot(slot.id)} className="text-muted-foreground hover:text-primary transition-colors">
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                                {panelSlots.length === 0 && <div className="py-10 text-center text-[9px] text-muted-foreground/30 uppercase tracking-widest font-bold">Matrix Empty</div>}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </HolographicCard>
                     </TabsContent>
                 )}
             </Tabs>
 
             {/* EVALUATION DIALOG */}
             <Dialog open={!!evalApp} onOpenChange={(open) => !open && setEvalApp(null)}>
-                <DialogContent className="max-w-xl bg-black/90 border-white/10 text-white backdrop-blur-xl">
-                    <DialogHeader>
-                        <DialogTitle>Evaluate Candidate</DialogTitle>
+                <DialogContent className="max-w-xl bg-zinc-950/80 border-white/10 text-white backdrop-blur-3xl rounded-[2rem] overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
+                    
+                    <DialogHeader className="pt-6">
+                        <DialogTitle className="text-2xl font-bold font-heading text-center">
+                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+                                Candidate Evaluation
+                            </span>
+                        </DialogTitle>
                     </DialogHeader>
+
                     {evalApp && (
-                        <div className="space-y-6">
-                            <div className="bg-white/5 p-4 rounded-lg">
-                                <h3 className="font-bold text-lg">{evalApp.fullName}</h3>
-                                <p className="text-muted-foreground">{evalApp.rollNumber} • {evalApp.primaryDept}</p>
+                        <div className="space-y-8 p-4">
+                            <div className="bg-white/5 p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
+                                <div className="absolute -right-8 -top-8 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all duration-500"></div>
+                                <div className="relative z-10">
+                                    <h3 className="font-heading text-lg text-white mb-1">{evalApp.fullName}</h3>
+                                    <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest opacity-60">
+                                        {evalApp.rollNumber} • {evalApp.primaryDept}
+                                    </p>
+                                </div>
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Score (0-10)</label>
-                                    <div className="flex items-center gap-4">
+                            <div className="space-y-6">
+                                <div className="space-y-3">
+                                    <Label className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">Performance Metric</Label>
+                                    <div className="flex items-center gap-6 bg-white/5 p-4 rounded-2xl border border-white/5">
                                         <Input
                                             type="number"
                                             min="0"
                                             max="10"
                                             value={evalForm.score}
                                             onChange={e => setEvalForm({ ...evalForm, score: parseInt(e.target.value) })}
-                                            className="bg-black/20 w-24 border-white/10"
+                                            className="bg-black/40 w-24 h-12 border-white/10 rounded-xl text-center font-heading text-xl text-primary focus:ring-primary/20"
                                         />
-                                        <span className="text-sm text-muted-foreground">/ 10 Points</span>
+                                        <div className="flex-1">
+                                            <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                                                <motion.div 
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${(evalForm.score / 10) * 100}%` }}
+                                                    className="h-full bg-primary shadow-[0_0_10px_rgba(220,20,60,0.5)]"
+                                                />
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground mt-2 font-bold uppercase tracking-widest opacity-40 text-right">Raw Score / 10.0</p>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Comments & Observations</label>
+                                <div className="space-y-3">
+                                    <Label className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">Interview Notes</Label>
                                     <Textarea
                                         value={evalForm.comments}
                                         onChange={e => setEvalForm({ ...evalForm, comments: e.target.value })}
-                                        className="bg-black/20 border-white/10 min-h-[100px]"
-                                        placeholder="Enter key observations..."
+                                        className="bg-white/5 border-white/10 rounded-2xl min-h-[120px] focus:border-primary/40 focus:ring-primary/10 text-sm p-4 placeholder:opacity-30"
+                                        placeholder="Record key observations, technical proficiency, and soft skills..."
                                     />
                                 </div>
 
-                                <div className="flex items-center space-x-2 bg-purple-500/10 p-3 rounded-lg border border-purple-500/20">
+                                <div className="flex items-center space-x-3 bg-primary/5 p-4 rounded-2xl border border-primary/20 group cursor-pointer hover:bg-primary/10 transition-all" onClick={() => setEvalForm({ ...evalForm, recommends_committee: !evalForm.recommends_committee })}>
                                     <Checkbox
                                         id="committee"
                                         checked={evalForm.recommends_committee}
                                         onCheckedChange={(checked) => setEvalForm({ ...evalForm, recommends_committee: checked as boolean })}
-                                        className="border-white/20 data-[state=checked]:bg-purple-600"
+                                        className="border-primary/40 data-[state=checked]:bg-primary rounded-md"
                                     />
                                     <label
                                         htmlFor="committee"
-                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                        className="text-[11px] font-bold uppercase tracking-widest leading-none cursor-pointer group-hover:text-primary transition-colors"
                                     >
-                                        Recommend for Committee Member?
+                                        Recommend for Committee Core?
                                     </label>
                                 </div>
                             </div>
 
-                            <Button onClick={submitFeedback} className="w-full bg-purple-600 hover:bg-purple-700">
-                                <Save className="w-4 h-4 mr-2" /> Save Feedback
+                            <Button onClick={submitFeedback} className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold tracking-[0.2em] uppercase text-xs shadow-xl shadow-primary/20 transition-all active:scale-[0.98]">
+                                <Save className="w-4 h-4 mr-2" /> 
+                                COMMIT EVALUATION
                             </Button>
                         </div>
                     )}
@@ -673,23 +798,30 @@ const InterviewScheduler = () => {
 
             {/* NOTIFY SHORTLISTED DIALOG */}
             <Dialog open={isNotifyDialogOpen} onOpenChange={setIsNotifyDialogOpen}>
-                <DialogContent className="max-w-2xl bg-black border-white/10 text-white max-h-[80vh] flex flex-col">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                            <Send className="w-5 h-5 text-purple-500" />
-                            Notify Shortlisted Candidates
-                        </DialogTitle>
-                        <CardDescription className="text-muted-foreground mt-2">
-                            Select the candidates you want to send the interview booking email to.
-                            Candidates already notified are unselected by default.
-                        </CardDescription>
-                    </DialogHeader>
+                <DialogContent className="max-w-2xl bg-zinc-950/90 border-white/10 text-white backdrop-blur-3xl rounded-[2.5rem] overflow-hidden flex flex-col p-0 h-[85vh]">
+                    <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-primary to-transparent opacity-40"></div>
+                    
+                    <div className="p-8 pb-4">
+                        <DialogHeader>
+                            <DialogTitle className="text-3xl font-bold font-heading flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                                    <Send className="w-6 h-6 text-primary" />
+                                </div>
+                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
+                                    Broadcast Call
+                                </span>
+                            </DialogTitle>
+                            <p className="text-[11px] text-muted-foreground uppercase tracking-[0.2em] font-bold mt-4 opacity-50 px-1">
+                                Selecting candidates for automated interview booking dispatch
+                            </p>
+                        </DialogHeader>
+                    </div>
 
-                    <div className="flex-1 overflow-auto my-4 border border-white/5 rounded-lg">
-                        <table className="w-full text-sm">
-                            <thead className="bg-white/5 sticky top-0 z-10 border-b border-white/10">
+                    <div className="flex-1 overflow-auto mx-8 my-4 border border-white/5 rounded-3xl bg-white/[0.02] backdrop-blur-sm scrollbar-thin scrollbar-thumb-white/10">
+                        <table className="w-full text-left">
+                            <thead className="bg-white/5 sticky top-0 z-20 backdrop-blur-md">
                                 <tr>
-                                    <th className="p-3 text-left w-12">
+                                    <th className="p-5 w-16">
                                         <Checkbox
                                             checked={
                                                 selectedCandidateIds.length === applications.filter(app => app.status === 'shortlisted').length &&
@@ -702,17 +834,17 @@ const InterviewScheduler = () => {
                                                     setSelectedCandidateIds([]);
                                                 }
                                             }}
-                                            className="border-white/20 data-[state=checked]:bg-purple-600"
+                                            className="border-white/20 data-[state=checked]:bg-primary"
                                         />
                                     </th>
-                                    <th className="p-3 text-left font-medium text-muted-foreground">Candidate</th>
-                                    <th className="p-3 text-left font-medium text-muted-foreground">Status</th>
+                                    <th className="p-5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Candidate Profile</th>
+                                    <th className="p-5 text-right text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Transmission Status</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
                                 {applications.filter(app => app.status === 'shortlisted').map(app => (
-                                    <tr key={app.id} className="hover:bg-white/5 transition-colors group">
-                                        <td className="p-3">
+                                    <tr key={app.id} className="hover:bg-white/[0.03] transition-all group">
+                                        <td className="p-5">
                                             <Checkbox
                                                 checked={selectedCandidateIds.includes(app.id)}
                                                 onCheckedChange={(checked) => {
@@ -722,23 +854,25 @@ const InterviewScheduler = () => {
                                                         setSelectedCandidateIds(selectedCandidateIds.filter(id => id !== app.id));
                                                     }
                                                 }}
-                                                className="border-white/20 data-[state=checked]:bg-purple-600"
+                                                className="border-white/20 data-[state=checked]:bg-primary"
                                             />
                                         </td>
-                                        <td className="p-3">
-                                            <div className="font-medium text-white group-hover:text-purple-400 transition-colors">
+                                        <td className="p-5">
+                                            <div className="font-heading text-sm text-white group-hover:text-primary transition-colors">
                                                 {app.fullName}
                                             </div>
-                                            <div className="text-xs text-muted-foreground">{app.rollNumber} • {app.primaryDept}</div>
+                                            <div className="text-[10px] font-mono text-muted-foreground mt-1 opacity-50 uppercase tracking-tighter">
+                                                {app.rollNumber} • {app.primaryDept}
+                                            </div>
                                         </td>
-                                        <td className="p-3 text-right">
+                                        <td className="p-5 text-right">
                                             {app.shortlistNotified ? (
-                                                <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 text-[10px] uppercase">
-                                                    Email Sent
+                                                <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg">
+                                                    NOTIFIED
                                                 </Badge>
                                             ) : (
-                                                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-[10px] uppercase">
-                                                    Not Notified
+                                                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg">
+                                                    PENDING
                                                 </Badge>
                                             )}
                                         </td>
@@ -746,33 +880,49 @@ const InterviewScheduler = () => {
                                 ))}
                             </tbody>
                         </table>
+                        {applications.filter(app => app.status === 'shortlisted').length === 0 && (
+                            <div className="py-20 text-center space-y-4">
+                                <div className="text-muted-foreground/30 font-heading text-xs uppercase tracking-widest">Zero Candidates Found</div>
+                                <p className="text-[10px] text-muted-foreground max-w-xs mx-auto opacity-40">No applications currently reside in the "shortlisted" state.</p>
+                            </div>
+                        )}
                     </div>
 
-                    <div className="flex justify-between items-center bg-white/5 p-4 rounded-lg border border-white/10 mt-2">
-                        <div className="text-sm text-muted-foreground">
-                            <span className="text-purple-400 font-bold">{selectedCandidateIds.length}</span> candidates selected
-                        </div>
-                        <div className="flex gap-3">
-                            <Button variant="ghost" onClick={() => setIsNotifyDialogOpen(false)} disabled={isSending}>
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={sendBookingLinkBatch}
-                                disabled={isSending || selectedCandidateIds.length === 0}
-                                className="bg-purple-600 hover:bg-purple-700 font-bold min-w-[150px]"
-                            >
-                                {isSending ? (
-                                    <>
-                                        <LogoSpinner size="sm" className="mr-2" />
-                                        Sending...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Send className="w-4 h-4 mr-2" />
-                                        Send Notification
-                                    </>
-                                )}
-                            </Button>
+                    <div className="p-8 pt-4">
+                        <div className="flex flex-col md:flex-row justify-between items-center bg-white/5 p-6 rounded-[2rem] border border-white/5 gap-6">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold opacity-40 mb-1">Queue Size</span>
+                                <span className="text-xl font-heading font-bold text-white">
+                                    <span className="text-primary">{selectedCandidateIds.length}</span> Ready for dispatch
+                                </span>
+                            </div>
+                            <div className="flex gap-4 w-full md:w-auto">
+                                <Button 
+                                    variant="ghost" 
+                                    onClick={() => setIsNotifyDialogOpen(false)} 
+                                    disabled={isSending}
+                                    className="flex-1 md:flex-none h-14 px-8 rounded-2xl font-bold tracking-widest text-[10px] uppercase hover:bg-white/5"
+                                >
+                                    ABORT
+                                </Button>
+                                <Button
+                                    onClick={sendBookingLinkBatch}
+                                    disabled={isSending || selectedCandidateIds.length === 0}
+                                    className="flex-1 md:flex-none h-14 px-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold tracking-[0.2em] uppercase text-[10px] shadow-xl shadow-primary/30 min-w-[220px]"
+                                >
+                                    {isSending ? (
+                                        <>
+                                            <LogoSpinner size="sm" className="mr-3" />
+                                            TRANSMITTING...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Send className="w-4 h-4 mr-3" />
+                                            INITIALIZE BROADCAST
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </DialogContent>

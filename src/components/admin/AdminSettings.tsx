@@ -109,7 +109,25 @@ const AdminSettings = () => {
         const { error } = await supabase.from('admins').insert(newAdmin);
 
         if (error) {
-            toast.error('Failed to add admin. They might already exist.');
+            console.error("Supabase Error adding admin:", error);
+            
+            // If it's a column missing error, try without added_by as fallback
+            if (error.message.includes('added_by') || error.code === '42703') {
+                const { error: retryError } = await supabase.from('admins').insert({
+                    email: newAdminEmail,
+                    role: 'interviewer'
+                });
+                
+                if (retryError) {
+                    toast.error(`Database Error: ${retryError.message}`);
+                } else {
+                    toast.success('Admin added (but database schema needs update).');
+                    setNewAdminEmail('');
+                    fetchData();
+                }
+            } else {
+                toast.error(`Failed to add admin: ${error.message}`);
+            }
         } else {
             toast.success('Admin added successfully.');
             setNewAdminEmail('');
