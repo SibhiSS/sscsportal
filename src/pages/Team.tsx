@@ -91,7 +91,7 @@ const leads = [
     quote: 'SKY IS THE LIMIT'
   },
   {
-    name: 'Priyadharshini',
+    name: 'Priyadarshini',
     role: 'Design Lead',
     image: '/priyadharshini.png',
     quote: 'LOST IN A PASTEL SKY'
