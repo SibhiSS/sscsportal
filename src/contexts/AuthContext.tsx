@@ -42,13 +42,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const validateAndSetUser = async (session: any) => {
       if (session?.user) {
         const email = session.user.email;
-        const isHardcodedAdmin = email === 'sibhis5223@gmail.com';
+        const isHardcodedAdmin = email === 'sibhis5223@gmail.com' || email === 'sibhi.s2024@vitstudent.ac.in';
         const isVitStudent = email?.endsWith('@vitstudent.ac.in');
         const isVitStaff = email?.endsWith('@vit.ac.in');
 
         if (!isHardcodedAdmin && !isVitStudent && !isVitStaff) {
           await supabase.auth.signOut();
-          alert('Access Restricted: Please sign in with your VIT email address (@vitstudent.ac.in or @vit.ac.in).');
+          alert('Access Restricted: Please sign in with your VIT email address (@vitstudent.ac.in).');
           setUser(null);
         } else {
           // Fetch Role from DB
@@ -58,7 +58,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             .eq('email', email)
             .single();
 
-          const role = adminData?.role || (isHardcodedAdmin ? 'super_admin' : 'viewer'); // Fallback or logic
+          // Force super_admin for these two emails regardless of DB state
+          const role = isHardcodedAdmin ? 'super_admin' : (adminData?.role || 'viewer');
 
           setUser({
             ...mapSupabaseUser(session.user),
