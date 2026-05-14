@@ -295,57 +295,53 @@ const Apply = () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         email: user.email,
-                        subject: "[VER 2.0] Transmission Logged - " + new Date().toLocaleTimeString(),
+                        subject: "Application Confirmation - IEEE SSCS Recruitment",
                         message: `
                             <div style="font-family: 'Raleway', sans-serif; background-color: #050505; color: #e5e5e5; max-width: 600px; margin: 0 auto; border: 1px solid #1a1a1a; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
-                                <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Raleway:wght@400;600&display=swap" rel="stylesheet">
+                                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
                                 
-                                <!-- Top Accent Bar -->
-                                <div style="height: 4px; background: linear-gradient(90deg, #7c3aed, #FFE100);"></div>
-
-                                <!-- Header Section -->
-                                <div style="background-color: #000000; padding: 30px 20px; text-align: center; border-bottom: 1px solid #1a1a1a;">
-                                    <h1 style="color: #FFE100; font-family: 'Syne', sans-serif; margin: 0; text-transform: uppercase; letter-spacing: 4px; font-size: 18px; font-weight: 800;">IEEE SSCS</h1>
+                                <div style="background-color: #000000; padding: 40px 20px; text-align: center; border-bottom: 1px solid #1a1a1a;">
+                                    <h1 style="color: #ffffff; font-family: 'Inter', sans-serif; margin: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 16px; font-weight: 600;">IEEE Solid-State Circuits Society</h1>
                                 </div>
 
-                                <div style="padding: 40px 35px;">
-                                    <h2 style="color: #FFE100; font-family: 'Syne', sans-serif; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 20px; font-weight: 800;">Transmission Logged</h2>
-                                    <p style="font-size: 15px; line-height: 1.6;">Greetings <strong>${formData.fullName}</strong>,</p>
-                                    <p style="font-size: 15px; line-height: 1.6;">Your application to join the **IEEE Solid-State Circuits Society (SSCS)** has been successfully logged into our systems.</p>
+                                <div style="padding: 45px 40px;">
+                                    <h2 style="color: #FFE100; font-family: 'Inter', sans-serif; margin-top: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em;">Application Confirmation</h2>
+                                    <p style="font-size: 15px; line-height: 1.6; color: #d1d5db;">Dear <strong>${formData.fullName}</strong>,</p>
+                                    <p style="font-size: 15px; line-height: 1.6; color: #d1d5db;">Thank you for your interest in joining the IEEE SSCS. Your application has been successfully received and is now under review by our recruitment committee.</p>
                                     
-                                    <div style="background: rgba(124, 58, 237, 0.05); border: 1px solid rgba(124, 58, 237, 0.2); padding: 25px; border-radius: 10px; margin: 30px 0;">
-                                        <p style="margin: 0; font-size: 14px; color: #e5e5e5; font-family: 'Syne', sans-serif;"><span style="color: #7c3aed;">[DEPT]:</span> ${formData.primaryDept}</p>
-                                        <p style="margin: 12px 0 0; font-size: 14px; color: #e5e5e5; font-family: 'Syne', sans-serif;"><span style="color: #7c3aed;">[ROLL]:</span> ${formData.rollNumber}</p>
-                                        <p style="margin: 12px 0 0; font-size: 14px; color: #e5e5e5; font-family: 'Syne', sans-serif;"><span style="color: #7c3aed;">[STATUS]:</span> <span style="color: #7c3aed;">PENDING_REVIEW</span></p>
+                                    <div style="background-color: #0a0a0a; border: 1px solid #1f2937; padding: 25px; border-radius: 8px; margin: 30px 0;">
+                                        <table style="width: 100%; border-collapse: collapse; font-family: 'Inter', sans-serif; font-size: 14px;">
+                                            <tr>
+                                                <td style="color: #9ca3af; padding-bottom: 12px; width: 120px;">Registration:</td>
+                                                <td style="color: #ffffff; padding-bottom: 12px; font-weight: 500;">${formData.rollNumber}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #9ca3af; padding-bottom: 12px;">Department:</td>
+                                                <td style="color: #ffffff; padding-bottom: 12px; font-weight: 500;">${formData.primaryDept}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #9ca3af;">Status:</td>
+                                                <td style="color: #FFE100; font-weight: 500;">Under Review</td>
+                                            </tr>
+                                        </table>
                                     </div>
 
-                                    <p style="font-size: 14px; line-height: 1.6; color: #a1a1aa;">Our technical leads are currently evaluating your profile. You will receive further instructions regarding the interview phase via this email.</p>
+                                    <p style="font-size: 14px; line-height: 1.6; color: #9ca3af;">Our team will evaluate your submission. Please stay updated via our official communication channels.</p>
 
                                     <div style="text-align: center; margin: 40px 0;">
-                                        <a href="https://chat.whatsapp.com/FDMlBGlnzrc7qlwqSp2hDe" style="display: inline-block; background-color: #7c3aed; color: #fff; padding: 16px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; font-family: 'Syne', sans-serif; text-transform: uppercase; letter-spacing: 1.5px; font-size: 13px; font-weight: 700;">Secure Comms (WhatsApp)</a>
+                                        <a href="https://chat.whatsapp.com/FDMlBGlnzrc7qlwqSp2hDe" style="display: inline-block; background-color: #FFE100; color: #000000; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: 600; font-family: 'Inter', sans-serif; font-size: 14px;">Join Official WhatsApp Group</a>
                                     </div>
 
-                                    <p style="margin-top: 40px; border-top: 1px solid #1a1a1a; padding-top: 25px; font-size: 14px; color: #888;">
-                                        Best Regards,<br>
-                                        <strong style="color: #e5e5e5; font-family: 'Syne', sans-serif;">IEEE SSCS Team</strong>
+                                    <p style="margin-top: 45px; border-top: 1px solid #1a1a1a; padding-top: 25px; font-size: 14px; color: #6b7280;">
+                                        Regards,<br>
+                                        <strong style="color: #ffffff; font-family: 'Inter', sans-serif;">IEEE SSCS Recruitment Team</strong>
                                     </p>
                                 </div>
 
-                                <div style="background-color: #000000; padding: 35px 25px; text-align: center; border-top: 1px solid #1a1a1a;">
-                                    <div style="margin-bottom: 25px;">
-                                        <img src="https://sscsportal.vercel.app/ieee-sscs-logo.png" alt="SSCS Mini" style="height: 30px; opacity: 0.8; margin-bottom: 15px;">
-                                        <br/>
-                                        <span style="color: #7c3aed; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 3px;">IEEE SSCS</span>
-                                        <span style="color: #27272a; margin: 0 10px;">|</span>
-                                        <span style="color: #71717a; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px;">VIT CHENNAI</span>
-                                    </div>
-
-                                    <div style="margin-bottom: 20px;">
-                                        <a href="https://linkedin.com/company/IEEE-SSCS" style="color: #71717a; text-decoration: none; margin: 0 12px; font-size: 12px; font-family: 'Syne', sans-serif;">LI</a>
-                                        <a href="https://instagram.com/IEEESSCS.vitc" style="color: #71717a; text-decoration: none; margin: 0 12px; font-size: 12px; font-family: 'Syne', sans-serif;">IG</a>
-                                    </div>
-                                    <p style="color: #3f3f46; font-size: 10px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">
-                                        CONTACT: <a href="mailto:IEEE.SSCSc@gmail.com" style="color: #7c3aed; text-decoration: none;">IEEE.SSCSc@gmail.com</a>
+                                <div style="background-color: #000000; padding: 30px 25px; text-align: center; border-top: 1px solid #1a1a1a;">
+                                    <img src="https://sscsportal.vercel.app/ieee-sscs-logo.png" alt="SSCS" style="height: 25px; margin-bottom: 15px;">
+                                    <p style="color: #4b5563; font-size: 11px; margin: 0; font-family: 'Inter', sans-serif;">
+                                        IEEE Solid-State Circuits Society | VIT Chennai Campus
                                     </p>
                                 </div>
                             </div>
