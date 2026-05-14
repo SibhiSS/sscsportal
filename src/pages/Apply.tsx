@@ -297,43 +297,54 @@ const Apply = () => {
                         email: user.email,
                         subject: "Application Received - IEEE SSCS",
                         message: `
-                            <div style="font-family: 'Raleway', sans-serif; background-color: #0a0a0a; color: #e5e5e5; max-width: 600px; margin: 0 auto; border: 1px solid #333; border-radius: 8px; overflow: hidden;">
+                            <div style="font-family: 'Raleway', sans-serif; background-color: #050505; color: #e5e5e5; max-width: 600px; margin: 0 auto; border: 1px solid #1a1a1a; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
                                 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=Raleway:wght@400;600&display=swap" rel="stylesheet">
-                                <div style="background-color: #000000; padding: 40px 20px; border-bottom: 2px solid #FFE100; text-align: center;">
-                                    <img src="https://bqtqhtpbyunzcwxyxdhx.supabase.co/storage/v1/object/public/asset/IEEE%20SSCS%20Logo.png" alt="IEEE SSCS Logo" style="height: 120px; width: auto; display: block; margin: 0 auto;">
-                                </div>
-                                <div style="padding: 40px 30px;">
-                                    <h2 style="color: #FFE100; font-family: 'Orbitron', sans-serif; margin-top: 0;">Application Received</h2>
-                                    <p>Hi <strong>${formData.fullName}</strong>,</p>
-                                    <p>Thank you for your interest in joining IEEE SSCS.</p>
-                                    <p>We have successfully received your application for <strong style="color: #FFE100;">${formData.primaryDept}</strong>.</p>
+                                
+                                <!-- Top Accent Bar -->
+                                <div style="height: 4px; background: linear-gradient(90deg, #7c3aed, #FFE100);"></div>
 
-                                    <div style="background-color: #1a1a1a; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #FFE100;">
-                                        <p style="margin: 0; font-size: 14px; color: #fff;"><strong>Registration Number:</strong> ${formData.rollNumber}</p>
-                                        <p style="margin: 8px 0 0; font-size: 14px; color: #fff;"><strong>Status:</strong> Under Review</p>
+                                <div style="background-color: #000000; padding: 45px 20px; text-align: center; border-bottom: 1px solid #1a1a1a;">
+                                    <img src="https://sscsportal.vercel.app/ieee-sscs-logo.png" alt="IEEE SSCS Logo" style="height: 100px; width: auto; display: block; margin: 0 auto;">
+                                </div>
+
+                                <div style="padding: 40px 35px;">
+                                    <h2 style="color: #FFE100; font-family: 'Orbitron', sans-serif; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 20px;">Transmission Received</h2>
+                                    <p style="font-size: 15px; line-height: 1.6;">Greetings <strong>${formData.fullName}</strong>,</p>
+                                    <p style="font-size: 15px; line-height: 1.6;">Your application to join the **IEEE Solid-State Circuits Society (SSCS)** has been successfully logged into our systems.</p>
+                                    
+                                    <div style="background: rgba(124, 58, 237, 0.05); border: 1px solid rgba(124, 58, 237, 0.2); padding: 25px; border-radius: 10px; margin: 30px 0;">
+                                        <p style="margin: 0; font-size: 14px; color: #e5e5e5; font-family: 'Orbitron', sans-serif;"><span style="color: #7c3aed;">[DEPT]:</span> ${formData.primaryDept}</p>
+                                        <p style="margin: 12px 0 0; font-size: 14px; color: #e5e5e5; font-family: 'Orbitron', sans-serif;"><span style="color: #7c3aed;">[ROLL]:</span> ${formData.rollNumber}</p>
+                                        <p style="margin: 12px 0 0; font-size: 14px; color: #e5e5e5; font-family: 'Orbitron', sans-serif;"><span style="color: #7c3aed;">[STATUS]:</span> <span style="color: #7c3aed;">PENDING_REVIEW</span></p>
                                     </div>
 
-                                    <p>Our team will review your profile and get back to you shortly. Please join our WhatsApp group below for updates regarding the interview process.</p>
+                                    <p style="font-size: 14px; line-height: 1.6; color: #a1a1aa;">Our technical leads are currently evaluating your profile. You will receive further instructions regarding the interview phase via this email.</p>
 
-                                    <div style="text-align: center; margin: 35px 0;">
-                                        <a href="https://chat.whatsapp.com/FDMlBGlnzrc7qlwqSp2hDe" style="display: inline-block; background-color: #FFE100; color: #000; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 1px;">Join WhatsApp Group</a>
+                                    <div style="text-align: center; margin: 40px 0;">
+                                        <a href="https://chat.whatsapp.com/FDMlBGlnzrc7qlwqSp2hDe" style="display: inline-block; background-color: #7c3aed; color: #fff; padding: 16px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 1.5px; font-size: 13px;">Secure Comms (WhatsApp)</a>
                                     </div>
 
-                                    <p style="margin-top: 30px; border-top: 1px solid #333; pt: 20px;">Best Regards,<br><strong>IEEE SSCS Team</strong></p>
+                                    <p style="margin-top: 40px; border-top: 1px solid #1a1a1a; padding-top: 25px; font-size: 14px; color: #888;">
+                                        Best Regards,<br>
+                                        <strong style="color: #e5e5e5; font-family: 'Orbitron', sans-serif;">IEEE SSCS Team</strong>
+                                    </p>
                                 </div>
-                                <div style="background-color: #000000; padding: 30px 20px; text-align: center; border-top: 1px solid #333;">
+
+                                <div style="background-color: #000000; padding: 35px 25px; text-align: center; border-top: 1px solid #1a1a1a;">
+                                    <div style="margin-bottom: 25px;">
+                                        <img src="https://sscsportal.vercel.app/ieee-sscs-logo.png" alt="SSCS Mini" style="height: 30px; opacity: 0.8; margin-bottom: 15px;">
+                                        <br/>
+                                        <span style="color: #7c3aed; font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 14px; letter-spacing: 3px;">IEEE SSCS</span>
+                                        <span style="color: #27272a; margin: 0 10px;">|</span>
+                                        <span style="color: #71717a; font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 14px;">VIT CHENNAI</span>
+                                    </div>
+
                                     <div style="margin-bottom: 20px;">
-                                        <span style="color: #FFE100; font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 16px; letter-spacing: 2px;">IEEE SSCS</span>
-                                        <span style="color: #333; margin: 0 15px;">|</span>
-                                        <span style="color: #e5e5e5; font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 16px;">VIT Chennai</span>
+                                        <a href="https://linkedin.com/company/IEEE-SSCS" style="color: #71717a; text-decoration: none; margin: 0 12px; font-size: 12px; font-family: 'Orbitron', sans-serif;">LI</a>
+                                        <a href="https://instagram.com/IEEESSCS.vitc" style="color: #71717a; text-decoration: none; margin: 0 12px; font-size: 12px; font-family: 'Orbitron', sans-serif;">IG</a>
                                     </div>
-
-                                    <div style="margin-bottom: 15px;">
-                                        <a href="https://linkedin.com/company/IEEE-SSCS" style="color: #888; text-decoration: none; margin: 0 10px; font-size: 13px;">LinkedIn</a>
-                                        <a href="https://instagram.com/IEEESSCS.vitc" style="color: #888; text-decoration: none; margin: 0 10px; font-size: 13px;">Instagram</a>
-                                    </div>
-                                    <p style="color: #555; font-size: 11px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">
-                                        For queries: <a href="mailto:IEEE.SSCSc@gmail.com" style="color: #FFE100; text-decoration: none;">IEEE.SSCSc@gmail.com</a>
+                                    <p style="color: #3f3f46; font-size: 10px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">
+                                        CONTACT: <a href="mailto:IEEE.SSCSc@gmail.com" style="color: #7c3aed; text-decoration: none;">IEEE.SSCSc@gmail.com</a>
                                     </p>
                                 </div>
                             </div>

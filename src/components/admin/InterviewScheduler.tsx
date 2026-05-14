@@ -266,32 +266,43 @@ const InterviewScheduler = () => {
                         email: app.email,
                         subject: "ACTION REQUIRED: Book Your Interview Slot - IEEE SSCS",
                         message: `
-                            <div style="font-family: 'Raleway', sans-serif; background-color: #0a0a0a; color: #e5e5e5; max-width: 600px; margin: 0 auto; border: 1px solid #333; border-radius: 8px; overflow: hidden;">
+                            <div style="font-family: 'Raleway', sans-serif; background-color: #050505; color: #e5e5e5; max-width: 600px; margin: 0 auto; border: 1px solid #1a1a1a; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
                                 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=Raleway:wght@400;600&display=swap" rel="stylesheet">
-                                <div style="background-color: #000000; padding: 40px 20px; border-bottom: 2px solid #7c3aed; text-align: center;">
-                                    <img src="https://bqtqhtpbyunzcwxyxdhx.supabase.co/storage/v1/object/public/asset/IEEE%20SSCS%20Logo.png" alt="IEEE SSCS Logo" style="height: 100px; width: auto; display: block; margin: 0 auto;">
+                                
+                                <!-- Top Accent Bar -->
+                                <div style="height: 4px; background: linear-gradient(90deg, #7c3aed, #FFE100);"></div>
+
+                                <div style="background-color: #000000; padding: 45px 20px; text-align: center; border-bottom: 1px solid #1a1a1a;">
+                                    <img src="https://sscsportal.vercel.app/ieee-sscs-logo.png" alt="IEEE SSCS Logo" style="height: 100px; width: auto; display: block; margin: 0 auto;">
                                 </div>
-                                <div style="padding: 40px 30px;">
-                                    <h2 style="color: #7c3aed; font-family: 'Orbitron', sans-serif; margin-top: 0; text-transform: uppercase; letter-spacing: 2px;">Shortlisted!</h2>
-                                    <p style="font-size: 16px;">Hi <strong>${app.fullName}</strong>,</p>
-                                    <p>Congratulations! You have been shortlisted for the next round of IEEE SSCS recruitments.</p>
+
+                                <div style="padding: 40px 35px;">
+                                    <h2 style="color: #7c3aed; font-family: 'Orbitron', sans-serif; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 20px;">Shortlisted</h2>
+                                    <p style="font-size: 15px; line-height: 1.6;">Hi <strong>${app.fullName}</strong>,</p>
+                                    <p style="font-size: 15px; line-height: 1.6;">Congratulations! Your profile has been cleared for the next phase of the recruitment process.</p>
                                     
-                                    <div style="background-color: #1a1a1a; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #7c3aed;">
-                                        <p style="margin: 0; font-size: 14px; color: #fff;"><strong>Next Step:</strong> Book Your Interview Slot</p>
-                                        <p style="margin: 5px 0 0; font-size: 13px; color: #888;">Slots are filled on a first-come, first-serve basis.</p>
+                                    <div style="background: rgba(124, 58, 237, 0.05); border: 1px solid rgba(124, 58, 237, 0.2); padding: 25px; border-radius: 10px; margin: 30px 0;">
+                                        <p style="margin: 0; font-size: 14px; color: #e5e5e5; font-family: 'Orbitron', sans-serif;"><span style="color: #7c3aed;">[ACTION]:</span> BOOK_INTERVIEW_SLOT</p>
+                                        <p style="margin: 12px 0 0; font-size: 13px; color: #a1a1aa;">Slots are allocated on a first-come, first-serve basis. Secure yours immediately.</p>
                                     </div>
 
-                                    <div style="text-align: center; margin: 35px 0;">
-                                        <a href="https://IEEESSCS.vercel.app/schedule" style="display: inline-block; background-color: #7c3aed; color: #white; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; font-family: 'Orbitron', sans-serif; text-transform: uppercase;">Book Slot Now</a>
+                                    <div style="text-align: center; margin: 40px 0;">
+                                        <a href="https://IEEESSCS.vercel.app/schedule" style="display: inline-block; background-color: #7c3aed; color: #fff; padding: 16px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 1.5px; font-size: 13px;">Book Interview Slot</a>
                                     </div>
 
-                                    <p style="margin-top: 40px; border-top: 1px solid #333; padding-top: 20px;">Best regards,<br><strong>IEEE SSCS Team</strong></p>
+                                    <p style="margin-top: 40px; border-top: 1px solid #1a1a1a; padding-top: 25px; font-size: 14px; color: #888;">
+                                        Best Regards,<br>
+                                        <strong style="color: #e5e5e5; font-family: 'Orbitron', sans-serif;">IEEE SSCS Team</strong>
+                                    </p>
                                 </div>
-                                <div style="background-color: #000000; padding: 30px 20px; text-align: center; border-top: 1px solid #333;">
-                                    <div style="margin-bottom: 20px;">
-                                        <span style="color: #7c3aed; font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 16px; letter-spacing: 2px;">IEEE SSCS</span>
-                                        <span style="color: #333; margin: 0 15px;">|</span>
-                                        <span style="color: #e5e5e5; font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 16px;">VIT Chennai</span>
+
+                                <div style="background-color: #000000; padding: 35px 25px; text-align: center; border-top: 1px solid #1a1a1a;">
+                                    <div style="margin-bottom: 25px;">
+                                        <img src="https://sscsportal.vercel.app/ieee-sscs-logo.png" alt="SSCS Mini" style="height: 30px; opacity: 0.8; margin-bottom: 15px;">
+                                        <br/>
+                                        <span style="color: #7c3aed; font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 14px; letter-spacing: 3px;">IEEE SSCS</span>
+                                        <span style="color: #27272a; margin: 0 10px;">|</span>
+                                        <span style="color: #71717a; font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 14px;">VIT CHENNAI</span>
                                     </div>
                                 </div>
                             </div>
