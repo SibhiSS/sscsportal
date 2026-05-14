@@ -287,7 +287,7 @@ const Apply = () => {
 
             // --- SEND CONFIRMATION EMAIL ---
             try {
-                const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
+                const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSuKNXGi-08iJ_NgkEeh_wpt0AUu3Hjy4CXMTZNMe417idYTviLKK97NBPU1kJbpqTMA/exec";
 
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
@@ -295,7 +295,7 @@ const Apply = () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         email: user.email,
-                        subject: "Transmission Logged - IEEE SSCS",
+                        subject: "[VER 2.0] Transmission Logged - " + new Date().toLocaleTimeString(),
                         message: `
                             <div style="font-family: 'Raleway', sans-serif; background-color: #050505; color: #e5e5e5; max-width: 600px; margin: 0 auto; border: 1px solid #1a1a1a; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
                                 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Raleway:wght@400;600&display=swap" rel="stylesheet">
