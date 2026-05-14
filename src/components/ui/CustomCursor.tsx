@@ -8,8 +8,8 @@ const CustomCursor = () => {
     const mouseX = useMotionValue(-100);
     const mouseY = useMotionValue(-100);
 
-    // Faster, tighter spring for a "short" snappy trace
-    const springConfig = { damping: 35, stiffness: 400 };
+    // Ultra-high tension spring for a "micro" trace
+    const springConfig = { damping: 40, stiffness: 1200, mass: 0.5 };
     const trailX = useSpring(mouseX, springConfig);
     const trailY = useSpring(mouseY, springConfig);
 
@@ -45,24 +45,34 @@ const CustomCursor = () => {
         ([mx, my, tx, ty]) => {
             const m_x = mx as number;
             const m_y = my as number;
-            const t_x = tx as number;
-            const t_y = ty as number;
+            let t_x = tx as number;
+            let t_y = ty as number;
 
-            const dx = m_x - t_x;
-            const dy = m_y - t_y;
+            let dx = m_x - t_x;
+            let dy = m_y - t_y;
+            
+            // Limit the distance mathematically to ensure it's ALWAYS short
+            const maxLen = 20; 
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > maxLen) {
+                const ratio = maxLen / dist;
+                t_x = m_x - (dx * ratio);
+                t_y = m_y - (dy * ratio);
+                dx = m_x - t_x;
+                dy = m_y - t_y;
+            }
+
             const absDx = Math.abs(dx);
             const absDy = Math.abs(dy);
             
-            // Routing logic for a sharp 45-degree PCB trace
+            // PCB-style 45-degree routing logic
             let cornerX = t_x;
             let cornerY = t_y;
             
             if (absDx > absDy) {
-                // Horizontal dominant: bend at 45 deg
                 cornerX = m_x - (dy > 0 ? absDy : -absDy);
                 cornerY = m_y;
             } else {
-                // Vertical dominant: bend at 45 deg
                 cornerX = m_x;
                 cornerY = m_y - (dx > 0 ? absDx : -absDx);
             }
@@ -77,33 +87,33 @@ const CustomCursor = () => {
         <div className="pointer-events-none fixed inset-0 z-[9999] hidden lg:block overflow-hidden">
             <svg className="absolute inset-0 h-full w-full">
                 <defs>
-                    <filter id="traceGlow">
-                        <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+                    <filter id="microGlow">
+                        <feGaussianBlur stdDeviation="1" result="coloredBlur" />
                         <feMerge>
                             <feMergeNode in="coloredBlur" />
                             <feMergeNode in="SourceGraphic" />
                         </feMerge>
                     </filter>
-                    <linearGradient id="traceGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <linearGradient id="shortTraceGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stopColor="rgba(220, 20, 60, 0)" />
-                        <stop offset="60%" stopColor="rgba(220, 20, 60, 0.9)" />
+                        <stop offset="80%" stopColor="rgba(220, 20, 60, 1)" />
                         <stop offset="100%" stopColor="rgba(255, 255, 255, 1)" />
                     </linearGradient>
                 </defs>
                 
-                {/* Snappy Short Trace */}
+                {/* Ultra-Short PCB Trace */}
                 <motion.path
                     d={pathData}
                     fill="none"
-                    stroke="url(#traceGradient)"
-                    strokeWidth={isHovering ? "2.5" : "1.8"}
+                    stroke="url(#shortTraceGradient)"
+                    strokeWidth={isHovering ? "2.2" : "1.5"}
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    filter="url(#traceGlow)"
+                    filter="url(#microGlow)"
                 />
             </svg>
 
-            {/* Small PCB Via (trailing point) */}
+            {/* Precision Micro-Via */}
             <motion.div
                 style={{
                     x: trailX,
@@ -111,10 +121,10 @@ const CustomCursor = () => {
                     translateX: '-50%',
                     translateY: '-50%',
                 }}
-                className="absolute h-1.5 w-1.5 border border-primary/60 bg-background shadow-[0_0_5px_rgba(220,20,60,0.4)]"
+                className="absolute h-1 w-1 bg-primary/80 shadow-[0_0_4px_rgba(220,20,60,0.6)]"
             />
 
-            {/* Active Cursor Dot */}
+            {/* Active Core Cursor */}
             <motion.div
                 style={{
                     x: mouseX,
@@ -123,20 +133,19 @@ const CustomCursor = () => {
                     translateY: '-50%',
                 }}
                 animate={{
-                    scale: isHovering ? 1.5 : 1,
+                    scale: isHovering ? 1.4 : 1,
                 }}
                 className="absolute flex items-center justify-center"
             >
-                <div className="absolute h-3 w-3 rounded-full border border-white/10" />
-                <div className="h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,1)]" />
+                <div className="h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,1)]" />
                 
                 {isHovering && (
                     <motion.div
-                        initial={{ opacity: 0, x: 10 }}
+                        initial={{ opacity: 0, x: 8 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="absolute left-4 top-4 font-mono text-[7px] font-bold text-primary whitespace-nowrap"
+                        className="absolute left-3 top-3 font-mono text-[6px] font-bold text-primary uppercase"
                     >
-                        [TRACE_LOCKED]
+                        locked
                     </motion.div>
                 )}
             </motion.div>
