@@ -9,10 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { supabase } from '@/lib/supabase';
 import { Interview, Application, AdminUser, PanelAssignment, InterviewFeedback } from '@/types';
 import { format, addDays, startOfWeek, addMinutes, isSameDay, parseISO, setHours, setMinutes } from 'date-fns';
-import { Calendar as CalendarIcon, Clock, Link as LinkIcon, Plus, User, Video, AlertTriangle, Send, Trash2, CheckCircle, Save } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Link as LinkIcon, Plus, User, Video, AlertTriangle, Send, Trash2, CheckCircle, Save, ShieldCheck } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 import { logAction } from '@/services/auditService';
 import { useAuth } from '@/contexts/AuthContext';
