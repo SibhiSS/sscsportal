@@ -98,64 +98,65 @@ const Apply = () => {
 
     const domainOptions: Record<string, string[]> = {
         'Technical': [
-            'Embedded Systems',
-            'Sensors, Actuators & Control Systems',
-            'Robotics & Automation',
-            'Edge Computing',
-            'Networking & IoT',
-            'Cybersecurity'
+            'Projects',
+            'Research',
+            'Web Development'
         ],
         'Management': [
-            'Operations & Logistics',
-            'Event Planning & Execution',
-            'Team Coordination & Internal Management',
-            'Documentation & Compliance'
+            'Finance',
+            'Internal Coordination',
+            'Documentation'
         ],
-        'Design & Content': [
-            'Graphic Design (Posters, Creatives)',
-            'Content Writing & Copy',
-            'Technical & Promotional Content',
-            'Branding & Visual Identity'
+        'Creative': [
+            'Design',
+            'Content — reels & posts',
+            'Social Media'
         ],
-        'Visual Media': [
-            'Photography',
-            'Videography',
-            'Video Editing & Motion Graphics',
-            'Event Coverage & Reels'
+        'Outreach & Partnerships': [
+            'Industry Relations',
+            'Speaker Acquisition',
+            'Sponsorships'
         ],
-        'Outreach & Sponsorship': [
-            'Corporate & Industry Outreach',
-            'Sponsorship Acquisition',
-            'Partnerships & Collaborations',
-            'Public Relations & Communications'
+        'Human Resources': [
+            'Recruitment',
+            'Member Engagement',
+            'Conflict Resolution'
+        ],
+        'Event Operations': [
+            'Event Planning',
+            'Event Execution',
+            'On-ground Operations'
         ]
     };
 
     const skillLabels: Record<string, string> = {
         'Technical': 'Technical Skills',
-        'Design & Content': 'Design Tools & Software',
-        'Visual Media': 'Editing & Camera Tools',
-        'Management': 'Management Tools',
-        'Outreach & Sponsorship': 'Communication Skills',
+        'Creative': 'Creative Tools & Portfolio',
+        'Management': 'Management Experience',
+        'Human Resources': 'HR & Communication Skills',
+        'Event Operations': 'Execution & Logistics Skills',
+        'Outreach & Partnerships': 'Negotiation & Communication',
         'default': 'Relevant Skills'
     };
 
     const skillPlaceholders: Record<string, string> = {
-        'Technical': 'e.g. Python, C++, Arduino, React, PCB Design...',
-        'Design & Content': 'e.g. Photoshop, Illustrator, Figma...',
-        'Management': 'e.g. Asana, Trello, Leadership, Communication...',
-        'Visual Media': 'e.g. Premiere Pro, Lightroom, After Effects...',
-        'Outreach & Sponsorship': 'e.g. Public Speaking, Email Writing, Negotiation...',
+        'Technical': 'e.g. Python, C++, PCB Design, React, ML...',
+        'Creative': 'e.g. Photoshop, Premiere Pro, Copywriting...',
+        'Management': 'e.g. Finance, Documentation, Team Leadership...',
+        'Human Resources': 'e.g. Recruitment, Conflict Management, People Skills...',
+        'Event Operations': 'e.g. Event Logistics, Planning, Execution...',
+        'Outreach & Partnerships': 'e.g. Negotiation, PR, Industry Outreach...',
         'default': 'List your relevant skills here...'
     };
 
     const reasonPlaceholders: Record<string, string> = {
-        'Technical': 'Tell us about your technical projects and what you want to build...',
-        'Design & Content': 'Share your design philosophy or portfolio links...',
-        'Management': 'Describe your experience in leading teams or organizing events...',
-        'Visual Media': 'Share your portfolio links or describe your style...',
-        'Outreach & Sponsorship': 'How would you help us connect with industry experts?',
-        'default': 'Tell us about your motivation and what you hope to achieve...'
+        'Technical': 'Tell us about your projects or what you want to research...',
+        'Creative': 'Share your design style or portfolio links...',
+        'Management': 'Describe your interest in finance or documentation...',
+        'Human Resources': 'How would you help manage member engagement?',
+        'Event Operations': 'What makes you good at on-ground execution?',
+        'Outreach & Partnerships': 'How would you connect us with industry partners?',
+        'default': 'Tell us about your motivation...'
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -788,9 +789,10 @@ const Apply = () => {
                                                     <SelectContent>
                                                         <SelectItem value="Technical">Technical</SelectItem>
                                                         <SelectItem value="Management">Management</SelectItem>
-                                                        <SelectItem value="Design & Content">Design & Content</SelectItem>
-                                                        <SelectItem value="Visual Media">Visual Media</SelectItem>
-                                                        <SelectItem value="Outreach & Sponsorship">Outreach & Sponsorship</SelectItem>
+                                                        <SelectItem value="Creative">Creative</SelectItem>
+                                                        <SelectItem value="Outreach & Partnerships">Outreach & Partnerships</SelectItem>
+                                                        <SelectItem value="Human Resources">Human Resources</SelectItem>
+                                                        <SelectItem value="Event Operations">Event Operations</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             </div>
@@ -895,9 +897,10 @@ const Apply = () => {
                                                     <SelectContent>
                                                         <SelectItem value="Technical" disabled={formData.primaryDept === 'Technical'}>Technical</SelectItem>
                                                         <SelectItem value="Management" disabled={formData.primaryDept === 'Management'}>Management</SelectItem>
-                                                        <SelectItem value="Design & Content" disabled={formData.primaryDept === 'Design & Content'}>Design & Content</SelectItem>
-                                                        <SelectItem value="Visual Media" disabled={formData.primaryDept === 'Visual Media'}>Visual Media</SelectItem>
-                                                        <SelectItem value="Outreach & Sponsorship" disabled={formData.primaryDept === 'Outreach & Sponsorship'}>Outreach & Sponsorship</SelectItem>
+                                                        <SelectItem value="Creative" disabled={formData.primaryDept === 'Creative'}>Creative</SelectItem>
+                                                        <SelectItem value="Outreach & Partnerships" disabled={formData.primaryDept === 'Outreach & Partnerships'}>Outreach & Partnerships</SelectItem>
+                                                        <SelectItem value="Human Resources" disabled={formData.primaryDept === 'Human Resources'}>Human Resources</SelectItem>
+                                                        <SelectItem value="Event Operations" disabled={formData.primaryDept === 'Event Operations'}>Event Operations</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                                 {formData.primaryDept && (

@@ -23,44 +23,44 @@ interface Domain {
 const domains: Domain[] = [
   {
     id: '01',
-    title: 'Analog IC Design',
-    description: 'High-performance analog circuits including amplifiers, oscillators, and precision voltage regulators.',
+    title: 'Technical',
+    description: 'Specializing in Projects, Research, and Web Development to push the boundaries of SSCS innovation.',
     icon: Cpu,
-    color: 'from-red-500/20 to-orange-500/20'
-  },
-  {
-    id: '02',
-    title: 'Digital VLSI Design',
-    description: 'Complex digital systems using Verilog/VHDL with advanced synthesis and physical design flows.',
-    icon: Microchip,
     color: 'from-blue-500/20 to-cyan-500/20'
   },
   {
+    id: '02',
+    title: 'Management',
+    description: 'Handling Finance, Internal Coordination, and Documentation to ensure seamless club operations.',
+    icon: Box,
+    color: 'from-emerald-500/20 to-teal-500/20'
+  },
+  {
     id: '03',
-    title: 'Mixed-Signal Circuits',
-    description: 'Bridging the gap between analog and digital worlds with ADCs, DACs, and high-speed PLLs.',
+    title: 'Creative',
+    description: 'Driving Design, Social Media, and Content creation to build a powerful brand presence.',
     icon: Activity,
     color: 'from-purple-500/20 to-pink-500/20'
   },
   {
     id: '04',
-    title: 'RF Design',
-    description: 'Radio frequency circuits for wireless communication, radar, and ultra-high-speed sensing.',
+    title: 'Outreach & Partnerships',
+    description: 'Managing Industry Relations, Speaker Acquisition, and Sponsorships to expand our ecosystem.',
     icon: Wifi,
-    color: 'from-amber-500/20 to-red-500/20'
+    color: 'from-amber-500/20 to-orange-500/20'
   },
   {
     id: '05',
-    title: 'Hardware Security',
-    description: 'Secure circuit architectures to protect against physical attacks and side-channel leakage.',
+    title: 'Human Resources',
+    description: 'Focused on Recruitment, Member Engagement, and Conflict Resolution for a thriving community.',
     icon: Shield,
-    color: 'from-emerald-500/20 to-teal-500/20'
+    color: 'from-red-500/20 to-rose-500/20'
   },
   {
     id: '06',
-    title: 'Memory Design',
-    description: 'Innovation in SRAM, DRAM, and next-generation non-volatile memory technologies.',
-    icon: Box,
+    title: 'Event Operations',
+    description: 'Planning and executing world-class events through on-ground operations and strategic execution.',
+    icon: Microchip,
     color: 'from-indigo-500/20 to-blue-500/20'
   },
 ];
