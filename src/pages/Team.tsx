@@ -46,6 +46,34 @@ const coreTeam = [
   }
 ];
 
+const leads = [
+  {
+    name: 'Shivaranjani',
+    role: 'Technical Lead',
+    quote: "Life's a circuit—I'm still meeting setup and hold."
+  },
+  {
+    name: 'Harshan',
+    role: 'Technical Lead',
+    quote: 'Observe. Plan. Execute.'
+  },
+  {
+    name: 'Ilangkumaran',
+    role: 'Operations Lead',
+    quote: "Big ideas don't need noise, they need action."
+  },
+  {
+    name: 'Sibhi S',
+    role: 'Operations Lead',
+    quote: 'Anbe Shivam'
+  },
+  {
+    name: 'Neyalakshmi',
+    role: 'Editorial Lead',
+    quote: 'PEACE!'
+  }
+];
+
 const Team = () => {
     return (
         <div className="min-h-screen relative text-foreground bg-[#050505] overflow-hidden">
@@ -149,6 +177,53 @@ const Team = () => {
                                             {member.role}
                                         </span>
                                         <h2 className="font-heading text-xl font-bold text-white mb-3">
+                                            {member.name}
+                                        </h2>
+                                        <p className="text-xs italic text-muted-foreground leading-relaxed">
+                                            "{member.quote}"
+                                        </p>
+                                    </div>
+                                </HolographicCard>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    {/* Leads Section */}
+                    <div className="text-center mt-24 mb-16">
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="mb-4"
+                        >
+                            <span className="text-[10px] text-primary tracking-[0.4em] uppercase font-bold px-4 py-1 rounded-full border border-primary/20 bg-primary/5">
+                                Expertise
+                            </span>
+                        </motion.div>
+                        <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight">
+                            <RevealText text="Leads" />
+                        </h1>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-24">
+                        {leads.map((member, index) => (
+                            <motion.div
+                                key={member.name}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: index * 0.1 }}
+                            >
+                                <HolographicCard className="p-6 text-center h-full flex flex-col items-center">
+                                    <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-6 text-primary/30 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors">
+                                        <User className="w-6 h-6" />
+                                    </div>
+
+                                    <div className="mb-4 flex-1">
+                                        <span className="inline-block text-[10px] text-primary font-bold tracking-[0.2em] uppercase mb-2">
+                                            {member.role}
+                                        </span>
+                                        <h2 className="font-heading text-lg font-bold text-white mb-3">
                                             {member.name}
                                         </h2>
                                         <p className="text-xs italic text-muted-foreground leading-relaxed">
