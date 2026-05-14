@@ -34,7 +34,7 @@ function App() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <CustomCursor />
+            {/* <CustomCursor /> */}
             <Router>
               <Routes>
                 <Route path="/" element={<Index />} />

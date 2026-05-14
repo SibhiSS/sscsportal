@@ -70,13 +70,6 @@
     caret-color: transparent;
   }
 
-  /* Hide default cursor on desktop to use custom cursor */
-  @media (pointer: fine) {
-    body, a, button, [role="button"], input, textarea {
-      cursor: none !important;
-    }
-  }
-
   input, textarea, [contenteditable="true"] {
     caret-color: auto;
   }

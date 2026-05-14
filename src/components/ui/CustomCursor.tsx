@@ -1,10 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, useSpring, useMotionValue, useTransform } from 'framer-motion';
 
 const CustomCursor = () => {
     const [isHovering, setIsHovering] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
-    const cursorRef = useRef<HTMLDivElement>(null);
 
     // Primary mouse position
     const mouseX = useMotionValue(-100);
@@ -42,14 +41,37 @@ const CustomCursor = () => {
         };
     }, [isVisible]);
 
+    // Construct the path string using a transform
+    const pathData = useTransform(
+        [mouseX, mouseY, trailX, trailY],
+        ([mx, my, tx, ty]) => {
+            const dx = (mx as number) - (tx as number);
+            const dy = (my as number) - (ty as number);
+            const absDx = Math.abs(dx);
+            const absDy = Math.abs(dy);
+            
+            let cornerX = tx as number;
+            let cornerY = ty as number;
+            
+            if (absDx > absDy) {
+                cornerX = (mx as number) - ((dy as number) > 0 ? absDy : -absDy);
+                cornerY = my as number;
+            } else {
+                cornerX = mx as number;
+                cornerY = (my as number) - ((dx as number) > 0 ? absDx : -absDx);
+            }
+
+            return `M ${tx} ${ty} L ${cornerX} ${cornerY} L ${mx} ${my}`;
+        }
+    );
+
     if (!isVisible) return null;
 
     return (
         <div className="pointer-events-none fixed inset-0 z-[9999] hidden lg:block overflow-hidden">
-            {/* The SVG Trace Layer */}
             <svg className="absolute inset-0 h-full w-full">
                 <defs>
-                    <filter id="glow">
+                    <filter id="cursorGlow">
                         <feGaussianBlur stdDeviation="2" result="coloredBlur" />
                         <feMerge>
                             <feMergeNode in="coloredBlur" />
@@ -63,42 +85,17 @@ const CustomCursor = () => {
                     </linearGradient>
                 </defs>
                 
-                {/* Dynamic PCB Trace Line */}
                 <motion.path
-                    d={useTransform(
-                        [mouseX, mouseY, trailX, trailY],
-                        ([mx, my, tx, ty]) => {
-                            // Calculate a 45-degree "routing" path
-                            const dx = mx - tx;
-                            const dy = my - ty;
-                            const absDx = Math.abs(dx);
-                            const absDy = Math.abs(dy);
-                            
-                            // Determine the corner point for PCB-style routing
-                            let cornerX = tx;
-                            let cornerY = ty;
-                            
-                            if (absDx > absDy) {
-                                cornerX = mx - (dy > 0 ? absDy : -absDy);
-                                cornerY = my;
-                            } else {
-                                cornerX = mx;
-                                cornerY = my - (dx > 0 ? absDx : -absDx);
-                            }
-
-                            return `M ${tx} ${ty} L ${cornerX} ${cornerY} L ${mx} ${my}`;
-                        }
-                    )}
+                    d={pathData}
                     fill="none"
                     stroke="url(#traceGradient)"
                     strokeWidth={isHovering ? "2" : "1.5"}
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    filter="url(#glow)"
+                    filter="url(#cursorGlow)"
                 />
             </svg>
 
-            {/* Terminal Via (The Connection Dot) */}
             <motion.div
                 style={{
                     x: trailX,
@@ -111,7 +108,6 @@ const CustomCursor = () => {
                 <div className="absolute inset-0.5 bg-primary/20" />
             </motion.div>
 
-            {/* Active Node (The Mouse Dot) */}
             <motion.div
                 style={{
                     x: mouseX,
@@ -124,12 +120,9 @@ const CustomCursor = () => {
                 }}
                 className="absolute flex items-center justify-center"
             >
-                {/* Outer Ring */}
                 <div className="absolute h-4 w-4 rounded-full border border-white/20" />
-                {/* Inner Precise Dot */}
                 <div className="h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,1)]" />
                 
-                {/* Coordinate Markers (PCB Grid style) */}
                 {isHovering && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0 }}
@@ -141,21 +134,6 @@ const CustomCursor = () => {
                     </motion.div>
                 )}
             </motion.div>
-
-            {/* Scanning Grid (Optional subtle pulse) */}
-            <motion.div
-                style={{
-                    x: mouseX,
-                    y: mouseY,
-                    translateX: '-50%',
-                    translateY: '-50%',
-                }}
-                animate={{
-                    opacity: isHovering ? 0.3 : 0,
-                    scale: isHovering ? 1.5 : 1
-                }}
-                className="absolute h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(220,20,60,0.15)_0%,transparent_70%)]"
-            />
         </div>
     );
 };
