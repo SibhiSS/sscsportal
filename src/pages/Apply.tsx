@@ -303,8 +303,9 @@ const Apply = () => {
                                 <!-- Top Accent Bar -->
                                 <div style="height: 4px; background: linear-gradient(90deg, #7c3aed, #FFE100);"></div>
 
-                                <div style="background-color: #000000; padding: 45px 20px; text-align: center; border-bottom: 1px solid #1a1a1a;">
-                                    <img src="https://sscsportal.vercel.app/ieee-sscs-logo.png" alt="IEEE SSCS Logo" style="height: 100px; width: auto; display: block; margin: 0 auto;">
+                                <!-- Header Section -->
+                                <div style="background-color: #000000; padding: 30px 20px; text-align: center; border-bottom: 1px solid #1a1a1a;">
+                                    <h1 style="color: #FFE100; font-family: 'Orbitron', sans-serif; margin: 0; text-transform: uppercase; letter-spacing: 4px; font-size: 18px;">IEEE SSCS</h1>
                                 </div>
 
                                 <div style="padding: 40px 35px;">
