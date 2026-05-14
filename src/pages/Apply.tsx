@@ -65,6 +65,28 @@ const Apply = () => {
         if (user) {
             setCheckingStatus(true);
             checkApplicationStatus();
+
+            // Auto-parse Name and Registration Number from VIT Google Login
+            const rawName = user.displayName || '';
+            const regMatch = rawName.match(/(\d{2}[A-Z]{3}\d{4})/i);
+            
+            if (regMatch) {
+                const regNo = regMatch[1].toUpperCase();
+                const cleanName = rawName.replace(regMatch[0], '').trim();
+                
+                setFormData(prev => ({
+                    ...prev,
+                    fullName: cleanName,
+                    rollNumber: regNo
+                }));
+
+                // Trigger validation for the parsed registration number
+                const validation = validateRegistrationNumber(regNo);
+                setRegValidation(validation);
+                setRegError(validation.isValid ? null : (validation.error || 'Invalid Registration Number'));
+            } else {
+                setFormData(prev => ({ ...prev, fullName: rawName }));
+            }
         } else {
             setCheckingStatus(false);
             setExistingApp(null);
@@ -713,26 +735,24 @@ const Apply = () => {
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium text-muted-foreground">Full Name</label>
                                                     <input
-                                                        required
+                                                        disabled
                                                         type="text"
                                                         name="fullName"
                                                         value={formData.fullName}
-                                                        onChange={handleInputChange}
-                                                        className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
+                                                        className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all cursor-not-allowed opacity-70"
                                                         placeholder=""
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium text-muted-foreground">Registration Number</label>
                                                     <input
-                                                        required
+                                                        disabled
                                                         type="text"
                                                         name="rollNumber"
                                                         value={formData.rollNumber}
-                                                        onChange={handleInputChange}
-                                                        className={`w-full bg-background/50 border rounded-lg px-4 py-3 focus:ring-1 outline-none transition-all ${regError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/50' :
-                                                            regValidation?.isValid ? 'border-green-500/50 focus:border-green-500 focus:ring-green-500/50' :
-                                                                'border-white/10 focus:border-primary/50 focus:ring-primary/50'
+                                                        className={`w-full bg-background/50 border rounded-lg px-4 py-3 outline-none transition-all cursor-not-allowed opacity-70 ${regError ? 'border-red-500' :
+                                                            regValidation?.isValid ? 'border-green-500/50' :
+                                                                'border-white/10'
                                                             }`}
                                                         placeholder="e.g. 24BPS1104"
                                                     />
