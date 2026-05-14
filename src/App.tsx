@@ -19,6 +19,8 @@ import StartupPreloader from '@/components/ui/StartupPreloader';
 
 import CustomCursor from '@/components/ui/CustomCursor';
 
+import { Analytics } from '@vercel/analytics/react';
+
 function App() {
   const [showPreloader, setShowPreloader] = useState(true);
 
@@ -35,6 +37,7 @@ function App() {
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
             <CustomCursor />
+            <Analytics />
             <Router>
               <Routes>
                 <Route path="/" element={<Index />} />
