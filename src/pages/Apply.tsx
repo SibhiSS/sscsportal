@@ -295,7 +295,7 @@ const Apply = () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         email: user.email,
-                        subject: "Application Received - IEEE SSCS",
+                        subject: "Transmission Logged - IEEE SSCS",
                         message: `
                             <div style="font-family: 'Raleway', sans-serif; background-color: #050505; color: #e5e5e5; max-width: 600px; margin: 0 auto; border: 1px solid #1a1a1a; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
                                 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Raleway:wght@400;600&display=swap" rel="stylesheet">
@@ -309,7 +309,7 @@ const Apply = () => {
                                 </div>
 
                                 <div style="padding: 40px 35px;">
-                                    <h2 style="color: #FFE100; font-family: 'Syne', sans-serif; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 20px; font-weight: 800;">Transmission Received</h2>
+                                    <h2 style="color: #FFE100; font-family: 'Syne', sans-serif; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 20px; font-weight: 800;">Transmission Logged</h2>
                                     <p style="font-size: 15px; line-height: 1.6;">Greetings <strong>${formData.fullName}</strong>,</p>
                                     <p style="font-size: 15px; line-height: 1.6;">Your application to join the **IEEE Solid-State Circuits Society (SSCS)** has been successfully logged into our systems.</p>
                                     
