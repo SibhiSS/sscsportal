@@ -142,7 +142,7 @@ const Team = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-0 bg-primary/20 pointer-events-none blur-[100px]"
+                        className="fixed inset-0 z-20 bg-primary/20 pointer-events-none blur-[100px]"
                     >
                         <motion.div 
                             animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
@@ -310,12 +310,12 @@ const Team = () => {
                                 >
                                     <HolographicCard 
                                         className={`p-6 text-center h-full flex flex-col items-center cursor-pointer transition-all duration-500 ${isSibhi && isSibhiMode ? 'border-primary shadow-[0_0_30px_rgba(220,20,60,0.3)]' : ''}`}
+                                        onClick={() => isSibhi && setClicks(c => c + 1)}
+                                        onMouseEnter={() => isSibhi && setIsHoveringSibhi(true)}
+                                        onMouseLeave={() => isSibhi && setIsHoveringSibhi(false)}
                                     >
                                         <div 
                                             className="w-20 h-20 rounded-2xl bg-white/5 grid place-items-center mb-6 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors mx-auto"
-                                            onClick={() => isSibhi && setClicks(c => c + 1)}
-                                            onMouseEnter={() => isSibhi && setIsHoveringSibhi(true)}
-                                            onMouseLeave={() => isSibhi && setIsHoveringSibhi(false)}
                                         >
                                             <img 
                                                 src={member.image} 
