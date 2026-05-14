@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const validateAndSetUser = async (session: any) => {
       if (session?.user) {
         const email = session.user.email;
-        const isHardcodedAdmin = email === 'sibhi.s2024@vitstudent.ac.in';
+        const isHardcodedAdmin = email === 'sibhis5223@gmail.com';
         const isVitStudent = email?.endsWith('@vitstudent.ac.in');
         const isVitStaff = email?.endsWith('@vit.ac.in');
 

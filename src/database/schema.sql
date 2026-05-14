@@ -29,14 +29,47 @@ INSERT INTO public.admins (email, role) VALUES
 ('tspradeepkumar@vit.ac.in', 'viewer')
 ON CONFLICT (email) DO NOTHING;
 
--- 3. Audit Logs (Security)
-CREATE TABLE public.audit_logs (
+-- 3. Audit Logs (Security Tracking)
+CREATE TABLE IF NOT EXISTS public.audit_logs (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   actor_email TEXT NOT NULL,
-  action TEXT NOT NULL, -- e.g., 'UPDATE_STATUS', 'DELETE_APP', 'PUBLISH_RESULTS'
-  target_id TEXT, -- ID of the application or entity affected
-  details JSONB, -- Previous value, New value, etc.
+  action TEXT NOT NULL,
+  target_id TEXT,
+  details JSONB,
   timestamp TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 4. Interview Slots (Booking Engine)
+CREATE TABLE IF NOT EXISTS public.interview_slots (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  panel_id INTEGER NOT NULL,
+  start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  is_booked BOOLEAN DEFAULT false,
+  booked_by UUID REFERENCES public.applications(id) ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 5. Panel Assignments (Admin Allocation)
+CREATE TABLE IF NOT EXISTS public.panel_assignments (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  panel_id INTEGER NOT NULL,
+  date DATE NOT NULL,
+  interviewer_email TEXT NOT NULL,
+  meeting_link TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(panel_id, date, interviewer_email)
+);
+
+-- 6. Interview Feedback (Evaluation)
+CREATE TABLE IF NOT EXISTS public.interview_feedback (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  application_id UUID REFERENCES public.applications(id) ON DELETE CASCADE,
+  interviewer_email TEXT NOT NULL,
+  score INTEGER CHECK (score >= 0 AND score <= 10),
+  comments TEXT,
+  recommends_committee BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(application_id, interviewer_email)
 );
 
 -- 4. Interviews (Scheduler)
@@ -53,20 +86,23 @@ CREATE TABLE public.interviews (
 );
 
 -- Add indexes for performance
-CREATE INDEX idx_audit_logs_timestamp ON public.audit_logs(timestamp DESC);
-CREATE INDEX idx_interviews_start_time ON public.interviews(start_time);
-CREATE INDEX idx_interviews_interviewer ON public.interviews(interviewer_email);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON public.audit_logs(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_interview_slots_start ON public.interview_slots(start_time);
+CREATE INDEX IF NOT EXISTS idx_panel_assignments_date ON public.panel_assignments(date);
+CREATE INDEX IF NOT EXISTS idx_feedback_app_id ON public.interview_feedback(application_id);
 
--- Enable RLS (Row Level Security) - recommended
+-- Enable RLS (Row Level Security)
 ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.interviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.interview_slots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.panel_assignments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.interview_feedback ENABLE ROW LEVEL SECURITY;
 
--- Simple Policies (OPEN FOR NOW - YOU SHOULD LOCK THIS DOWN IN PROD)
--- Allow read/write for now to make development easy. 
--- In production, you would check "auth.email() IN (SELECT email FROM admins)"
+-- Simple Policies (OPEN FOR DEVELOPMENT)
 CREATE POLICY "Allow All Access" ON public.app_settings FOR ALL USING (true);
 CREATE POLICY "Allow All Access" ON public.admins FOR ALL USING (true);
 CREATE POLICY "Allow All Access" ON public.audit_logs FOR ALL USING (true);
-CREATE POLICY "Allow All Access" ON public.interviews FOR ALL USING (true);
+CREATE POLICY "Allow All Access" ON public.interview_slots FOR ALL USING (true);
+CREATE POLICY "Allow All Access" ON public.panel_assignments FOR ALL USING (true);
+CREATE POLICY "Allow All Access" ON public.interview_feedback FOR ALL USING (true);
