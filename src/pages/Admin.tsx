@@ -27,6 +27,10 @@ import AdminSettings from '@/components/admin/AdminSettings';
 import AuditLogViewer from '@/components/admin/AuditLogViewer';
 import InterviewScheduler from '@/components/admin/InterviewScheduler';
 import { logAction } from '@/services/auditService';
+import CircuitBoardBackground from '@/components/ui/CircuitBoardBackground';
+import { ArrowLeft, LayoutDashboard, Calendar, History, Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 // EMAILJS CONFIGURATION - PLEASE REPLACE WITH YOUR ACTUAL CREDENTIALS
 const EMAILJS_SERVICE_ID = "service_32a77yo";
@@ -432,161 +436,240 @@ const Admin = () => {
     }
 
     return (
-        <div className="min-h-screen bg-black text-foreground p-6 md:p-12 font-sans">
-            <div className="max-w-7xl mx-auto space-y-8">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold font-heading text-primary bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-500">
-                            Admin Dashboard
-                        </h1>
-                        <p className="text-muted-foreground">Managing {applications.length} applications</p>
-                    </div>
-                </div>
+        <div className="min-h-screen bg-black text-foreground relative overflow-hidden">
+            <CircuitBoardBackground />
+            
+            <div className="relative z-10 p-6 md:p-12">
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="max-w-7xl mx-auto space-y-8"
+                >
+                    {/* Header with Breadcrumb */}
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        <div className="space-y-4">
+                            <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-all px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl group text-xs tracking-widest uppercase">
+                                <ArrowLeft className="w-3 h-3 mr-2 transition-transform group-hover:-translate-x-1" />
+                                Portal Home
+                            </Link>
+                            <div>
+                                <h1 className="text-4xl md:text-5xl font-bold font-heading tracking-tight mb-2">
+                                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-primary to-primary/50">
+                                        Admin Dashboard
+                                    </span>
+                                </h1>
+                                <p className="text-muted-foreground flex items-center gap-2">
+                                    <LayoutDashboard className="w-4 h-4 text-primary/50" />
+                                    Recruitment Intelligence • {applications.length} Applicants
+                                </p>
+                            </div>
+                        </div>
 
-                <Tabs defaultValue="dashboard" className="w-full">
-                    <div className="flex justify-between items-center mb-6">
-                        <TabsList className="bg-white/5 border border-white/10">
-                            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                            {isAdmin && (
-                                <>
-                                    <TabsTrigger value="interviews">Interviews</TabsTrigger>
-                                    <TabsTrigger value="activity">Activity Log</TabsTrigger>
-                                    <TabsTrigger value="settings">Settings</TabsTrigger>
-                                </>
-                            )}
-                        </TabsList>
-                        <div className={`flex items-center gap-2 text-sm px-3 py-1 rounded-full border ${isSuperAdmin ? 'text-yellow-500/80 bg-yellow-500/10 border-yellow-500/20' : 'text-blue-500/80 bg-blue-500/10 border-blue-500/20'}`}>
-                            <div className={`w-2 h-2 rounded-full animate-pulse ${isSuperAdmin ? 'bg-yellow-500' : 'bg-blue-500'}`}></div>
-                            {isSuperAdmin ? 'Super Admin Mode' : 'Interviewer Mode'} ({currentPhase.replace('_', ' ')})
+                        <div className={`flex items-center gap-3 px-4 py-2 rounded-2xl border backdrop-blur-xl shadow-lg transition-all duration-500 ${isSuperAdmin ? 'text-primary bg-primary/10 border-primary/20 shadow-primary/5' : 'text-blue-500 bg-blue-500/10 border-blue-500/20 shadow-blue-500/5'}`}>
+                            <div className={`w-2.5 h-2.5 rounded-full animate-pulse shadow-[0_0_8px_currentColor] ${isSuperAdmin ? 'bg-primary' : 'bg-blue-500'}`}></div>
+                            <span className="text-xs font-bold tracking-widest uppercase">
+                                {isSuperAdmin ? 'Super Admin Mode' : 'Interviewer Mode'}
+                            </span>
+                            <span className="text-[10px] opacity-50 font-mono px-2 py-0.5 rounded-md bg-white/10 ml-1">
+                                {currentPhase.replace('_', ' ')}
+                            </span>
                         </div>
                     </div>
 
-                    <TabsContent value="dashboard" className="space-y-8">
-                        {/* Step 1: Analytics Check */}
-                        {isAdmin && <AdminStats applications={applications} />}
+                    <Tabs defaultValue="dashboard" className="w-full">
+                        <div className="flex justify-between items-center mb-10 overflow-x-auto pb-2 scrollbar-hide">
+                            <TabsList className="bg-white/5 border border-white/10 p-1 h-auto backdrop-blur-xl rounded-2xl">
+                                <TabsTrigger 
+                                    value="dashboard" 
+                                    className="px-6 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all text-xs font-bold tracking-wider"
+                                >
+                                    <LayoutDashboard className="w-4 h-4 mr-2" />
+                                    DASHBOARD
+                                </TabsTrigger>
+                                {isAdmin && (
+                                    <>
+                                        <TabsTrigger 
+                                            value="interviews" 
+                                            className="px-6 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all text-xs font-bold tracking-wider"
+                                        >
+                                            <Calendar className="w-4 h-4 mr-2" />
+                                            INTERVIEWS
+                                        </TabsTrigger>
+                                        <TabsTrigger 
+                                            value="activity" 
+                                            className="px-6 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all text-xs font-bold tracking-wider"
+                                        >
+                                            <History className="w-4 h-4 mr-2" />
+                                            ACTIVITY LOG
+                                        </TabsTrigger>
+                                        <TabsTrigger 
+                                            value="settings" 
+                                            className="px-6 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all text-xs font-bold tracking-wider"
+                                        >
+                                            <Settings className="w-4 h-4 mr-2" />
+                                            SETTINGS
+                                        </TabsTrigger>
+                                    </>
+                                )}
+                            </TabsList>
+                        </div>
 
-                        {/* Step 2: Advanced Filtering & Sorting */}
-                        <AdminToolbar
-                            applications={applications}
-                            searchTerm={searchTerm}
-                            onSearchChange={setSearchTerm}
-                            deptFilter={deptFilter}
-                            onDeptFilterChange={setDeptFilter}
-                            statusFilter={statusFilter}
-                            onStatusFilterChange={setStatusFilter}
-                            programFilter={programFilter}
-                            onProgramFilterChange={setProgramFilter}
-                            yearFilter={yearFilter}
-                            onYearFilterChange={setYearFilter}
-                            isPublishing={isPublishing}
-                            onPublish={publishResults}
-                            onExport={downloadExcel}
-                            canPublish={isSuperAdmin}
-                        />
+                        <TabsContent value="dashboard" className="space-y-12 outline-none">
+                            {/* Step 1: Analytics Check */}
+                            {isAdmin && <AdminStats applications={applications} />}
 
-                        {/* Main Table */}
-                        <HolographicCard className="p-0 overflow-hidden">
-                            <div className="max-h-[70vh] overflow-auto">
-                                <Table>
-                                    <TableHeader className="bg-white/5 sticky top-0 z-10 backdrop-blur-md">
-                                        <TableRow className="hover:bg-white/5 border-white/10">
-                                            <TableHead onClick={() => requestSort('fullName')} className="cursor-pointer hover:text-white transition-colors">
-                                                <div className="flex items-center gap-2">Name <ArrowUpDown className="w-3 h-3" /></div>
-                                            </TableHead>
-                                            <TableHead className="text-primary">Dept</TableHead>
-                                            <TableHead onClick={() => requestSort('primaryDept')} className="cursor-pointer hover:text-white transition-colors">
-                                                <div className="flex items-center gap-2">Choice 1 <ArrowUpDown className="w-3 h-3" /></div>
-                                            </TableHead>
-                                            <TableHead onClick={() => requestSort('rating')} className="cursor-pointer hover:text-white transition-colors">
-                                                <div className="flex items-center gap-2">Rating <ArrowUpDown className="w-3 h-3" /></div>
-                                            </TableHead>
-                                            <TableHead onClick={() => requestSort('status')} className="cursor-pointer hover:text-white transition-colors text-center">
-                                                <div className="flex items-center justify-center gap-2">Status <ArrowUpDown className="w-3 h-3" /></div>
-                                            </TableHead>
-                                            <TableHead className="text-primary text-right">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {isLoading ? (
-                                            <TableRow>
-                                                <TableCell colSpan={6} className="h-32 text-center">
-                                                    <LogoSpinner size="sm" className="mx-auto" />
-                                                </TableCell>
-                                            </TableRow>
-                                        ) : sortedApps.length === 0 ? (
-                                            <TableRow>
-                                                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
-                                                    No applications found matching your criteria.
-                                                </TableCell>
-                                            </TableRow>
-                                        ) : (
-                                            sortedApps.map((app) => (
-                                                <TableRow key={app.id} className="hover:bg-white/5 border-white/10 transition-colors cursor-pointer group" onClick={() => setSelectedApp(app)}>
-                                                    <TableCell>
-                                                        <div className="font-medium text-white group-hover:text-primary transition-colors">{app.fullName}</div>
-                                                        <div className="text-xs text-muted-foreground">{app.rollNumber}</div>
-                                                        {app.programName && (
-                                                            <div className="text-[10px] text-primary/70 uppercase tracking-wider">{app.programCode} • {app.batch}</div>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="text-sm">{app.department}</div>
-                                                        <div className="text-xs text-muted-foreground">Year {app.year}</div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary">
-                                                            {app.primaryDept}
-                                                        </Badge>
-                                                        <div className="text-xs text-muted-foreground mt-1 truncate max-w-[200px]">
-                                                            {app.domains.join(', ')}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex">
-                                                            {[1, 2, 3, 4, 5].map((star) => (
-                                                                <Star
-                                                                    key={star}
-                                                                    className={`w-4 h-4 ${star <= (app.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-700'}`}
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        <Badge variant="outline" className={`capitalize ${getStatusColor(app.status)}`}>
-                                                            {app.status === 'rejected_pending' ? 'To Reject' : app.status === 'shortlisted' ? 'Shortlisted' : app.status}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); setSelectedApp(app); }}>
-                                                            <Eye className="w-4 h-4" />
-                                                        </Button>
-                                                    </TableCell>
+                            {/* Step 2: Advanced Filtering & Sorting */}
+                            <div className="space-y-6">
+                                <AdminToolbar
+                                    applications={applications}
+                                    searchTerm={searchTerm}
+                                    onSearchChange={setSearchTerm}
+                                    deptFilter={deptFilter}
+                                    onDeptFilterChange={setDeptFilter}
+                                    statusFilter={statusFilter}
+                                    onStatusFilterChange={setStatusFilter}
+                                    programFilter={programFilter}
+                                    onProgramFilterChange={setProgramFilter}
+                                    yearFilter={yearFilter}
+                                    onYearFilterChange={setYearFilter}
+                                    isPublishing={isPublishing}
+                                    onPublish={publishResults}
+                                    onExport={downloadExcel}
+                                    canPublish={isSuperAdmin}
+                                />
+
+                                {/* Main Table */}
+                                <HolographicCard className="p-0 border-white/5 overflow-hidden shadow-2xl">
+                                    <div className="max-h-[70vh] overflow-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+                                        <Table>
+                                            <TableHeader className="bg-white/5 sticky top-0 z-10 backdrop-blur-2xl border-b border-white/10">
+                                                <TableRow className="hover:bg-transparent border-white/10">
+                                                    <TableHead onClick={() => requestSort('fullName')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
+                                                        <div className="flex items-center gap-2">Name <ArrowUpDown className="w-3 h-3" /></div>
+                                                    </TableHead>
+                                                    <TableHead className="text-[10px] font-bold tracking-[0.2em] uppercase py-5 text-primary/70">Dept</TableHead>
+                                                    <TableHead onClick={() => requestSort('primaryDept')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
+                                                        <div className="flex items-center gap-2">Choice 1 <ArrowUpDown className="w-3 h-3" /></div>
+                                                    </TableHead>
+                                                    <TableHead onClick={() => requestSort('rating')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
+                                                        <div className="flex items-center gap-2">Rating <ArrowUpDown className="w-3 h-3" /></div>
+                                                    </TableHead>
+                                                    <TableHead onClick={() => requestSort('status')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5 text-center">
+                                                        <div className="flex items-center justify-center gap-2">Status <ArrowUpDown className="w-3 h-3" /></div>
+                                                    </TableHead>
+                                                    <TableHead className="text-[10px] font-bold tracking-[0.2em] uppercase py-5 text-right pr-8">Actions</TableHead>
                                                 </TableRow>
-                                            ))
-                                        )}
-                                    </TableBody>
-                                </Table>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {isLoading ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={6} className="h-64 text-center">
+                                                            <LogoSpinner size="md" className="mx-auto" />
+                                                            <p className="text-xs tracking-widest text-muted-foreground mt-4 uppercase animate-pulse">Syncing Database...</p>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ) : sortedApps.length === 0 ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={6} className="h-64 text-center">
+                                                            <div className="max-w-xs mx-auto space-y-3">
+                                                                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-4">
+                                                                    <LayoutDashboard className="w-6 h-6 text-muted-foreground" />
+                                                                </div>
+                                                                <p className="text-sm font-medium text-white">No matches found</p>
+                                                                <p className="text-xs text-muted-foreground">Try adjusting your filters or search terms.</p>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ) : (
+                                                    sortedApps.map((app) => (
+                                                        <TableRow 
+                                                            key={app.id} 
+                                                            className="hover:bg-white/5 border-white/5 transition-all cursor-pointer group/row" 
+                                                            onClick={() => setSelectedApp(app)}
+                                                        >
+                                                            <TableCell className="py-6 pl-8">
+                                                                <div className="font-heading text-sm text-white group-hover/row:text-primary transition-colors duration-300">{app.fullName}</div>
+                                                                <div className="text-[10px] text-muted-foreground font-mono mt-0.5 tracking-tighter opacity-70">{app.rollNumber}</div>
+                                                                {app.programName && (
+                                                                    <div className="flex items-center gap-1.5 mt-2">
+                                                                        <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-white/5 border border-white/10 text-muted-foreground font-bold tracking-wider uppercase">{app.programCode}</span>
+                                                                        <span className="text-[9px] text-primary/50 font-bold tracking-widest uppercase">Batch {app.batch}</span>
+                                                                    </div>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="text-xs font-medium text-zinc-400">{app.department}</div>
+                                                                <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-widest">Year {app.year}</div>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Badge variant="outline" className="bg-primary/10 border-primary/20 text-primary text-[10px] font-bold tracking-wider rounded-md">
+                                                                    {app.primaryDept}
+                                                                </Badge>
+                                                                <div className="text-[10px] text-muted-foreground mt-2 font-medium truncate max-w-[150px] opacity-60">
+                                                                    {app.domains.join(' • ')}
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex gap-0.5">
+                                                                    {[1, 2, 3, 4, 5].map((star) => (
+                                                                        <Star
+                                                                            key={star}
+                                                                            className={`w-3 h-3 ${star <= (app.rating || 0) ? 'text-primary fill-primary drop-shadow-[0_0_5px_rgba(220,20,60,0.5)]' : 'text-zinc-800'}`}
+                                                                        />
+                                                                    ))}
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell className="text-center">
+                                                                <Badge variant="outline" className={`capitalize text-[9px] font-bold tracking-[0.15em] py-1 px-2.5 rounded-full border-2 ${getStatusColor(app.status)} shadow-lg`}>
+                                                                    {app.status === 'rejected_pending' ? 'To Reject' : app.status === 'shortlisted' ? 'Shortlisted' : app.status}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell className="text-right pr-8">
+                                                                <Button 
+                                                                    size="sm" 
+                                                                    variant="ghost" 
+                                                                    className="w-10 h-10 rounded-xl bg-white/5 hover:bg-primary hover:text-white transition-all duration-300 opacity-0 group-hover/row:opacity-100 group-hover/row:translate-x-0 translate-x-2" 
+                                                                    onClick={(e) => { e.stopPropagation(); setSelectedApp(app); }}
+                                                                >
+                                                                    <Eye className="w-4 h-4" />
+                                                                </Button>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </HolographicCard>
                             </div>
-                        </HolographicCard>
-                    </TabsContent>
+                        </TabsContent>
 
-                    {isAdmin && (
-                        <>
-                            <TabsContent value="interviews">
-                                <InterviewScheduler />
-                            </TabsContent>
+                        {isAdmin && (
+                            <>
+                                <TabsContent value="interviews" className="outline-none">
+                                    <InterviewScheduler />
+                                </TabsContent>
 
-                            <TabsContent value="activity">
-                                <AuditLogViewer />
-                            </TabsContent>
+                                <TabsContent value="activity" className="outline-none">
+                                    <AuditLogViewer />
+                                </TabsContent>
 
-                            <TabsContent value="settings">
-                                <AdminSettings />
-                            </TabsContent>
-                        </>
-                    )}
-                </Tabs>
+                                <TabsContent value="settings" className="outline-none">
+                                    <AdminSettings />
+                                </TabsContent>
+                            </>
+                        )}
+                    </Tabs>
+
+                    {/* Footer Attribution */}
+                    <div className="pt-12 pb-6 border-t border-white/5 flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-[0.3em] font-bold">
+                        <span>IEEE SSCS Portal v2.0.4</span>
+                        <span className="flex items-center gap-2">
+                            <span className="w-1 h-1 rounded-full bg-green-500"></span>
+                            System Operational
+                        </span>
+                    </div>
+                </motion.div>
 
                 {/* Step 6: Refactored Modal (includes Step 5 History) */}
                 <ApplicationModal

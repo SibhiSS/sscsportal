@@ -33,108 +33,150 @@ const AdminStats: React.FC<AdminStatsProps> = ({ applications }) => {
     }, [applications]);
 
     return (
-        <div className="space-y-6 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <HolographicCard className="p-4 flex items-center justify-between border-blue-500/20 bg-blue-500/5">
-                    <div>
-                        <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Total Applications</p>
-                        <h3 className="text-3xl font-bold text-blue-400 mt-1">{stats.total}</h3>
-                    </div>
-                    <Users className="w-8 h-8 text-blue-500/50" />
-                </HolographicCard>
-
-                <HolographicCard className="p-4 flex items-center justify-between border-yellow-500/20 bg-yellow-500/5">
-                    <div>
-                        <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Pending Review</p>
-                        <h3 className="text-3xl font-bold text-yellow-400 mt-1">{stats.pending}</h3>
-                    </div>
-                    <Clock className="w-8 h-8 text-yellow-500/50" />
-                </HolographicCard>
-
-                <HolographicCard className="p-4 flex items-center justify-between border-green-500/20 bg-green-500/5">
-                    <div>
-                        <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Shortlisted</p>
-                        <h3 className="text-3xl font-bold text-green-400 mt-1">{stats.shortlisted}</h3>
-                    </div>
-                    <CheckCircle className="w-8 h-8 text-green-500/50" />
-                </HolographicCard>
-
-                <HolographicCard className="p-4 flex items-start justify-between border-purple-500/20 bg-purple-500/5">
-                    <div className="w-full">
-                        <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider mb-2">Top Departments</p>
-                        <div className="space-y-1">
-                            {stats.topDepts.map(([dept, count]) => (
-                                <div key={dept} className="flex justify-between text-xs">
-                                    <span className="text-purple-300/80 truncate max-w-[120px]">{dept}</span>
-                                    <span className="font-mono text-purple-400">{count}</span>
-                                </div>
-                            ))}
+        <div className="space-y-10 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <HolographicCard className="p-6 border-white/5 bg-white/5">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] mb-1">Applications</p>
+                            <h3 className="text-4xl font-heading font-bold text-white tracking-tighter">{stats.total}</h3>
+                        </div>
+                        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-[0_0_15px_rgba(220,20,60,0.1)]">
+                            <Users className="w-6 h-6 text-primary" />
                         </div>
                     </div>
-                    <BarChart3 className="w-8 h-8 text-purple-500/50 ml-2" />
+                </HolographicCard>
+
+                <HolographicCard className="p-6 border-white/5 bg-white/5">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] mb-1">In Review</p>
+                            <h3 className="text-4xl font-heading font-bold text-yellow-500 tracking-tighter">{stats.pending}</h3>
+                        </div>
+                        <div className="w-12 h-12 rounded-2xl bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
+                            <Clock className="w-6 h-6 text-yellow-500" />
+                        </div>
+                    </div>
+                </HolographicCard>
+
+                <HolographicCard className="p-6 border-white/5 bg-white/5">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] mb-1">Qualified</p>
+                            <h3 className="text-4xl font-heading font-bold text-green-500 tracking-tighter">{stats.shortlisted}</h3>
+                        </div>
+                        <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center border border-green-500/20">
+                            <CheckCircle className="w-6 h-6 text-green-500" />
+                        </div>
+                    </div>
+                </HolographicCard>
+
+                <HolographicCard className="p-6 border-white/5 bg-white/5">
+                    <div className="flex items-start justify-between">
+                        <div className="w-full">
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] mb-3">Leaderboard</p>
+                            <div className="space-y-2">
+                                {stats.topDepts.map(([dept, count]) => (
+                                    <div key={dept} className="flex justify-between text-[10px]">
+                                        <span className="text-zinc-400 font-medium truncate max-w-[120px]">{dept}</span>
+                                        <span className="font-mono text-primary font-bold">{count}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <BarChart3 className="w-6 h-6 text-primary/30 ml-2" />
+                    </div>
                 </HolographicCard>
             </div>
 
             {/* Analytics Row 2 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <HolographicCard className="p-6 border-white/10 bg-white/5">
-                    <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                        <BarChart3 className="w-5 h-5 text-purple-400" />
-                        Recruitment Funnel
-                    </h4>
-                    <div className="space-y-4">
-                        <div className="space-y-1">
-                            <div className="flex justify-between text-sm">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <HolographicCard className="lg:col-span-2 p-8 border-white/5 bg-white/5">
+                    <div className="flex items-center justify-between mb-8">
+                        <h4 className="text-sm font-bold text-white tracking-[0.2em] uppercase flex items-center gap-3">
+                            <div className="w-1 h-4 bg-primary rounded-full"></div>
+                            Conversion Funnel
+                        </h4>
+                        <BarChart3 className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-[10px] font-bold tracking-widest uppercase mb-1">
                                 <span className="text-muted-foreground">Applications Received</span>
                                 <span className="text-white">{stats.total}</span>
                             </div>
-                            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-blue-500" style={{ width: '100%' }}></div>
+                            <div className="h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                <div className="h-full bg-gradient-to-r from-blue-500 to-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.3)]" style={{ width: '100%' }}></div>
                             </div>
                         </div>
 
-                        <div className="space-y-1">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Shortlisted for Interview</span>
-                                <span className="text-white">{stats.shortlisted} ({stats.total > 0 ? Math.round((stats.shortlisted / stats.total) * 100) : 0}%)</span>
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-[10px] font-bold tracking-widest uppercase mb-1">
+                                <span className="text-muted-foreground">Shortlisted</span>
+                                <span className="text-white">{stats.shortlisted} <span className="text-zinc-600 font-normal ml-1">({stats.total > 0 ? Math.round((stats.shortlisted / stats.total) * 100) : 0}%)</span></span>
                             </div>
-                            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-yellow-500" style={{ width: `${stats.total > 0 ? (stats.shortlisted / stats.total) * 100 : 0}%` }}></div>
+                            <div className="h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                <div className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400" style={{ width: `${stats.total > 0 ? (stats.shortlisted / stats.total) * 100 : 0}%` }}></div>
                             </div>
                         </div>
 
-                        <div className="space-y-1">
-                            <div className="flex justify-between text-sm">
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-[10px] font-bold tracking-widest uppercase mb-1">
                                 <span className="text-muted-foreground">Interviews Conducted</span>
-                                <span className="text-white">{stats.interviewed} ({stats.total > 0 ? Math.round((stats.interviewed / stats.total) * 100) : 0}%)</span>
+                                <span className="text-white">{stats.interviewed} <span className="text-zinc-600 font-normal ml-1">({stats.total > 0 ? Math.round((stats.interviewed / stats.total) * 100) : 0}%)</span></span>
                             </div>
-                            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-orange-500" style={{ width: `${stats.total > 0 ? (stats.interviewed / stats.total) * 100 : 0}%` }}></div>
+                            <div className="h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                <div className="h-full bg-gradient-to-r from-primary to-accent" style={{ width: `${stats.total > 0 ? (stats.interviewed / stats.total) * 100 : 0}%` }}></div>
                             </div>
                         </div>
 
-                        <div className="space-y-1">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Selected</span>
-                                <span className="text-white">{stats.selected} ({stats.total > 0 ? Math.round((stats.selected / stats.total) * 100) : 0}%)</span>
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-[10px] font-bold tracking-widest uppercase mb-1">
+                                <span className="text-muted-foreground">Final Selection</span>
+                                <span className="text-white">{stats.selected} <span className="text-zinc-600 font-normal ml-1">({stats.total > 0 ? Math.round((stats.selected / stats.total) * 100) : 0}%)</span></span>
                             </div>
-                            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-green-500" style={{ width: `${stats.total > 0 ? (stats.selected / stats.total) * 100 : 0}%` }}></div>
+                            <div className="h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                <div className="h-full bg-gradient-to-r from-green-500 to-green-400 shadow-[0_0_10px_rgba(34,197,94,0.3)]" style={{ width: `${stats.total > 0 ? (stats.selected / stats.total) * 100 : 0}%` }}></div>
                             </div>
                         </div>
                     </div>
                 </HolographicCard>
 
-                <HolographicCard className="p-6 border-white/10 bg-white/5 flex flex-col justify-center items-center text-center">
-                    <div className="w-32 h-32 rounded-full border-4 border-purple-500/20 flex items-center justify-center mb-4 relative">
-                        <div className="absolute inset-0 rounded-full border-4 border-t-purple-500 border-r-purple-500/50 border-b-transparent border-l-transparent rotate-45"></div>
-                        <div>
-                            <div className="text-3xl font-bold text-white">{stats.selectionRatio}%</div>
-                            <div className="text-xs text-muted-foreground uppercase tracking-widest">Select Ratio</div>
+                <HolographicCard className="p-8 border-white/5 bg-white/5 flex flex-col justify-center items-center text-center relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-30 group-hover:opacity-100 transition-opacity"></div>
+                    
+                    <div className="w-36 h-36 rounded-full border-2 border-white/5 flex items-center justify-center mb-6 relative">
+                        <svg className="absolute inset-0 w-full h-full -rotate-90">
+                            <circle
+                                cx="72"
+                                cy="72"
+                                r="68"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                                fill="transparent"
+                                className="text-white/5"
+                            />
+                            <circle
+                                cx="72"
+                                cy="72"
+                                r="68"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                                fill="transparent"
+                                strokeDasharray={Math.PI * 2 * 68}
+                                strokeDashoffset={Math.PI * 2 * 68 * (1 - Number(stats.selectionRatio) / 100)}
+                                className="text-primary drop-shadow-[0_0_8px_rgba(220,20,60,0.5)] transition-all duration-1000 ease-out"
+                                strokeLinecap="round"
+                            />
+                        </svg>
+                        <div className="relative z-10">
+                            <div className="text-4xl font-heading font-bold text-white tracking-tighter">{stats.selectionRatio}%</div>
+                            <div className="text-[8px] text-muted-foreground uppercase tracking-[0.3em] font-bold mt-1">Select Ratio</div>
                         </div>
                     </div>
-                    <p className="text-sm text-muted-foreground max-w-xs">
-                        Current selection rate across all departments. Lower ratio implies higher competition.
+                    <p className="text-[10px] text-muted-foreground max-w-[200px] leading-relaxed uppercase tracking-widest font-medium opacity-60">
+                        Performance efficiency across all departments.
                     </p>
                 </HolographicCard>
             </div>
