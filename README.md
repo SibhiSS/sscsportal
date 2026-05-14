@@ -1,81 +1,61 @@
-# IEEE SSCS Recruitment Portal 🚀
-> **The Official Recruitment & Management Platform for IEEE Solid-State Circuits Society, VIT Chennai.**
+# IEEE SSCS Recruitment Portal
+Technical documentation for the official recruitment and administrative platform of the IEEE Solid-State Circuits Society, VIT Chennai.
 
-![IEEE SSCS Banner](https://sscsportal.vercel.app/ieee-sscs-logo.png)
+## Project Overview
+The IEEE SSCS Portal is a centralized recruitment engine designed to streamline candidate applications, automate interview scheduling, and facilitate administrative oversight. The platform is engineered for high reliability, institutional security, and process automation.
 
-[![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.io/)
-[![Tailwind](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+## Core Capabilities
+- **Institutional Authentication**: Google OAuth integration restricted to authorized domains.
+- **Academic Validation**: Intelligent parsing and validation for 30+ academic branch codes.
+- **Administrative Interface**: Real-time management of candidate pipelines and departmental assignments.
+- **Automated Scheduling**: Conflict-aware interview booking system for candidates and panels.
+- **Notification Engine**: Professional email communication via Google Apps Script integration.
+- **Responsive Architecture**: Performance-optimized UI built for both desktop and mobile environments.
 
-## 🌐 Overview
-The **IEEE SSCS Portal** is a high-performance recruitment engine designed to manage student applications, automate interview scheduling, and facilitate departmental management. Built with a premium "Silicon Trace" aesthetic, it combines cutting-edge web technologies with robust backend automation.
+## Technical Architecture
+- **Frontend**: React 18, Vite, TypeScript
+- **Styling**: Tailwind CSS, Framer Motion, shadcn/ui
+- **Database & Auth**: Supabase (PostgreSQL)
+- **Automation Service**: Google Apps Script
+- **Deployment**: Vercel
 
-## ✨ Key Features
-- **Authentication**: Secure Google OAuth integration restricted to institutional domains.
-- **Dynamic Application**: Intelligent form validation for 30+ academic branches.
-- **Admin Dashboard**: Real-time candidate management, status tracking, and department filtering.
-- **Interview Scheduler**: Automated booking system with priority conflict detection.
-- **Email System**: Professional corporate-themed notifications powered by Google Apps Script.
-- **Silicon Trace UI**: Custom-built premium components with high-fidelity animations.
+## Installation and Setup
 
-## 🛠️ Tech Stack
-| Layer | Technology |
-|---|---|
-| **Frontend** | React 18, Vite, TypeScript |
-| **Styling** | Tailwind CSS, Framer Motion, shadcn/ui |
-| **Backend** | Supabase (PostgreSQL, Realtime, Auth) |
-| **Automation** | Google Apps Script (Emailing Service) |
-| **Deployment** | Vercel |
+### Prerequisites
+- Node.js (Version 18.0 or higher)
+- npm (Version 9.0 or higher)
 
-## 🚀 Getting Started
+### Local Environment Setup
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/SibhiSS/sscsportal.git
+   ```
 
-### 1. Prerequisites
-- **Node.js**: Version 18.0 or higher.
-- **npm**: Version 9.0 or higher.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-### 2. Installation
-```bash
-# Clone the repository
-git clone https://github.com/SibhiSS/sscsportal.git
+3. Configure environment variables:
+   Create a `.env` file in the root directory with the following keys:
+   ```env
+   VITE_GOOGLE_CLIENT_ID=your_google_client_id
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   VITE_GOOGLE_SCRIPT_URL=https://script.google.com/macros/s/.../exec
+   ```
 
-# Navigate to project
-cd sscsportal
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-# Install dependencies
-npm install
-```
+## Deployment
+This project is configured for seamless deployment on Vercel. Ensure all environment variables are correctly mapped in the Vercel project settings prior to build execution.
 
-### 3. Environment Configuration
-Create a `.env` file in the root directory and populate it with the following:
+## Maintenance
+For updates to the email templates or notification logic, modifications should be made within the respective component message variables in the `src` directory. Any changes to the script endpoint must be updated in the `VITE_GOOGLE_SCRIPT_URL` environment variable.
 
-```env
-# Google OAuth
-VITE_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
-
-# Supabase Configuration
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# Automation
-VITE_GOOGLE_SCRIPT_URL=https://script.google.com/macros/s/.../exec
-```
-
-### 4. Running Locally
-```bash
-# Start development server
-npm run dev
-```
-The application will be accessible at `http://localhost:5173`.
-
-## 📦 Deployment
-The portal is optimized for deployment on **Vercel**. 
-
-1. Connect your GitHub repository to Vercel.
-2. Add all environment variables listed above in the Vercel Dashboard.
-3. Vercel will automatically detect the Vite configuration and deploy.
-
-## 📄 License
-© 2026 IEEE SSCS VIT Chennai. All Rights Reserved.
-Built with ❤️ by the IEEE SSCS Technical Team.
+## Copyright
+Copyright 2026 IEEE SSCS VIT Chennai. All Rights Reserved.
+Developed and maintained by the IEEE SSCS Technical Committee.
