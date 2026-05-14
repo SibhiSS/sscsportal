@@ -7,13 +7,15 @@ import TechGridBackground from '@/components/ui/TechGridBackground';
 
 const coordinators = [
   {
-    name: 'Sangeeth R G',
+    name: 'Sangeetha R G',
     role: 'Faculty Coordinator',
+    image: '/sangeetha.png',
     description: 'Expert mentorship in technical direction and academic excellence for IEEE SSCS.'
   },
   {
     name: 'Hemanth C',
     role: 'Faculty Coordinator',
+    image: '/hemanth.png',
     description: 'Guiding innovation and student engagement within the solid-state circuits domain.'
   }
 ];
@@ -22,26 +24,31 @@ const coreTeam = [
   {
     name: 'E Abijay',
     role: 'Chairperson',
+    image: '/abijay.png',
     quote: 'Never Settle!'
   },
   {
     name: 'Kiran Kumar',
     role: 'Vice Chairperson',
+    image: '/kiran.png',
     quote: 'I create systems that redefine the best.'
   },
   {
     name: 'Manasa Grandhi',
     role: 'General Secretary',
+    image: '/manasa.png',
     quote: 'Troubles are just passing clouds.'
   },
   {
     name: 'Mrithubashini',
     role: 'General Secretary',
+    image: '/mrithubashini.png',
     quote: "Let's see what happens."
   },
   {
     name: 'Arushi',
     role: 'Treasurer',
+    image: '/arushi.png',
     quote: 'Who wishes to fight must first count the cost.'
   }
 ];
@@ -50,41 +57,49 @@ const leads = [
   {
     name: 'Shivaranjani',
     role: 'Technical Lead',
+    image: '/shivaranjani.png',
     quote: "Life's a circuit—I'm still meeting setup and hold."
   },
   {
     name: 'Harshan',
     role: 'Technical Lead',
+    image: '/harshan.png',
     quote: 'Observe. Plan. Execute.'
   },
   {
     name: 'Ilangkumaran',
     role: 'Operations Lead',
+    image: '/ilangkumaran.png',
     quote: "Big ideas don't need noise, they need action."
   },
   {
     name: 'Sibhi S',
     role: 'Operations Lead',
+    image: '/sibhi.png',
     quote: 'Anbe Sivam'
   },
   {
     name: 'Neyalakshmi',
     role: 'Editorial Lead',
+    image: '/neya.png',
     quote: 'PEACE!'
   },
   {
     name: 'Goutham P',
     role: 'Editorial Lead',
+    image: '/goutham.png',
     quote: 'SKY IS THE LIMIT'
   },
   {
-    name: 'Priyadarshini',
+    name: 'Priyadharshini',
     role: 'Design Lead',
+    image: '/priyadharshini.png',
     quote: 'LOST IN A PASTEL SKY'
   },
   {
     name: 'Midhun P',
     role: 'Associate Design Lead',
+    image: '/midhun.png',
     quote: 'COOL TONE WARM CORE'
   }
 ];
@@ -134,8 +149,12 @@ const Team = () => {
                                 <HolographicCard className="p-8 text-center h-full">
                                     <div className="flex flex-col items-center">
                                         <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 text-primary relative overflow-hidden border border-primary/20">
-                                            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
-                                            <GraduationCap className="w-10 h-10 relative z-10" />
+                                            <img 
+                                                src={coord.image} 
+                                                alt={coord.name}
+                                                className="w-full h-full object-cover"
+                                                loading="lazy"
+                                            />
                                         </div>
 
                                         <div className="mb-4">
@@ -184,8 +203,13 @@ const Team = () => {
                                 className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.33%-16px)]"
                             >
                                 <HolographicCard className="p-6 text-center h-full flex flex-col items-center">
-                                    <div className="w-20 h-20 rounded-2xl bg-white/5 grid place-items-center mb-6 text-primary/50 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors">
-                                        <User className="w-8 h-8" />
+                                    <div className="w-24 h-24 rounded-2xl bg-white/5 grid place-items-center mb-6 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors">
+                                        <img 
+                                            src={member.image} 
+                                            alt={member.name}
+                                            className="w-full h-full object-cover"
+                                            loading="lazy"
+                                        />
                                     </div>
 
                                     <div className="mb-4 flex-1">
@@ -232,8 +256,13 @@ const Team = () => {
                                 className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.33%-16px)]"
                             >
                                 <HolographicCard className="p-6 text-center h-full flex flex-col items-center">
-                                    <div className="w-16 h-16 rounded-2xl bg-white/5 grid place-items-center mb-6 text-primary/30 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors">
-                                        <User className="w-6 h-6" />
+                                    <div className="w-20 h-20 rounded-2xl bg-white/5 grid place-items-center mb-6 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors">
+                                        <img 
+                                            src={member.image} 
+                                            alt={member.name}
+                                            className="w-full h-full object-cover"
+                                            loading="lazy"
+                                        />
                                     </div>
 
                                     <div className="mb-4 flex-1">
