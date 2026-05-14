@@ -71,6 +71,21 @@ const leads = [
     name: 'Neyalakshmi',
     role: 'Editorial Lead',
     quote: 'PEACE!'
+  },
+  {
+    name: 'Goutham P',
+    role: 'Editorial Lead',
+    quote: 'SKY IS THE LIMIT'
+  },
+  {
+    name: 'Priyadarshini',
+    role: 'Design Lead',
+    quote: 'LOST IN A PASTEL SKY'
+  },
+  {
+    name: 'Midhun P',
+    role: 'Associate Design Lead',
+    quote: 'COOL TONE WARM CORE'
   }
 ];
 
