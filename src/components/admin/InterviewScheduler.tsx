@@ -23,7 +23,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // CONFIG (Should match Admin.tsx)
 const EMAILJS_PUBLIC_KEY = "bj3DbINQas11jOWqr";
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwsz5EIGmR_a6Wa1m01Z56DcWefUuZla_rsVI_8ma6N_T90eM3v9CQ89E712zt939oH5w/exec";
+const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
 
 const InterviewScheduler = () => {
     const { user } = useAuth();
