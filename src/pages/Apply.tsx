@@ -192,14 +192,9 @@ const Apply = () => {
 
     const handleDomainToggle = (domain: string, isSecondary = false) => {
         setFormData(prev => {
-            const targetList = isSecondary ? prev.secondaryDomains : prev.domains;
-            const updated = targetList.includes(domain)
-                ? targetList.filter(d => d !== domain)
-                : [...targetList, domain];
-
             return isSecondary
-                ? { ...prev, secondaryDomains: updated }
-                : { ...prev, domains: updated };
+                ? { ...prev, secondaryDomains: [domain] }
+                : { ...prev, domains: [domain] };
         });
     };
 
@@ -374,7 +369,11 @@ const Apply = () => {
     const currentSkillPlaceholder = formData.primaryDept ? (skillPlaceholders[formData.primaryDept] || skillPlaceholders['default']) : skillPlaceholders['default'];
     const currentReasonPlaceholder = formData.primaryDept ? (reasonPlaceholders[formData.primaryDept] || reasonPlaceholders['default']) : reasonPlaceholders['default'];
 
-    const secondaryDomainsList = formData.secondaryDept ? domainOptions[formData.secondaryDept] || [] : [];
+    const secondaryDomainsList = formData.secondaryDept 
+        ? (domainOptions[formData.secondaryDept] || []).filter(d => 
+            !(formData.primaryDept === formData.secondaryDept && formData.domains.includes(d))
+          ) 
+        : [];
     const secondarySkillLabel = formData.secondaryDept ? (skillLabels[formData.secondaryDept] || skillLabels['default']) : skillLabels['default'];
     const secondarySkillPlaceholder = formData.secondaryDept ? (skillPlaceholders[formData.secondaryDept] || skillPlaceholders['default']) : skillPlaceholders['default'];
     const secondaryReasonPlaceholder = formData.secondaryDept ? (reasonPlaceholders[formData.secondaryDept] || reasonPlaceholders['default']) : reasonPlaceholders['default'];
@@ -895,17 +894,15 @@ const Apply = () => {
                                                         <SelectValue placeholder="Select Secondary Department" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="Technical" disabled={formData.primaryDept === 'Technical'}>Technical</SelectItem>
-                                                        <SelectItem value="Management" disabled={formData.primaryDept === 'Management'}>Management</SelectItem>
-                                                        <SelectItem value="Creative" disabled={formData.primaryDept === 'Creative'}>Creative</SelectItem>
-                                                        <SelectItem value="Outreach & Partnerships" disabled={formData.primaryDept === 'Outreach & Partnerships'}>Outreach & Partnerships</SelectItem>
-                                                        <SelectItem value="Human Resources" disabled={formData.primaryDept === 'Human Resources'}>Human Resources</SelectItem>
-                                                        <SelectItem value="Event Operations" disabled={formData.primaryDept === 'Event Operations'}>Event Operations</SelectItem>
+                                                        <SelectItem value="Technical">Technical</SelectItem>
+                                                        <SelectItem value="Management">Management</SelectItem>
+                                                        <SelectItem value="Creative">Creative</SelectItem>
+                                                        <SelectItem value="Outreach & Partnerships">Outreach & Partnerships</SelectItem>
+                                                        <SelectItem value="Human Resources">Human Resources</SelectItem>
+                                                        <SelectItem value="Event Operations">Event Operations</SelectItem>
                                                     </SelectContent>
                                                 </Select>
-                                                {formData.primaryDept && (
-                                                    <p className="text-xs text-muted-foreground">Your primary choice <b>{formData.primaryDept}</b> is disabled here.</p>
-                                                )}
+
                                             </div>
 
                                             <div className="space-y-3">
