@@ -148,11 +148,11 @@ const Team = () => {
                             >
                                 <HolographicCard className="p-8 text-center h-full">
                                     <div className="flex flex-col items-center">
-                                        <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 text-primary relative overflow-hidden border border-primary/20">
+                                        <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 text-primary relative overflow-hidden border border-primary/20 mx-auto">
                                             <img 
                                                 src={coord.image} 
                                                 alt={coord.name}
-                                                className="w-full h-full object-cover"
+                                                className="w-full h-full object-cover block"
                                                 loading="lazy"
                                             />
                                         </div>
@@ -203,11 +203,11 @@ const Team = () => {
                                 className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.33%-16px)]"
                             >
                                 <HolographicCard className="p-6 text-center h-full flex flex-col items-center">
-                                    <div className="w-24 h-24 rounded-2xl bg-white/5 grid place-items-center mb-6 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors">
+                                    <div className="w-24 h-24 rounded-2xl bg-white/5 flex items-center justify-center mb-6 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors mx-auto">
                                         <img 
                                             src={member.image} 
                                             alt={member.name}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-cover block"
                                             loading="lazy"
                                         />
                                     </div>
@@ -256,11 +256,11 @@ const Team = () => {
                                 className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.33%-16px)]"
                             >
                                 <HolographicCard className="p-6 text-center h-full flex flex-col items-center">
-                                    <div className="w-20 h-20 rounded-2xl bg-white/5 grid place-items-center mb-6 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors">
+                                    <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mb-6 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors mx-auto">
                                         <img 
                                             src={member.image} 
                                             alt={member.name}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-cover block"
                                             loading="lazy"
                                         />
                                     </div>
