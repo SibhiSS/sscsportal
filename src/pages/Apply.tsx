@@ -892,10 +892,7 @@ const Apply = () => {
 
                                 {step === 2 && (
                                     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                                        <div className="flex items-center gap-3 p-4 bg-primary/10 border border-primary/20 rounded-lg text-primary mb-6">
-                                            <span className="text-sm font-medium">✨ Why a second preference?</span>
-                                            <span className="text-xs text-muted-foreground">If slots in your primary department are full, we will consider you for this role.</span>
-                                        </div>
+
 
                                         <div className="space-y-6">
                                             <h3 className="text-xl font-heading font-semibold flex items-center gap-2 text-primary">
