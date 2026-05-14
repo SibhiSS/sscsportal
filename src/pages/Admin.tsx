@@ -465,10 +465,20 @@ const Admin = () => {
                             </div>
                         </div>
 
-                        <div className={`flex items-center gap-3 px-4 py-2 rounded-2xl border backdrop-blur-xl shadow-lg transition-all duration-500 ${isSuperAdmin ? 'text-primary bg-primary/10 border-primary/20 shadow-primary/5' : 'text-blue-500 bg-blue-500/10 border-blue-500/20 shadow-blue-500/5'}`}>
-                            <div className={`w-2.5 h-2.5 rounded-full animate-pulse shadow-[0_0_8px_currentColor] ${isSuperAdmin ? 'bg-primary' : 'bg-blue-500'}`}></div>
+                        <div className={`flex items-center gap-3 px-4 py-2 rounded-2xl border backdrop-blur-xl shadow-lg transition-all duration-500 ${
+                            isSuperAdmin ? 'text-primary bg-primary/10 border-primary/20 shadow-primary/5' : 
+                            user?.role === 'admin' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20 shadow-blue-500/5' :
+                            'text-zinc-400 bg-zinc-500/10 border-white/10'
+                        }`}>
+                            <div className={`w-2.5 h-2.5 rounded-full animate-pulse shadow-[0_0_8px_currentColor] ${
+                                isSuperAdmin ? 'bg-primary' : 
+                                user?.role === 'admin' ? 'bg-blue-400' : 
+                                'bg-zinc-400'
+                            }`}></div>
                             <span className="text-xs font-bold tracking-widest uppercase">
-                                {isSuperAdmin ? 'Super Admin Mode' : 'Interviewer Mode'}
+                                {isSuperAdmin ? 'Super Admin Mode' : 
+                                 user?.role === 'admin' ? 'Admin Mode' : 
+                                 'Interviewer Mode'}
                             </span>
                             <span className="text-[10px] opacity-50 font-mono px-2 py-0.5 rounded-md bg-white/10 ml-1">
                                 {currentPhase.replace('_', ' ')}
@@ -516,7 +526,7 @@ const Admin = () => {
 
                         <TabsContent value="dashboard" className="space-y-12 outline-none">
                             {/* Step 1: Analytics Check */}
-                            {isAdmin && <AdminStats applications={applications} />}
+                            {(isSuperAdmin || user?.role === 'admin') && <AdminStats applications={applications} />}
 
                             {/* Step 2: Advanced Filtering & Sorting */}
                             <div className="space-y-6">

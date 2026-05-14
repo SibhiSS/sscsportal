@@ -184,14 +184,18 @@ const AdminSettings = () => {
                         <User className="w-4 h-4 mr-2" />
                         User Management
                     </TabsTrigger>
-                    <TabsTrigger value="recruitment" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-card hover:bg-muted transition-all">
-                        <ShieldAlert className="w-4 h-4 mr-2" />
-                        Recruitment Phase
-                    </TabsTrigger>
-                    <TabsTrigger value="data" className="data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground border bg-card hover:bg-muted transition-all">
-                        <Shield className="w-4 h-4 mr-2" />
-                        Data Retention
-                    </TabsTrigger>
+                    {isSuperAdmin && (
+                        <>
+                            <TabsTrigger value="recruitment" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-card hover:bg-muted transition-all">
+                                <ShieldAlert className="w-4 h-4 mr-2" />
+                                Recruitment Phase
+                            </TabsTrigger>
+                            <TabsTrigger value="data" className="data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground border bg-card hover:bg-muted transition-all">
+                                <Shield className="w-4 h-4 mr-2" />
+                                Data Retention
+                            </TabsTrigger>
+                        </>
+                    )}
                 </TabsList>
 
                 {/* --- TEAM MANAGEMENT --- */}
