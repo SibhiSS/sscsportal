@@ -262,8 +262,7 @@ const Apply = () => {
                 roll_number: formData.rollNumber,
                 phone: formData.phone,
                 // Passing empty strings for removed academic fields if needed by DB, otherwise depend on null
-                department: '',
-                year: '',
+
                 primary_dept: formData.primaryDept,
                 domains: formData.domains,
                 skills: formData.skills,
@@ -846,10 +845,7 @@ const Apply = () => {
                                                         Please select a Department of Interest first.
                                                     </div>
                                                 )}
-                                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm text-blue-200 mt-2">
-                                                    <strong>Heads-up:</strong> These roles represent your core strength or interest, not a fixed boundary.
-                                                    SSCS projects are cross-disciplinary by nature, and members are encouraged (and expected) to explore and contribute across different technical domains.
-                                                </div>
+
                                             </div>
 
                                             <div className="space-y-2">
@@ -952,10 +948,7 @@ const Apply = () => {
                                                         Please select a Secondary Department of Interest first.
                                                     </div>
                                                 )}
-                                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm text-blue-200 mt-2">
-                                                    <strong>Heads-up:</strong> These roles represent your core strength or interest, not a fixed boundary.
-                                                    SSCS projects are cross-disciplinary by nature, and members are encouraged (and expected) to explore and contribute across different technical domains.
-                                                </div>
+
                                             </div>
 
                                             <div className="space-y-2">

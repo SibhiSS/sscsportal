@@ -12,6 +12,44 @@ INSERT INTO public.app_settings (key, value)
 VALUES ('recruitment_status', '{"isOpen": true, "message": "Recruitment is currently open."}')
 ON CONFLICT (key) DO NOTHING;
 
+-- 1.5. Applications (Candidate Submissions)
+CREATE TABLE IF NOT EXISTS public.applications (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  email TEXT NOT NULL,
+  full_name TEXT NOT NULL,
+  roll_number TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  department TEXT, -- Legacy
+  year TEXT, -- Legacy
+  
+  -- Step 1: Primary Choice
+  primary_dept TEXT NOT NULL,
+  domains TEXT[] DEFAULT '{}',
+  skills TEXT,
+  reason TEXT,
+  
+  -- Step 2: Secondary Choice
+  secondary_dept TEXT,
+  secondary_domains TEXT[] DEFAULT '{}',
+  secondary_skills TEXT,
+  secondary_reason TEXT,
+  
+  -- Metadata (Auto-calculated from Roll No)
+  admission_year INTEGER,
+  program_code TEXT,
+  program_name TEXT,
+  batch TEXT,
+  program_category TEXT,
+  
+  -- System
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'shortlisted', 'rejected', 'selected', 'interview_scheduled', 'rejected_pending', 'neutral', 'active_member', 'alumni', 'inactive')),
+  rating INTEGER DEFAULT 0,
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- 2. Admin Users (Dynamic Team Management)
 CREATE TABLE public.admins (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -98,6 +136,8 @@ ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.interview_slots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.panel_assignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.interview_feedback ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.applications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.interviews ENABLE ROW LEVEL SECURITY;
 
 -- Simple Policies (OPEN FOR DEVELOPMENT)
 CREATE POLICY "Allow All Access" ON public.app_settings FOR ALL USING (true);
@@ -106,3 +146,10 @@ CREATE POLICY "Allow All Access" ON public.audit_logs FOR ALL USING (true);
 CREATE POLICY "Allow All Access" ON public.interview_slots FOR ALL USING (true);
 CREATE POLICY "Allow All Access" ON public.panel_assignments FOR ALL USING (true);
 CREATE POLICY "Allow All Access" ON public.interview_feedback FOR ALL USING (true);
+CREATE POLICY "Allow All Access" ON public.applications FOR ALL USING (true);
+CREATE POLICY "Allow All Access" ON public.interviews FOR ALL USING (true);
+
+-- Add indexes for applications
+CREATE INDEX IF NOT EXISTS idx_apps_email ON public.applications(email);
+CREATE INDEX IF NOT EXISTS idx_apps_status ON public.applications(status);
+CREATE INDEX IF NOT EXISTS idx_apps_user_id ON public.applications(user_id);
