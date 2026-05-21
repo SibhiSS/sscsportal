@@ -1,33 +1,81 @@
 
 import { ApplicationStatus, RecruitmentPhase } from '@/types';
 
-// Valid transitions for Applicant Status
+// Valid transitions for Applicant Status — Full 8-stage ATS pipeline
 export const VALID_TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
-    // Initial State
-    'submitted': ['under_review', 'rejected', 'pending'], // pending is legacy
-    'pending': ['under_review', 'shortlisted', 'rejected', 'rejected_pending', 'neutral'], // legacy state transitions
+    // ── Stage 1: Applied (entry point) ──────────────────────────────────
+    'applied':             ['under_review', 'rejected'],
+    // Legacy alias
+    'pending':             ['applied', 'under_review', 'shortlisted', 'rejected', 'rejected_pending', 'neutral'],
 
-    // Review Process
-    'under_review': ['interview_scheduled', 'rejected', 'waitlisted', 'shortlisted', 'rejected_pending', 'extended_review' as ApplicationStatus], // extended_review not yet in type but useful concept
-    'neutral': ['shortlisted', 'rejected_pending', 'under_review'],
+    // ── Stage 2: Under Review ────────────────────────────────────────────
+    'under_review':        ['shortlisted', 'waitlisted', 'rejected', 'applied'],
+    // Legacy alias
+    'neutral':             ['under_review', 'shortlisted', 'rejected_pending'],
 
-    // Legacy mappings (shortlisted ~= interview_scheduled/waitlisted/selected depending on context)
-    'shortlisted': ['interview_scheduled', 'selected', 'rejected'],
-    'rejected_pending': ['rejected', 'pending', 'neutral'],
+    // ── Stage 3: Shortlisted (cleared resume + review) ──────────────────
+    'shortlisted':         ['interview_scheduled', 'waitlisted', 'rejected'],
 
-    // Interview Cycle
-    'interview_scheduled': ['interviewed', 'no_show' as ApplicationStatus, 'rescheduled' as ApplicationStatus], // no_show/rescheduled to add later
-    'interviewed': ['selected', 'rejected', 'waitlisted', 'second_interview' as ApplicationStatus],
+    // ── Stage 4: Interview Scheduled (slot booked) ───────────────────────
+    'interview_scheduled': ['interviewed', 'shortlisted', 'waitlisted', 'rejected'],
 
-    // Decisions
-    'waitlisted': ['selected', 'rejected'],
-    'selected': ['active_member', 'rejected'], // Can be revoked
-    'rejected': [], // Terminal mostly, unless admin override
+    // ── Stage 5: Interviewed (evaluation complete) ────────────────────────
+    'interviewed':         ['selected', 'waitlisted', 'rejected'],
 
-    // Lifecycle (For future)
-    'active_member': ['alumni', 'inactive'],
-    'alumni': [],
-    'inactive': ['active_member']
+    // ── Stage 6: Selected ────────────────────────────────────────────────
+    'selected':            ['active_member', 'rejected'], // rejection can be revoked
+
+    // ── Stage 7: Waitlisted ──────────────────────────────────────────────
+    'waitlisted':          ['selected', 'rejected', 'interview_scheduled'],
+
+    // ── Stage 8: Rejected (terminal) ────────────────────────────────────
+    'rejected':            ['applied', 'under_review'], // Super admin can reopen
+
+    // ── Legacy states ────────────────────────────────────────────────────
+    'rejected_pending':    ['rejected', 'under_review', 'waitlisted'],
+
+    // ── Post-selection lifecycle ──────────────────────────────────────────
+    'active_member':       ['alumni', 'inactive'],
+    'alumni':              [],
+    'inactive':            ['active_member'],
+};
+
+// Pipeline stages in order (for Kanban column ordering)
+export const PIPELINE_STAGES: ApplicationStatus[] = [
+    'applied',
+    'under_review',
+    'shortlisted',
+    'interview_scheduled',
+    'interviewed',
+    'selected',
+    'waitlisted',
+    'rejected',
+];
+
+export const STAGE_LABELS: Record<string, string> = {
+    applied:              'Applied',
+    under_review:         'Under Review',
+    shortlisted:          'Shortlisted',
+    interview_scheduled:  'Interview Scheduled',
+    interviewed:          'Interviewed',
+    selected:             'Selected',
+    waitlisted:           'Waitlisted',
+    rejected:             'Rejected',
+    // Legacy
+    pending:              'Applied',
+    neutral:              'Under Review',
+    rejected_pending:     'To Reject',
+};
+
+export const STAGE_COLORS: Record<string, string> = {
+    applied:              'blue',
+    under_review:         'yellow',
+    shortlisted:          'cyan',
+    interview_scheduled:  'purple',
+    interviewed:          'orange',
+    selected:             'green',
+    waitlisted:           'amber',
+    rejected:             'red',
 };
 
 // Phase Restrictions
@@ -35,11 +83,11 @@ export const PHASE_PERMISSIONS: Record<RecruitmentPhase, {
     canApply: boolean;
     canReview: boolean;
     canInterview: boolean;
-    canDecide: boolean; // Publish results
+    canDecide: boolean;
 }> = {
     'APPLICATIONS_OPEN': {
         canApply: true,
-        canReview: true, // Parallel review allowed
+        canReview: true,
         canInterview: false,
         canDecide: false
     },
@@ -51,7 +99,7 @@ export const PHASE_PERMISSIONS: Record<RecruitmentPhase, {
     },
     'INTERVIEWS_ONGOING': {
         canApply: false,
-        canReview: false, // Generally closed, but maybe exceptions
+        canReview: false,
         canInterview: true,
         canDecide: false
     },
@@ -59,16 +107,26 @@ export const PHASE_PERMISSIONS: Record<RecruitmentPhase, {
         canApply: false,
         canReview: false,
         canInterview: false,
-        canDecide: true // Technically deciding logic is done, but permissions might linger or disable everything
+        canDecide: true
     }
 };
 
 export const canTransition = (current: ApplicationStatus, next: ApplicationStatus): boolean => {
-    // Super admins might bypass, but UI should check this
     const validNext = VALID_TRANSITIONS[current];
     return validNext ? validNext.includes(next) : false;
 };
 
-export const canPerformAction = (phase: RecruitmentPhase, action: keyof typeof PHASE_PERMISSIONS['APPLICATIONS_OPEN']): boolean => {
+export const canPerformAction = (
+    phase: RecruitmentPhase,
+    action: keyof typeof PHASE_PERMISSIONS['APPLICATIONS_OPEN']
+): boolean => {
     return PHASE_PERMISSIONS[phase][action];
+};
+
+// Normalize legacy statuses to canonical pipeline stage for display
+export const normalizeStatus = (status: ApplicationStatus): ApplicationStatus => {
+    if (status === 'pending') return 'applied';
+    if (status === 'neutral') return 'under_review';
+    if (status === 'rejected_pending') return 'rejected';
+    return status;
 };

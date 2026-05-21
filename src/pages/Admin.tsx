@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
-import { ShieldAlert, Eye, Star, ArrowUpDown } from 'lucide-react';
+import { ShieldAlert, Eye, Star, ArrowUpDown, LayoutGrid, List, Trophy, BarChart3, Settings2 } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 import { useAuth } from '@/contexts/AuthContext';
 import HolographicCard from '@/components/ui/HolographicCard';
@@ -26,19 +26,31 @@ import ApplicationModal from '@/components/admin/ApplicationModal';
 import AdminSettings from '@/components/admin/AdminSettings';
 import AuditLogViewer from '@/components/admin/AuditLogViewer';
 import InterviewScheduler from '@/components/admin/InterviewScheduler';
+import KanbanBoard from '@/components/admin/KanbanBoard';
+import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
+import RankingPanel from '@/components/admin/RankingPanel';
+import DeptWeightsEditor from '@/components/admin/DeptWeightsEditor';
 import { logAction } from '@/services/auditService';
 import CircuitBoardBackground from '@/components/ui/CircuitBoardBackground';
-import { ArrowLeft, LayoutDashboard, Calendar, History, Settings } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, Calendar, History } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { parseApplicationText } from '@/utils/resumeParser';
 
-// EMAILJS CONFIGURATION - PLEASE REPLACE WITH YOUR ACTUAL CREDENTIALS
+// ── Email config ─────────────────────────────────────────────────────────────
 const EMAILJS_SERVICE_ID = "service_32a77yo";
 const EMAILJS_TEMPLATE_ID = "template_5p399mj";
 const EMAILJS_PUBLIC_KEY = "bj3DbINQas11jOWqr";
-
-// GOOGLE SCRIPT CONFIGURATION (New SMTP Method)
 const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
+
+const ADMIN_EMAILS = [
+    'sibhi.s2024@vitstudent.ac.in',
+    'sibhis5223@gmail.com',
+    'santhosh.v2024d@vitstudent.ac.in',
+    'tspradeepkumar@vit.ac.in'
+];
+
+type ViewMode = 'table' | 'kanban';
 
 const Admin = () => {
     const { user, loading: authLoading } = useAuth();
@@ -46,12 +58,19 @@ const Admin = () => {
     const [applications, setApplications] = useState<Application[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    // View mode: table or kanban
+    const [viewMode, setViewMode] = useState<ViewMode>(() => {
+        return (localStorage.getItem('sscs_admin_view') as ViewMode) || 'table';
+    });
+
     // Filters & Search
     const [searchTerm, setSearchTerm] = useState('');
     const [deptFilter, setDeptFilter] = useState('ALL');
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [programFilter, setProgramFilter] = useState('ALL');
     const [yearFilter, setYearFilter] = useState('ALL');
+    const [skillFilter, setSkillFilter] = useState('');
+    const [hasResumeFilter, setHasResumeFilter] = useState(false);
     const [currentPhase, setCurrentPhase] = useState<RecruitmentPhase>('APPLICATIONS_OPEN');
 
     // Sorting
@@ -60,35 +79,27 @@ const Admin = () => {
     const [selectedApp, setSelectedApp] = useState<Application | null>(null);
     const [isPublishing, setIsPublishing] = useState(false);
 
-    const ADMIN_EMAILS = [
-        'sibhi.s2024@vitstudent.ac.in',
-        'sibhis5223@gmail.com',
-        'santhosh.v2024d@vitstudent.ac.in',
-        'tspradeepkumar@vit.ac.in'
-    ];
-
     useEffect(() => {
-        // Initialize EmailJS
         emailjs.init(EMAILJS_PUBLIC_KEY);
     }, []);
 
     useEffect(() => {
-        if (!authLoading && !user) {
-            return;
-        }
-
-        // Allow access if user has a role OR is in the legacy email list (fallback)
+        if (!authLoading && !user) return;
         const hasAccess = user?.role || (user?.email && ADMIN_EMAILS.includes(user.email));
-
         if (hasAccess) {
             fetchApplications();
             fetchPhase();
         }
     }, [user, authLoading]);
 
+    const switchView = (mode: ViewMode) => {
+        setViewMode(mode);
+        localStorage.setItem('sscs_admin_view', mode);
+    };
+
     const fetchPhase = async () => {
         const { data } = await supabase.from('app_settings').select('value').eq('key', 'recruitment_status').single();
-        if (data && data.value.currentPhase) {
+        if (data?.value?.currentPhase) {
             setCurrentPhase(data.value.currentPhase);
         }
     };
@@ -102,41 +113,55 @@ const Admin = () => {
 
             if (error) throw error;
 
-            const apps: Application[] = (data || []).map((doc: any) => ({
-                id: doc.id,
-                fullName: doc.full_name,
-                email: doc.email,
-                rollNumber: doc.roll_number,
-                phone: doc.phone,
-                year: doc.year,
-                department: doc.department,
-
-                primaryDept: doc.primary_dept,
-                domains: doc.domains || [],
-                skills: doc.skills || '',
-                reason: doc.reason || '',
-
-                secondaryDept: doc.secondary_dept || '',
-                secondaryDomains: doc.secondary_domains || [],
-                secondarySkills: doc.secondary_skills || '',
-                secondaryReason: doc.secondary_reason || '',
-
-                submittedAt: doc.created_at,
-                status: doc.status || 'pending',
-                rating: doc.rating || 0,
-                notes: doc.notes || '',
-
-                // Derived
-                admissionYear: doc.admission_year,
-                programCode: doc.program_code,
-                programName: doc.program_name,
-                batch: doc.batch,
-                programCategory: doc.program_category
-            }));
+            const apps: Application[] = (data || []).map((doc: any) => {
+                // Auto-parse skills on load
+                const parsed = parseApplicationText(doc.skills || '', doc.reason || '');
+                return {
+                    id: doc.id,
+                    fullName: doc.full_name,
+                    email: doc.email,
+                    rollNumber: doc.roll_number,
+                    phone: doc.phone,
+                    year: doc.year,
+                    department: doc.department,
+                    primaryDept: doc.primary_dept,
+                    domains: doc.domains || [],
+                    skills: doc.skills || '',
+                    reason: doc.reason || '',
+                    secondaryDept: doc.secondary_dept || '',
+                    secondaryDomains: doc.secondary_domains || [],
+                    secondarySkills: doc.secondary_skills || '',
+                    secondaryReason: doc.secondary_reason || '',
+                    submittedAt: doc.created_at,
+                    status: doc.status || 'applied',
+                    rating: doc.rating || 0,
+                    notes: doc.notes || '',
+                    admissionYear: doc.admission_year,
+                    programCode: doc.program_code,
+                    programName: doc.program_name,
+                    batch: doc.batch,
+                    programCategory: doc.program_category,
+                    // Resume & Social
+                    resumeUrl: doc.resume_url || '',
+                    resumeFilename: doc.resume_filename || '',
+                    githubUrl: parsed.githubUrl || doc.github_url || '',
+                    linkedinUrl: parsed.linkedinUrl || doc.linkedin_url || '',
+                    parsedSkills: doc.parsed_skills?.length ? doc.parsed_skills : parsed.skills,
+                    // Scoring
+                    taskScore: doc.task_score || 0,
+                    resumeScore: doc.resume_score || 0,
+                    finalScore: doc.final_score || 0,
+                    rankInDept: doc.rank_in_dept,
+                    // Timeline
+                    shortlistedAt: doc.shortlisted_at,
+                    interviewedAt: doc.interviewed_at,
+                    decidedAt: doc.decided_at,
+                };
+            });
 
             setApplications(apps);
         } catch (error) {
-            console.error("Error fetching documents: ", error);
+            console.error("Error fetching applications: ", error);
         } finally {
             setIsLoading(false);
         }
@@ -144,184 +169,100 @@ const Admin = () => {
 
     const updateApplication = async (id: string, updates: Partial<Application>) => {
         try {
-            // Optimistic update
-            setApplications(prev => prev.map(app =>
-                app.id === id ? { ...app, ...updates } : app
-            ));
-            if (selectedApp && selectedApp.id === id) {
+            setApplications(prev => prev.map(app => app.id === id ? { ...app, ...updates } : app));
+            if (selectedApp?.id === id) {
                 setSelectedApp(prev => prev ? { ...prev, ...updates } : null);
             }
 
             const dbUpdates: any = {};
-            if (updates.status) dbUpdates.status = updates.status;
+            if (updates.status !== undefined) dbUpdates.status = updates.status;
             if (updates.rating !== undefined) dbUpdates.rating = updates.rating;
             if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+            if (updates.taskScore !== undefined) dbUpdates.task_score = updates.taskScore;
+            if (updates.resumeUrl !== undefined) dbUpdates.resume_url = updates.resumeUrl;
+            if (updates.githubUrl !== undefined) dbUpdates.github_url = updates.githubUrl;
+            if (updates.linkedinUrl !== undefined) dbUpdates.linkedin_url = updates.linkedinUrl;
 
-            const { error } = await supabase
-                .from('applications')
-                .update(dbUpdates)
-                .eq('id', id);
-
+            const { error } = await supabase.from('applications').update(dbUpdates).eq('id', id);
             if (error) throw error;
 
-            // Log the action
             if (user?.email) {
                 await logAction(user.email, 'UPDATE_APPLICATION', id, updates);
             }
         } catch (error) {
             console.error("Error updating application:", error);
-            alert("Failed to update application. Please try again.");
-            fetchApplications(); // Revert
+            fetchApplications();
         }
     };
 
-    const deleteApplication = async (id: string) => {
-        // Double check for safety
-        const isSuperAdmin = user?.role === 'super_admin' || (user?.email && ADMIN_EMAILS.includes(user.email) && !user?.role);
-        if (!isSuperAdmin) {
-            alert("Only Super Admins can delete applications.");
-            return;
-        }
+    const updateTaskScore = async (id: string, score: number) => {
+        await updateApplication(id, { taskScore: score });
+    };
 
-        if (!confirm("Are you sure you want to delete this application? This action cannot be undone.")) {
-            return;
-        }
+    const deleteApplication = async (id: string) => {
+        const isSuperAdmin = user?.role === 'super_admin';
+        if (!isSuperAdmin) { alert("Only Super Admins can delete applications."); return; }
+        if (!confirm("Are you sure you want to delete this application? This cannot be undone.")) return;
 
         try {
-            const { error } = await supabase
-                .from('applications')
-                .delete()
-                .eq('id', id);
-
+            const { error } = await supabase.from('applications').delete().eq('id', id);
             if (error) throw error;
-
             setApplications(prev => prev.filter(app => app.id !== id));
-            if (selectedApp?.id === id) {
-                setSelectedApp(null);
-            }
-
-            if (user?.email) {
-                await logAction(user.email, 'DELETE_APPLICATION', id, { deleted: true });
-            }
+            if (selectedApp?.id === id) setSelectedApp(null);
+            if (user?.email) await logAction(user.email, 'DELETE_APPLICATION', id, { deleted: true });
         } catch (error) {
             console.error("Error deleting application:", error);
-            alert("Failed to delete application. Please try again.");
         }
     };
 
     const publishResults = async () => {
         const shortlistedApps = applications.filter(app => app.status === 'shortlisted');
         const rejectedPendingApps = applications.filter(app => app.status === 'rejected_pending');
-
         if (shortlistedApps.length === 0 && rejectedPendingApps.length === 0) {
-            alert("No applications are pending publication (Shortlisted or Rejected Pending).");
+            alert("No applications pending publication.");
             return;
         }
-
-        if (!confirm(`Are you sure you want to publish results?\n\nThis will:\n- Send acceptance emails to ${shortlistedApps.length} shortlisted applicants\n- Update status to 'Selected' for ${shortlistedApps.length} applicants\n- Mark ${rejectedPendingApps.length} applicants as 'Rejected' (no email)`)) {
-            return;
-        }
+        if (!confirm(`Publish results?\n\n${shortlistedApps.length} → Selected\n${rejectedPendingApps.length} → Rejected`)) return;
 
         setIsPublishing(true);
-
         try {
             let emailCount = 0;
-            const isEmailJsConfigured = (EMAILJS_SERVICE_ID as string) !== "service_id" && (EMAILJS_PUBLIC_KEY as string) !== "public_key";
-            const isGoogleScriptConfigured = (GOOGLE_SCRIPT_URL as string) !== "";
-
-            if (!isEmailJsConfigured && !isGoogleScriptConfigured) {
-                alert("No email service configured! Please set up Google Script (Recommended) or EmailJS.");
-            }
+            const isGoogleScriptConfigured = GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== "";
 
             for (const app of shortlistedApps) {
                 try {
-                    console.log(`Processing ${app.email}...`);
                     if (isGoogleScriptConfigured) {
                         await fetch(GOOGLE_SCRIPT_URL, {
-                            method: 'POST',
-                            mode: 'no-cors',
+                            method: 'POST', mode: 'no-cors',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 email: app.email,
                                 subject: "Congratulations! You're in - IEEE SSCS",
-                                message: `
-                                    <div style="font-family: 'Inter', sans-serif; background-color: #050505; color: #ffffff; max-width: 600px; margin: 0 auto; border: 1px solid #1a1a1a; border-radius: 12px; overflow: hidden;">
-                                        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-                                        
-                                        <div style="background-color: #000000; padding: 40px 20px; text-align: center; border-bottom: 1px solid #1a1a1a;">
-                                            <h1 style="color: #ffffff; font-family: 'Inter', sans-serif; margin: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 16px; font-weight: 600;">IEEE Solid-State Circuits Society</h1>
-                                        </div>
-                                        <div style="padding: 45px 40px;">
-                                            <h2 style="color: #FFE100; font-family: 'Inter', sans-serif; margin-top: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em;">Membership Acceptance</h2>
-                                            <p style="font-size: 15px; line-height: 1.6; color: #d1d5db;">Dear <strong>${app.fullName}</strong>,</p>
-                                            <p style="font-size: 15px; line-height: 1.6; color: #d1d5db;">On behalf of the IEEE SSCS Executive Committee, we are pleased to offer you a position as a Committee Member within the <strong>${app.primaryDept}</strong> department.</p>
-                                            
-                                            <div style="background-color: #0a0a0a; border: 1px solid #1f2937; padding: 25px; border-radius: 8px; margin: 30px 0;">
-                                                <table style="width: 100%; border-collapse: collapse; font-family: 'Inter', sans-serif; font-size: 14px;">
-                                                    <tr>
-                                                        <td style="color: #9ca3af; padding-bottom: 12px; width: 120px;">Role:</td>
-                                                        <td style="color: #ffffff; padding-bottom: 12px; font-weight: 500;">Committee Member</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td style="color: #9ca3af; padding-bottom: 12px;">Department:</td>
-                                                        <td style="color: #ffffff; padding-bottom: 12px; font-weight: 500;">${app.primaryDept}</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td style="color: #9ca3af;">Status:</td>
-                                                        <td style="color: #10b981; font-weight: 500;">Active Member</td>
-                                                    </tr>
-                                                </table>
-                                            </div>
-
-                                            <p style="font-size: 14px; line-height: 1.6; color: #9ca3af;">We were highly impressed by your qualifications and are confident you will be a valuable addition to our society. Our team will contact you shortly regarding onboarding.</p>
-
-                                            <p style="margin-top: 45px; border-top: 1px solid #1a1a1a; padding-top: 25px; font-size: 14px; color: #6b7280;">
-                                                Sincerely,<br>
-                                                <strong style="color: #ffffff; font-family: 'Inter', sans-serif;">IEEE SSCS Executive Committee</strong>
-                                            </p>
-                                        </div>
-                                        <div style="background-color: #000000; padding: 30px 25px; text-align: center; border-top: 1px solid #1a1a1a;">
-                                            <img src="https://sscsportal.vercel.app/ieee-sscs-logo.png" alt="SSCS" style="height: 25px; margin-bottom: 10px;">
-                                        </div>
-                                    </div>
-                                `
+                                message: `<div style="font-family:'Inter',sans-serif;background:#050505;color:#fff;max-width:600px;margin:0 auto;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;"><div style="background:#000;padding:40px 20px;text-align:center;border-bottom:1px solid #1a1a1a;"><h1 style="color:#fff;margin:0;text-transform:uppercase;letter-spacing:2px;font-size:16px;">IEEE Solid-State Circuits Society</h1></div><div style="padding:45px 40px;"><h2 style="color:#FFE100;margin-top:0;font-size:24px;font-weight:700;">Membership Acceptance</h2><p style="font-size:15px;line-height:1.6;color:#d1d5db;">Dear <strong>${app.fullName}</strong>,</p><p style="font-size:15px;line-height:1.6;color:#d1d5db;">We are pleased to offer you a position in the <strong>${app.primaryDept}</strong> department at IEEE SSCS.</p><p style="font-size:14px;color:#9ca3af;">Our team will contact you shortly regarding onboarding.</p><p style="margin-top:45px;border-top:1px solid #1a1a1a;padding-top:25px;font-size:14px;color:#6b7280;">Sincerely,<br><strong style="color:#fff;">IEEE SSCS Executive Committee</strong></p></div></div>`
                             })
-                        });
-                    } else if (isEmailJsConfigured) {
-                        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-                            to_name: app.fullName,
-                            to_email: app.email,
-                            department: app.primaryDept,
-                            message: "Congratulations! You have been selected for IEEE SSCS."
                         });
                     }
                     emailCount++;
-                    const { error } = await supabase.from('applications').update({ status: 'selected' }).eq('id', app.id);
-                    if (error) throw error;
-                } catch (err: any) {
-                    console.error(`Failed to process ${app.email}:`, err);
+                    await supabase.from('applications').update({ status: 'selected', decided_at: new Date().toISOString() }).eq('id', app.id);
+                } catch (err) {
+                    console.error(`Failed for ${app.email}:`, err);
                 }
             }
 
             for (const app of rejectedPendingApps) {
-                await supabase.from('applications').update({ status: 'rejected' }).eq('id', app.id);
+                await supabase.from('applications').update({ status: 'rejected', decided_at: new Date().toISOString() }).eq('id', app.id);
             }
 
-            alert(`Results published!\n\n- ${emailCount} Emails sent\n- ${shortlistedApps.length} apps marked Selected\n- ${rejectedPendingApps.length} apps marked Rejected`);
-
+            alert(`Results published!\n\n${emailCount} emails sent\n${shortlistedApps.length} selected\n${rejectedPendingApps.length} rejected`);
             if (user?.email) {
                 await logAction(user.email, 'PUBLISHED_RESULTS', 'BATCH_OPERATION', {
                     selectedCount: shortlistedApps.length,
                     rejectedCount: rejectedPendingApps.length,
-                    emailsSent: emailCount
                 });
             }
-
             fetchApplications();
-
         } catch (error) {
             console.error("Error publishing results:", error);
-            alert("An error occurred while publishing results. Check console.");
         } finally {
             setIsPublishing(false);
         }
@@ -334,27 +275,23 @@ const Admin = () => {
             'Roll Number': app.rollNumber,
             'Phone': app.phone,
             'Year': app.year,
-            'Department': app.department,
             'Primary Choice': app.primaryDept,
-            'Primary Domains': app.domains.join(', '),
-            'Primary Skills': app.skills,
-            'Primary Reason': app.reason,
-            'Secondary Choice': app.secondaryDept,
-            'Secondary Domains': app.secondaryDomains.join(', '),
-            'Secondary Skills': app.secondarySkills,
-            'Secondary Reason': app.secondaryReason,
+            'Skills': app.skills,
+            'Final Score': app.finalScore || '',
+            'Rank in Dept': app.rankInDept || '',
             'Status': app.status,
             'Rating': app.rating,
-            'Submitted At': app.submittedAt ? new Date(app.submittedAt).toLocaleString() : ''
+            'GitHub': app.githubUrl || '',
+            'LinkedIn': app.linkedinUrl || '',
+            'Submitted At': app.submittedAt ? new Date(app.submittedAt).toLocaleString() : '',
         }));
-
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Applications");
-        XLSX.writeFile(wb, "IEEE_applications.xlsx");
+        XLSX.writeFile(wb, "IEEE_SSCS_Applications.xlsx");
     };
 
-    // Filter Logic
+    // ── Filter Logic ────────────────────────────────────────────────────────
     const filteredApps = useMemo(() => {
         return applications.filter(app => {
             const matchesSearch =
@@ -365,28 +302,26 @@ const Admin = () => {
             const matchesDept = deptFilter === 'ALL' || app.primaryDept === deptFilter;
             const matchesStatus = statusFilter === 'ALL' || app.status === statusFilter;
             const matchesProgram = programFilter === 'ALL' || app.programName === programFilter;
-            // Year filter: handle number vs string comparison carefully
             const matchesYear = yearFilter === 'ALL' || (app.admissionYear ? app.admissionYear.toString() === yearFilter : false);
+            const matchesSkill = !skillFilter || app.skills.toLowerCase().includes(skillFilter.toLowerCase()) ||
+                app.parsedSkills?.some(s => s.toLowerCase().includes(skillFilter.toLowerCase()));
+            const matchesResume = !hasResumeFilter || !!app.resumeUrl;
 
-            return matchesSearch && matchesDept && matchesStatus && matchesProgram && matchesYear;
+            return matchesSearch && matchesDept && matchesStatus && matchesProgram && matchesYear && matchesSkill && matchesResume;
         });
-    }, [applications, searchTerm, deptFilter, statusFilter, programFilter, yearFilter]);
+    }, [applications, searchTerm, deptFilter, statusFilter, programFilter, yearFilter, skillFilter, hasResumeFilter]);
 
-    // Sort Logic
+    // ── Sort Logic ───────────────────────────────────────────────────────────
     const sortedApps = useMemo(() => {
         if (!sortConfig) return filteredApps;
-
         return [...filteredApps].sort((a, b) => {
-            // Handle potentially undefined values safely
             const aVal = a[sortConfig.key] ?? '';
             const bVal = b[sortConfig.key] ?? '';
-
             if (typeof aVal === 'string' && typeof bVal === 'string') {
                 if (aVal.toLowerCase() < bVal.toLowerCase()) return sortConfig.direction === 'asc' ? -1 : 1;
                 if (aVal.toLowerCase() > bVal.toLowerCase()) return sortConfig.direction === 'asc' ? 1 : -1;
                 return 0;
             }
-
             if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
             if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
@@ -395,31 +330,27 @@ const Admin = () => {
 
     const requestSort = (key: keyof Application) => {
         let direction: 'asc' | 'desc' = 'asc';
-        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-            direction = 'desc';
-        }
+        if (sortConfig?.key === key && sortConfig.direction === 'asc') direction = 'desc';
         setSortConfig({ key, direction });
     };
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'selected': return 'text-green-500 bg-green-500/10 border-green-500/20';
-            case 'shortlisted': return 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20';
-            case 'rejected': return 'text-red-500 bg-red-500/10 border-red-500/20';
-            case 'rejected_pending': return 'text-orange-500 bg-orange-500/10 border-orange-500/20';
-            case 'neutral': return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
-            default: return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
+            case 'selected': return 'text-green-400 bg-green-500/10 border-green-500/20';
+            case 'shortlisted': return 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20';
+            case 'rejected': return 'text-red-400 bg-red-500/10 border-red-500/20';
+            case 'rejected_pending': return 'text-orange-400 bg-orange-500/10 border-orange-500/20';
+            case 'under_review': return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
+            case 'interview_scheduled': return 'text-purple-400 bg-purple-500/10 border-purple-500/20';
+            case 'interviewed': return 'text-orange-300 bg-orange-500/10 border-orange-500/20';
+            case 'waitlisted': return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+            default: return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
         }
     };
 
-    // Allowed roles for admin panel access
     const ALLOWED_ROLES = ['super_admin', 'admin', 'interviewer'];
-
-    // Check access: must have an allowed role OR be in legacy email list
     const hasAccess = (user?.role && ALLOWED_ROLES.includes(user.role)) ||
         (user?.email && ADMIN_EMAILS.includes(user.email));
-
-    // Derived permissions - use ONLY the database role, no fallback confusion
     const isSuperAdmin = user?.role === 'super_admin';
     const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
 
@@ -431,12 +362,8 @@ const Admin = () => {
                 <HolographicCard className="max-w-md w-full text-center p-8 border-red-500/50">
                     <ShieldAlert className="w-16 h-16 text-red-500 mx-auto mb-4" />
                     <h1 className="text-2xl font-bold text-red-500 mb-2">Access Denied</h1>
-                    <p className="text-muted-foreground mb-6">
-                        You do not have permission to view this page. This area is restricted to administrators only.
-                    </p>
-                    <Button onClick={() => navigate('/')} variant="outline" className="border-red-500/50 text-red-500 hover:bg-red-950/30">
-                        Return Home
-                    </Button>
+                    <p className="text-muted-foreground mb-6">Restricted to administrators only.</p>
+                    <Button onClick={() => navigate('/')} variant="outline" className="border-red-500/50 text-red-500 hover:bg-red-950/30">Return Home</Button>
                 </HolographicCard>
             </div>
         );
@@ -445,14 +372,14 @@ const Admin = () => {
     return (
         <div className="min-h-screen bg-black text-foreground relative overflow-hidden">
             <CircuitBoardBackground />
-            
+
             <div className="relative z-10 p-6 md:p-12">
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="max-w-7xl mx-auto space-y-8"
+                    className="max-w-[1600px] mx-auto space-y-8"
                 >
-                    {/* Header with Breadcrumb */}
+                    {/* Header */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                         <div className="space-y-4">
                             <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-all px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl group text-xs tracking-widest uppercase">
@@ -467,230 +394,272 @@ const Admin = () => {
                                 </h1>
                                 <p className="text-muted-foreground flex items-center gap-2">
                                     <LayoutDashboard className="w-4 h-4 text-primary/50" />
-                                    Recruitment Intelligence • {applications.length} Applicants
+                                    Applicant Tracking System · {applications.length} Applicants
                                 </p>
                             </div>
                         </div>
 
-                        <div className={`flex items-center gap-3 px-4 py-2 rounded-2xl border backdrop-blur-xl shadow-lg transition-all duration-500 ${
-                            isSuperAdmin ? 'text-primary bg-primary/10 border-primary/20 shadow-primary/5' : 
-                            user?.role === 'admin' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20 shadow-blue-500/5' :
-                            'text-zinc-400 bg-zinc-500/10 border-white/10'
-                        }`}>
-                            <div className={`w-2.5 h-2.5 rounded-full animate-pulse shadow-[0_0_8px_currentColor] ${
-                                isSuperAdmin ? 'bg-primary' : 
-                                user?.role === 'admin' ? 'bg-blue-400' : 
-                                'bg-zinc-400'
-                            }`}></div>
+                        <div className={`flex items-center gap-3 px-4 py-2 rounded-2xl border backdrop-blur-xl shadow-lg transition-all duration-500 ${isSuperAdmin ? 'text-primary bg-primary/10 border-primary/20' :
+                            user?.role === 'admin' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' :
+                                'text-zinc-400 bg-zinc-500/10 border-white/10'
+                            }`}>
+                            <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${isSuperAdmin ? 'bg-primary' : user?.role === 'admin' ? 'bg-blue-400' : 'bg-zinc-400'}`} />
                             <span className="text-xs font-bold tracking-widest uppercase">
-                                {isSuperAdmin ? 'Super Admin Mode' : 
-                                 user?.role === 'admin' ? 'Admin Mode' : 
-                                 'Interviewer Mode'}
+                                {isSuperAdmin ? 'Super Admin' : user?.role === 'admin' ? 'Admin' : 'Interviewer'}
                             </span>
                             <span className="text-[10px] opacity-50 font-mono px-2 py-0.5 rounded-md bg-white/10 ml-1">
-                                {currentPhase.replace('_', ' ')}
+                                {currentPhase.replace(/_/g, ' ')}
                             </span>
                         </div>
                     </div>
 
+                    {/* ── Main Tabs ─────────────────────────────────────────── */}
                     <Tabs defaultValue="dashboard" className="w-full">
-                        <div className="flex justify-between items-center mb-10 overflow-x-auto pb-2 scrollbar-hide">
-                            <TabsList className="bg-white/5 border border-white/10 p-1 h-auto backdrop-blur-xl rounded-2xl">
-                                <TabsTrigger 
-                                    value="dashboard" 
-                                    className="px-6 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all text-xs font-bold tracking-wider"
-                                >
-                                    <LayoutDashboard className="w-4 h-4 mr-2" />
-                                    DASHBOARD
+                        <div className="flex justify-between items-center mb-8 overflow-x-auto pb-2 scrollbar-hide">
+                            <TabsList className="bg-white/5 border border-white/10 p-1 h-auto backdrop-blur-xl rounded-2xl flex-wrap gap-1">
+                                <TabsTrigger value="dashboard" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                    <LayoutDashboard className="w-3.5 h-3.5 mr-1.5" />DASHBOARD
                                 </TabsTrigger>
                                 {isAdmin && (
                                     <>
+                                        <TabsTrigger value="analytics" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                            <BarChart3 className="w-3.5 h-3.5 mr-1.5" />ANALYTICS
+                                        </TabsTrigger>
+                                        <TabsTrigger value="rankings" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                            <Trophy className="w-3.5 h-3.5 mr-1.5" />RANKINGS
+                                        </TabsTrigger>
                                         {isSuperAdmin && (
-                                            <TabsTrigger 
-                                                value="interviews" 
-                                                className="px-6 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all text-xs font-bold tracking-wider"
-                                            >
-                                                <Calendar className="w-4 h-4 mr-2" />
-                                                INTERVIEWS
+                                            <TabsTrigger value="interviews" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                                <Calendar className="w-3.5 h-3.5 mr-1.5" />INTERVIEWS
                                             </TabsTrigger>
                                         )}
-                                        <TabsTrigger 
-                                            value="activity" 
-                                            className="px-6 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all text-xs font-bold tracking-wider"
-                                        >
-                                            <History className="w-4 h-4 mr-2" />
-                                            ACTIVITY LOG
+                                        <TabsTrigger value="activity" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                            <History className="w-3.5 h-3.5 mr-1.5" />ACTIVITY
                                         </TabsTrigger>
-                                        <TabsTrigger 
-                                            value="settings" 
-                                            className="px-6 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all text-xs font-bold tracking-wider"
-                                        >
-                                            <Settings className="w-4 h-4 mr-2" />
-                                            SETTINGS
+                                        <TabsTrigger value="settings" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                            <Settings2 className="w-3.5 h-3.5 mr-1.5" />SETTINGS
                                         </TabsTrigger>
                                     </>
                                 )}
                             </TabsList>
                         </div>
 
-                        <TabsContent value="dashboard" className="space-y-12 outline-none">
-                            {/* Step 1: Analytics Check */}
-                            {(isSuperAdmin || user?.role === 'admin') && <AdminStats applications={applications} />}
+                        {/* ── DASHBOARD TAB ──────────────────────────────────── */}
+                        <TabsContent value="dashboard" className="space-y-8 outline-none">
+                            {isAdmin && <AdminStats applications={applications} />}
 
-                            {/* Step 2: Advanced Filtering & Sorting */}
                             <div className="space-y-6">
-                                <AdminToolbar
-                                    applications={applications}
-                                    searchTerm={searchTerm}
-                                    onSearchChange={setSearchTerm}
-                                    deptFilter={deptFilter}
-                                    onDeptFilterChange={setDeptFilter}
-                                    statusFilter={statusFilter}
-                                    onStatusFilterChange={setStatusFilter}
-                                    programFilter={programFilter}
-                                    onProgramFilterChange={setProgramFilter}
-                                    yearFilter={yearFilter}
-                                    onYearFilterChange={setYearFilter}
-                                    isPublishing={isPublishing}
-                                    onPublish={publishResults}
-                                    onExport={downloadExcel}
-                                    canPublish={isSuperAdmin}
-                                />
+                                <div className="flex items-center justify-between flex-wrap gap-4">
+                                    <AdminToolbar
+                                        applications={applications}
+                                        searchTerm={searchTerm}
+                                        onSearchChange={setSearchTerm}
+                                        deptFilter={deptFilter}
+                                        onDeptFilterChange={setDeptFilter}
+                                        statusFilter={statusFilter}
+                                        onStatusFilterChange={setStatusFilter}
+                                        programFilter={programFilter}
+                                        onProgramFilterChange={setProgramFilter}
+                                        yearFilter={yearFilter}
+                                        onYearFilterChange={setYearFilter}
+                                        isPublishing={isPublishing}
+                                        onPublish={publishResults}
+                                        onExport={downloadExcel}
+                                        canPublish={isSuperAdmin}
+                                    />
 
-                                {/* Main Table */}
-                                <HolographicCard className="p-0 border-white/5 overflow-hidden shadow-2xl">
-                                    <div className="max-h-[70vh] overflow-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
-                                        <Table>
-                                            <TableHeader className="bg-white/5 sticky top-0 z-10 backdrop-blur-2xl border-b border-white/10">
-                                                <TableRow className="hover:bg-transparent border-white/10">
-                                                    <TableHead onClick={() => requestSort('fullName')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
-                                                        <div className="flex items-center gap-2">Name <ArrowUpDown className="w-3 h-3" /></div>
-                                                    </TableHead>
-                                                    <TableHead className="text-[10px] font-bold tracking-[0.2em] uppercase py-5 text-primary/70">Dept</TableHead>
-                                                    <TableHead onClick={() => requestSort('primaryDept')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
-                                                        <div className="flex items-center gap-2">Choice 1 <ArrowUpDown className="w-3 h-3" /></div>
-                                                    </TableHead>
-                                                    <TableHead onClick={() => requestSort('rating')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
-                                                        <div className="flex items-center gap-2">Rating <ArrowUpDown className="w-3 h-3" /></div>
-                                                    </TableHead>
-                                                    <TableHead onClick={() => requestSort('status')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5 text-center">
-                                                        <div className="flex items-center justify-center gap-2">Status <ArrowUpDown className="w-3 h-3" /></div>
-                                                    </TableHead>
-                                                    <TableHead className="text-[10px] font-bold tracking-[0.2em] uppercase py-5 text-right pr-8">Actions</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {isLoading ? (
-                                                    <TableRow>
-                                                        <TableCell colSpan={6} className="h-64 text-center">
-                                                            <LogoSpinner size="md" className="mx-auto" />
-                                                            <p className="text-xs tracking-widest text-muted-foreground mt-4 uppercase animate-pulse">Syncing Database...</p>
-                                                        </TableCell>
+                                    {/* View Toggle */}
+                                    <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
+                                        <button
+                                            onClick={() => switchView('table')}
+                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'table' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-white'}`}
+                                        >
+                                            <List className="w-3.5 h-3.5" /> Table
+                                        </button>
+                                        <button
+                                            onClick={() => switchView('kanban')}
+                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'kanban' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-white'}`}
+                                        >
+                                            <LayoutGrid className="w-3.5 h-3.5" /> Kanban
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Table View */}
+                                {viewMode === 'table' && (
+                                    <HolographicCard className="p-0 border-white/5 overflow-hidden shadow-2xl">
+                                        <div className="max-h-[70vh] overflow-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+                                            <Table>
+                                                <TableHeader className="bg-white/5 sticky top-0 z-10 backdrop-blur-2xl border-b border-white/10">
+                                                    <TableRow className="hover:bg-transparent border-white/10">
+                                                        <TableHead onClick={() => requestSort('fullName')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
+                                                            <div className="flex items-center gap-2">Name <ArrowUpDown className="w-3 h-3" /></div>
+                                                        </TableHead>
+                                                        <TableHead className="text-[10px] font-bold tracking-[0.2em] uppercase py-5 text-primary/70">Dept</TableHead>
+                                                        <TableHead onClick={() => requestSort('primaryDept')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
+                                                            <div className="flex items-center gap-2">Choice 1 <ArrowUpDown className="w-3 h-3" /></div>
+                                                        </TableHead>
+                                                        <TableHead onClick={() => requestSort('finalScore')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
+                                                            <div className="flex items-center gap-2">Score <ArrowUpDown className="w-3 h-3" /></div>
+                                                        </TableHead>
+                                                        <TableHead onClick={() => requestSort('status')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5 text-center">
+                                                            <div className="flex items-center justify-center gap-2">Status <ArrowUpDown className="w-3 h-3" /></div>
+                                                        </TableHead>
+                                                        <TableHead className="text-[10px] font-bold tracking-[0.2em] uppercase py-5 text-right pr-8">Actions</TableHead>
                                                     </TableRow>
-                                                ) : sortedApps.length === 0 ? (
-                                                    <TableRow>
-                                                        <TableCell colSpan={6} className="h-64 text-center">
-                                                            <div className="max-w-xs mx-auto space-y-3">
-                                                                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-4">
-                                                                    <LayoutDashboard className="w-6 h-6 text-muted-foreground" />
-                                                                </div>
-                                                                <p className="text-sm font-medium text-white">No matches found</p>
-                                                                <p className="text-xs text-muted-foreground">Try adjusting your filters or search terms.</p>
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ) : (
-                                                    sortedApps.map((app) => (
-                                                        <TableRow 
-                                                            key={app.id} 
-                                                            className="hover:bg-white/5 border-white/5 transition-all cursor-pointer group/row" 
-                                                            onClick={() => setSelectedApp(app)}
-                                                        >
-                                                            <TableCell className="py-6 pl-8">
-                                                                <div className="font-heading text-sm text-white group-hover/row:text-primary transition-colors duration-300">{app.fullName}</div>
-                                                                <div className="text-[10px] text-muted-foreground font-mono mt-0.5 tracking-tighter opacity-70">{app.rollNumber}</div>
-                                                                {app.programName && (
-                                                                    <div className="flex items-center gap-1.5 mt-2">
-                                                                        <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-white/5 border border-white/10 text-muted-foreground font-bold tracking-wider uppercase">{app.programCode}</span>
-                                                                        <span className="text-[9px] text-primary/50 font-bold tracking-widest uppercase">Batch {app.batch}</span>
-                                                                    </div>
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <div className="text-xs font-medium text-zinc-400">{app.department}</div>
-                                                                <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-widest">Year {app.year}</div>
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Badge variant="outline" className="bg-primary/10 border-primary/20 text-primary text-[10px] font-bold tracking-wider rounded-md">
-                                                                    {app.primaryDept}
-                                                                </Badge>
-                                                                <div className="text-[10px] text-muted-foreground mt-2 font-medium truncate max-w-[150px] opacity-60">
-                                                                    {app.domains.join(' • ')}
-                                                                </div>
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <div className="flex gap-0.5">
-                                                                    {[1, 2, 3, 4, 5].map((star) => (
-                                                                        <Star
-                                                                            key={star}
-                                                                            className={`w-3 h-3 ${star <= (app.rating || 0) ? 'text-primary fill-primary drop-shadow-[0_0_5px_rgba(220,20,60,0.5)]' : 'text-zinc-800'}`}
-                                                                        />
-                                                                    ))}
-                                                                </div>
-                                                            </TableCell>
-                                                            <TableCell className="text-center">
-                                                                <Badge variant="outline" className={`capitalize text-[9px] font-bold tracking-[0.15em] py-1 px-2.5 rounded-full border-2 ${getStatusColor(app.status)} shadow-lg`}>
-                                                                    {app.status === 'rejected_pending' ? 'To Reject' : app.status === 'shortlisted' ? 'Shortlisted' : app.status}
-                                                                </Badge>
-                                                            </TableCell>
-                                                            <TableCell className="text-right pr-8">
-                                                                <Button 
-                                                                    size="sm" 
-                                                                    variant="ghost" 
-                                                                    className="w-10 h-10 rounded-xl bg-white/5 hover:bg-primary hover:text-white transition-all duration-300 opacity-0 group-hover/row:opacity-100 group-hover/row:translate-x-0 translate-x-2" 
-                                                                    onClick={(e) => { e.stopPropagation(); setSelectedApp(app); }}
-                                                                >
-                                                                    <Eye className="w-4 h-4" />
-                                                                </Button>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {isLoading ? (
+                                                        <TableRow>
+                                                            <TableCell colSpan={6} className="h-64 text-center">
+                                                                <LogoSpinner size="md" className="mx-auto" />
+                                                                <p className="text-xs tracking-widest text-muted-foreground mt-4 uppercase animate-pulse">Syncing Database...</p>
                                                             </TableCell>
                                                         </TableRow>
-                                                    ))
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                </HolographicCard>
+                                                    ) : sortedApps.length === 0 ? (
+                                                        <TableRow>
+                                                            <TableCell colSpan={6} className="h-64 text-center">
+                                                                <div className="max-w-xs mx-auto space-y-3">
+                                                                    <p className="text-sm font-medium text-white">No matches found</p>
+                                                                    <p className="text-xs text-muted-foreground">Try adjusting your filters.</p>
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ) : (
+                                                        sortedApps.map((app) => (
+                                                            <TableRow
+                                                                key={app.id}
+                                                                className="hover:bg-white/5 border-white/5 transition-all cursor-pointer group/row"
+                                                                onClick={() => setSelectedApp(app)}
+                                                            >
+                                                                <TableCell className="py-6 pl-8">
+                                                                    <div className="font-heading text-sm text-white group-hover/row:text-primary transition-colors duration-300">{app.fullName}</div>
+                                                                    <div className="text-[10px] text-muted-foreground font-mono mt-0.5 tracking-tighter opacity-70">{app.rollNumber}</div>
+                                                                    {app.programName && (
+                                                                        <div className="flex items-center gap-1.5 mt-2">
+                                                                            <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-white/5 border border-white/10 text-muted-foreground font-bold tracking-wider uppercase">{app.programCode}</span>
+                                                                            <span className="text-[9px] text-primary/50 font-bold tracking-widest uppercase">Batch {app.batch}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <div className="text-xs font-medium text-zinc-400">{app.department}</div>
+                                                                    <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-widest">Year {app.year}</div>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Badge variant="outline" className="bg-primary/10 border-primary/20 text-primary text-[10px] font-bold tracking-wider rounded-md">
+                                                                        {app.primaryDept}
+                                                                    </Badge>
+                                                                    <div className="text-[10px] text-muted-foreground mt-2 font-medium truncate max-w-[150px] opacity-60">
+                                                                        {app.domains.join(' · ')}
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {app.finalScore && app.finalScore > 0 ? (
+                                                                        <span className={`font-mono text-sm font-bold ${app.finalScore >= 7 ? 'text-green-400' : app.finalScore >= 5 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                                                            {app.finalScore.toFixed(1)}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <div className="flex gap-0.5">
+                                                                            {[1, 2, 3, 4, 5].map(star => (
+                                                                                <Star key={star} className={`w-3 h-3 ${star <= (app.rating || 0) ? 'text-primary fill-primary' : 'text-zinc-800'}`} />
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell className="text-center">
+                                                                    <Badge variant="outline" className={`capitalize text-[9px] font-bold tracking-[0.15em] py-1 px-2.5 rounded-full border-2 ${getStatusColor(app.status)} shadow-lg`}>
+                                                                        {app.status === 'rejected_pending' ? 'To Reject' : app.status.replace(/_/g, ' ')}
+                                                                    </Badge>
+                                                                </TableCell>
+                                                                <TableCell className="text-right pr-8">
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        className="w-10 h-10 rounded-xl bg-white/5 hover:bg-primary hover:text-white transition-all duration-300 opacity-0 group-hover/row:opacity-100"
+                                                                        onClick={(e) => { e.stopPropagation(); setSelectedApp(app); }}
+                                                                    >
+                                                                        <Eye className="w-4 h-4" />
+                                                                    </Button>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                        <div className="px-8 py-3 border-t border-white/5 flex justify-between text-[10px] text-muted-foreground">
+                                            <span>Showing {sortedApps.length} of {applications.length}</span>
+                                            <span>Click any row to view details</span>
+                                        </div>
+                                    </HolographicCard>
+                                )}
+
+                                {/* Kanban View */}
+                                {viewMode === 'kanban' && (
+                                    <KanbanBoard
+                                        applications={filteredApps}
+                                        onUpdate={updateApplication}
+                                        onCardClick={setSelectedApp}
+                                    />
+                                )}
                             </div>
                         </TabsContent>
 
+                        {/* ── ANALYTICS TAB ────────────────────────────────── */}
                         {isAdmin && (
-                            <>
-                                <TabsContent value="interviews" className="outline-none">
-                                    <InterviewScheduler />
-                                </TabsContent>
+                            <TabsContent value="analytics" className="outline-none">
+                                <AnalyticsDashboard applications={applications} />
+                            </TabsContent>
+                        )}
 
-                                <TabsContent value="activity" className="outline-none">
-                                    <AuditLogViewer />
-                                </TabsContent>
+                        {/* ── RANKINGS TAB ─────────────────────────────────── */}
+                        {isAdmin && (
+                            <TabsContent value="rankings" className="outline-none">
+                                <RankingPanel
+                                    applications={applications}
+                                    onUpdateTaskScore={updateTaskScore}
+                                    userEmail={user?.email || ''}
+                                />
+                            </TabsContent>
+                        )}
 
-                                <TabsContent value="settings" className="outline-none">
-                                    <AdminSettings />
-                                </TabsContent>
-                            </>
+                        {/* ── INTERVIEWS TAB ────────────────────────────────── */}
+                        {isAdmin && isSuperAdmin && (
+                            <TabsContent value="interviews" className="outline-none">
+                                <InterviewScheduler />
+                            </TabsContent>
+                        )}
+
+                        {/* ── ACTIVITY LOG TAB ──────────────────────────────── */}
+                        {isAdmin && (
+                            <TabsContent value="activity" className="outline-none">
+                                <AuditLogViewer />
+                            </TabsContent>
+                        )}
+
+                        {/* ── SETTINGS TAB ─────────────────────────────────── */}
+                        {isAdmin && (
+                            <TabsContent value="settings" className="space-y-12 outline-none">
+                                <AdminSettings />
+                                <div className="border-t border-white/10 pt-10">
+                                    <DeptWeightsEditor userEmail={user?.email || ''} />
+                                </div>
+                            </TabsContent>
                         )}
                     </Tabs>
 
-                    {/* Footer Attribution */}
+                    {/* Footer */}
                     <div className="pt-12 pb-6 border-t border-white/5 flex justify-between items-center text-[10px] text-muted-foreground uppercase tracking-[0.3em] font-bold">
-                        <span>IEEE SSCS Portal v2.0.4</span>
+                        <span>IEEE SSCS Portal v3.0</span>
                         <span className="flex items-center gap-2">
-                            <span className="w-1 h-1 rounded-full bg-green-500"></span>
+                            <span className="w-1 h-1 rounded-full bg-green-500" />
                             System Operational
                         </span>
                     </div>
                 </motion.div>
 
-                {/* Step 6: Refactored Modal (includes Step 5 History) */}
+                {/* Application Detail Modal */}
                 <ApplicationModal
                     application={selectedApp}
                     open={!!selectedApp}

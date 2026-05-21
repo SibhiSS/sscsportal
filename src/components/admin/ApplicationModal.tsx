@@ -8,12 +8,13 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { Star, CheckCircle, XCircle, MinusCircle, Trash2, Calendar, Clock, Lock, Save } from 'lucide-react';
+import { Star, CheckCircle, XCircle, MinusCircle, Trash2, Calendar, Clock, Save, Github, Linkedin, FileText, ExternalLink, Users } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
-import { Application, ApplicationStatus, RecruitmentPhase } from '@/types';
+import { Application, ApplicationStatus } from '@/types';
 import { canTransition } from '@/lib/fsm';
-
 import { useAuth } from '@/contexts/AuthContext';
+import CandidateTimeline from '@/components/admin/CandidateTimeline';
+import MultiInterviewerPanel from '@/components/admin/MultiInterviewerPanel';
 
 interface ApplicationModalProps {
     application: Application | null;
@@ -232,31 +233,64 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                             </div>
                         )}
 
-                        {/* Suggestion 5: Activity Log / Timeline Placeholder */}
-                        <div className="md:col-span-2 border-t border-dashed border-white/10 pt-6 mt-2">
-                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Application History</h4>
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-3 text-sm text-foreground/80">
-                                    <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
-                                    <span>Applied on <span className="font-mono">{application.submittedAt ? new Date(application.submittedAt).toLocaleString() : 'N/A'}</span></span>
+                        {/* Resume & Social Links */}
+                        {(application.resumeUrl || application.githubUrl || application.linkedinUrl) && (
+                            <div className="md:col-span-2 border-t border-dashed border-white/10 pt-6 mt-2">
+                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Links & Resume</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {application.resumeUrl && (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="border-white/10 text-muted-foreground hover:text-white text-xs"
+                                            onClick={() => window.open(application.resumeUrl, '_blank')}
+                                        >
+                                            <FileText className="w-3 h-3 mr-1.5" /> Resume
+                                            <ExternalLink className="w-3 h-3 ml-1.5 opacity-50" />
+                                        </Button>
+                                    )}
+                                    {application.githubUrl && (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="border-white/10 text-muted-foreground hover:text-white text-xs"
+                                            onClick={() => window.open(application.githubUrl, '_blank')}
+                                        >
+                                            <Github className="w-3 h-3 mr-1.5" /> GitHub
+                                            <ExternalLink className="w-3 h-3 ml-1.5 opacity-50" />
+                                        </Button>
+                                    )}
+                                    {application.linkedinUrl && (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="border-white/10 text-muted-foreground hover:text-white text-xs"
+                                            onClick={() => window.open(application.linkedinUrl, '_blank')}
+                                        >
+                                            <Linkedin className="w-3 h-3 mr-1.5" /> LinkedIn
+                                            <ExternalLink className="w-3 h-3 ml-1.5 opacity-50" />
+                                        </Button>
+                                    )}
                                 </div>
-                                {application.rating > 0 && (
-                                    <div className="flex items-center gap-3 text-sm text-foreground/80">
-                                        <div className="w-2 h-2 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]"></div>
-                                        <span>Rated <span className="font-bold text-yellow-500">{application.rating} stars</span></span>
-                                    </div>
-                                )}
-                                {application.status !== 'pending' && (
-                                    <div className="flex items-center gap-3 text-sm text-foreground/80">
-                                        <div className={`w-2 h-2 rounded-full shadow-[0_0_8px_currentColor] ${application.status === 'selected' ? 'bg-green-500 text-green-500' :
-                                            application.status === 'rejected' ? 'bg-red-500 text-red-500' :
-                                                'bg-foreground text-foreground'
-                                            }`}></div>
-                                        <span>Status marked as <span className="font-bold uppercase">{application.status}</span></span>
-                                    </div>
-                                )}
                             </div>
+                        )}
+
+                        {/* Candidate Timeline */}
+                        <div className="md:col-span-2 border-t border-dashed border-white/10 pt-6 mt-2">
+                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">Application Timeline</h4>
+                            <CandidateTimeline application={application} />
                         </div>
+
+                        {/* Multi-Interviewer Panel */}
+                        {['interview_scheduled', 'interviewed', 'selected', 'waitlisted', 'rejected'].includes(application.status) && (
+                            <div className="md:col-span-2 border-t border-dashed border-white/10 pt-6 mt-2">
+                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <Users className="w-3.5 h-3.5" />
+                                    Interview Evaluations
+                                </h4>
+                                <MultiInterviewerPanel applicationId={application.id} />
+                            </div>
+                        )}
 
                         <div className="md:col-span-2 space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
                             <div className="flex items-center justify-between">

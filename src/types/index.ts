@@ -28,22 +28,44 @@ export interface Application {
 
     submittedAt: any;
     status: ApplicationStatus;
-    rating: number; // 0-5
+    rating: number; // 0-5 star rating (resume proxy)
     notes?: string;
     shortlistNotified?: boolean;
+
+    // Resume & Social Links
+    resumeUrl?: string;
+    resumeFilename?: string;
+    resumeUploadedAt?: string;
+    githubUrl?: string;
+    linkedinUrl?: string;
+    portfolioUrl?: string;
+    parsedSkills?: string[];
+
+    // Scoring & Ranking
+    taskScore?: number;       // 0-10, set by admin
+    resumeScore?: number;     // 0-10, derived from rating
+    finalScore?: number;      // weighted composite
+    rankInDept?: number;      // auto-assigned rank within dept
+
+    // Timeline timestamps
+    shortlistedAt?: string;
+    interviewedAt?: string;
+    decidedAt?: string;
 }
 
 export type ApplicationStatus =
-    | 'submitted'
+    // Canonical 8-stage pipeline
+    | 'applied'
     | 'under_review'
+    | 'shortlisted'
     | 'interview_scheduled'
     | 'interviewed'
-    | 'waitlisted'
     | 'selected'
+    | 'waitlisted'
     | 'rejected'
-    // Legacy/UI mappings
-    | 'pending' | 'shortlisted' | 'rejected_pending' | 'neutral'
-    // Lifecycle
+    // Legacy/backward compat
+    | 'pending' | 'neutral' | 'rejected_pending'
+    // Lifecycle post-selection
     | 'active_member' | 'alumni' | 'inactive';
 
 export type RecruitmentPhase =
@@ -99,8 +121,62 @@ export interface InterviewFeedback {
     id: string;
     application_id: string;
     interviewer_email: string;
-    score: number;
-    comments: string;
-    recommends_committee: boolean;
+    // Structured 5-metric scores (0-10 each)
+    score_communication: number;
+    score_technical: number;
+    score_enthusiasm: number;
+    score_leadership: number;
+    score_team_fit: number;
+    // Computed
+    total_score: number;         // avg of 5 metrics
+    score: number;               // legacy alias for total_score
+    // Evaluation
+    recommendation: 'strong_select' | 'select' | 'maybe' | 'reject';
+    interviewer_remarks: string;
+    comments: string;            // legacy alias
+    recommends_committee: boolean; // legacy alias
     created_at: string;
+    updated_at?: string;
+}
+
+export type EvaluationRecommendation = 'strong_select' | 'select' | 'maybe' | 'reject';
+
+export interface AggregatedFeedback {
+    applicationId: string;
+    feedbacks: InterviewFeedback[];
+    averageScores: {
+        communication: number;
+        technical: number;
+        enthusiasm: number;
+        leadership: number;
+        teamFit: number;
+        total: number;
+    };
+    variance: number;
+    hasConflict: boolean; // variance > 2.5
+    recommendationSummary: Record<EvaluationRecommendation, number>;
+    interviewerCount: number;
+}
+
+export interface DepartmentWeights {
+    id: string;
+    department: string;
+    // Per-metric weights within interview component
+    metric_weight_communication: number;
+    metric_weight_technical: number;
+    metric_weight_enthusiasm: number;
+    metric_weight_leadership: number;
+    metric_weight_team_fit: number;
+    // Component weights
+    weight_resume: number;
+    weight_task: number;
+    weight_interview: number;
+    updated_at?: string;
+    updated_by?: string;
+}
+
+export interface SkillFrequency {
+    skill: string;
+    count: number;
+    percentage: number;
 }
