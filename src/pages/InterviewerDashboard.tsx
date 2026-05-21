@@ -98,6 +98,11 @@ const InterviewerDashboard = () => {
             secondaryReason: app.secondary_reason || '',
             submittedAt: app.created_at,
             rating: app.rating || 0,
+            resumeUrl: app.resume_url,
+            linkedinUrl: app.linkedin_url,
+            githubUrl: app.github_url,
+            portfolioUrl: app.portfolio_url,
+            parsedSkills: app.parsed_skills || [],
         };
         setEvalApp(mappedApp);
 

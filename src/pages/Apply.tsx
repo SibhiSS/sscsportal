@@ -11,6 +11,9 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { validateRegistrationNumber, RegNoDetails } from '@/utils/validation';
+import * as pdfjsLib from 'pdfjs-dist';
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+import { extractSkillTags } from '@/utils/resumeParser';
 import {
     Select,
     SelectContent,
@@ -34,9 +37,13 @@ const Apply = () => {
         secondaryDomains: [] as string[],
         secondarySkills: '',
         secondaryReason: '',
-        resumeUrl: '',
         linkedinUrl: ''
     });
+
+    // Resume File & Parsing
+    const [resumeFile, setResumeFile] = useState<File | null>(null);
+    const [isParsingResume, setIsParsingResume] = useState(false);
+    const [parsedResumeSkills, setParsedResumeSkills] = useState<string[]>([]);
 
     // Validation State
     const [regValidation, setRegValidation] = useState<RegNoDetails | null>(null);
@@ -222,6 +229,58 @@ const Apply = () => {
         });
     };
 
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) {
+            setResumeFile(null);
+            setParsedResumeSkills([]);
+            return;
+        }
+        
+        if (file.type !== 'application/pdf') {
+            alert('Please upload a PDF file.');
+            e.target.value = '';
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File size should be less than 5MB.');
+            e.target.value = '';
+            return;
+        }
+
+        setResumeFile(file);
+        setIsParsingResume(true);
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map((item: any) => item.str).join(' ');
+                fullText += pageText + ' ';
+            }
+            
+            const extracted = extractSkillTags(fullText);
+            setParsedResumeSkills(extracted);
+            
+            if (extracted.length > 0) {
+                setFormData(prev => {
+                    const existing = prev.skills.split(',').map(s => s.trim()).filter(Boolean);
+                    const newSkills = Array.from(new Set([...existing, ...extracted])).join(', ');
+                    return { ...prev, skills: newSkills };
+                });
+            }
+        } catch (error) {
+            console.error('Error parsing PDF:', error);
+            alert("Could not parse PDF to extract skills, but file will still be uploaded.");
+        } finally {
+            setIsParsingResume(false);
+        }
+    };
+
     const handleNextStep = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -256,6 +315,27 @@ const Apply = () => {
 
         setIsSubmitting(true);
 
+        let uploadedResumeUrl = '';
+        let uploadedResumeFilename = '';
+
+        if (resumeFile) {
+            const fileExt = resumeFile.name.split('.').pop();
+            const fileName = `${user.uid}-${Date.now()}.${fileExt}`;
+
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('resumes')
+                .upload(fileName, resumeFile);
+
+            if (uploadError) {
+                console.error('Upload error:', uploadError);
+                alert("Failed to upload resume. Proceeding without it.");
+            } else if (uploadData) {
+                const { data: { publicUrl } } = supabase.storage.from('resumes').getPublicUrl(fileName);
+                uploadedResumeUrl = publicUrl;
+                uploadedResumeFilename = resumeFile.name;
+            }
+        }
+
         try {
             const { error } = await supabase.from('applications').insert({
                 user_id: user.uid,
@@ -274,7 +354,10 @@ const Apply = () => {
                 secondary_skills: formData.secondarySkills,
                 secondary_reason: formData.secondaryReason,
                 status: 'pending',
-                resume_url: formData.resumeUrl,
+                resume_url: uploadedResumeUrl || null,
+                resume_filename: uploadedResumeFilename || null,
+                resume_uploaded_at: uploadedResumeUrl ? new Date().toISOString() : null,
+                parsed_skills: parsedResumeSkills.length > 0 ? parsedResumeSkills : null,
                 linkedin_url: formData.linkedinUrl,
 
                 // Derived Metadata
@@ -809,16 +892,27 @@ const Apply = () => {
                                                     />
                                                 </div>
                                                 <div className="space-y-2 md:col-span-2">
-                                                    <label className="text-sm font-medium text-muted-foreground">Resume Drive Link</label>
-                                                    <input
-                                                        type="url"
-                                                        name="resumeUrl"
-                                                        value={formData.resumeUrl}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                        className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
-                                                        placeholder="Google Drive link (Make sure it is set to 'Anyone with link can view')"
-                                                    />
+                                                    <label className="text-sm font-medium text-muted-foreground flex justify-between">
+                                                        <span>Upload Resume <span className="text-white/30 text-xs ml-1">(Optional, max 5MB PDF)</span></span>
+                                                        {isParsingResume && <span className="text-primary text-xs animate-pulse">Extracting skills...</span>}
+                                                    </label>
+                                                    <div className="relative">
+                                                        <input
+                                                            type="file"
+                                                            accept=".pdf"
+                                                            onChange={handleFileUpload}
+                                                            className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30"
+                                                        />
+                                                    </div>
+                                                    {parsedResumeSkills.length > 0 && (
+                                                        <div className="flex flex-wrap gap-2 mt-3 animate-in fade-in">
+                                                            {parsedResumeSkills.map(s => (
+                                                                <span key={s} className="px-2 py-1 bg-green-500/10 text-green-400 text-xs rounded-full border border-green-500/20">
+                                                                    {s}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
