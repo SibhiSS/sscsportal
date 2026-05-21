@@ -33,7 +33,9 @@ const Apply = () => {
         secondaryDept: '',
         secondaryDomains: [] as string[],
         secondarySkills: '',
-        secondaryReason: ''
+        secondaryReason: '',
+        resumeUrl: '',
+        linkedinUrl: ''
     });
 
     // Validation State
@@ -272,6 +274,8 @@ const Apply = () => {
                 secondary_skills: formData.secondarySkills,
                 secondary_reason: formData.secondaryReason,
                 status: 'pending',
+                resume_url: formData.resumeUrl,
+                linkedin_url: formData.linkedinUrl,
 
                 // Derived Metadata
                 admission_year: regValidation?.admissionYear,
@@ -792,6 +796,29 @@ const Apply = () => {
                                                             placeholder="98765 43210"
                                                         />
                                                     </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-muted-foreground">LinkedIn URL</label>
+                                                    <input
+                                                        type="url"
+                                                        name="linkedinUrl"
+                                                        value={formData.linkedinUrl}
+                                                        onChange={handleInputChange}
+                                                        className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
+                                                        placeholder="https://linkedin.com/in/username"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2 md:col-span-2">
+                                                    <label className="text-sm font-medium text-muted-foreground">Resume Drive Link</label>
+                                                    <input
+                                                        type="url"
+                                                        name="resumeUrl"
+                                                        value={formData.resumeUrl}
+                                                        onChange={handleInputChange}
+                                                        required
+                                                        className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
+                                                        placeholder="Google Drive link (Make sure it is set to 'Anyone with link can view')"
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
