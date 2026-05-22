@@ -139,6 +139,13 @@ export interface InterviewFeedback {
     updated_at?: string;
 }
 
+export interface PanelMetadata {
+    id?: string;
+    panel_id: number;
+    date: string;
+    panel_name: string;
+}
+
 export type EvaluationRecommendation = 'strong_select' | 'select' | 'maybe' | 'reject';
 
 export interface AggregatedFeedback {

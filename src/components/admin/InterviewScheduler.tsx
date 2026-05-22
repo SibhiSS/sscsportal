@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from '@/lib/supabase';
-import { Interview, Application, AdminUser, PanelAssignment, InterviewFeedback } from '@/types';
+import { Interview, Application, AdminUser, PanelAssignment, InterviewFeedback, PanelMetadata } from '@/types';
 import { format, addDays, startOfWeek, addMinutes, isSameDay, parseISO, setHours, setMinutes } from 'date-fns';
 import { Calendar as CalendarIcon, Clock, Link as LinkIcon, Plus, User, Video, AlertTriangle, Send, Trash2, CheckCircle, Save, ShieldCheck } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
@@ -48,7 +48,7 @@ const InterviewScheduler = () => {
 
     // UI State
     const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
-    const [visiblePanels, setVisiblePanels] = useState(5);
+    const [panelMetadata, setPanelMetadata] = useState<PanelMetadata[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [isSavingAssignment, setIsSavingAssignment] = useState(false);
@@ -79,6 +79,12 @@ const InterviewScheduler = () => {
         fetchAdmins();
         fetchAssignments();
         fetchFeedbacks();
+        fetchPanelMetadata();
+    };
+
+    const fetchPanelMetadata = async () => {
+        const { data } = await supabase.from('panel_metadata').select('*');
+        if (data) setPanelMetadata(data as PanelMetadata[]);
     };
 
     const fetchSlots = async () => {
@@ -159,7 +165,7 @@ const InterviewScheduler = () => {
 
         } catch (error: any) {
             console.error(error);
-            alert("Failed to generate slots.");
+            alert("Failed to generate slots: " + (error?.message || JSON.stringify(error)));
         } finally {
             setIsGenerating(false);
         }
@@ -327,6 +333,33 @@ const InterviewScheduler = () => {
     );
     const myPanelIds = myAssignments.map(a => a.panel_id);
 
+    // Compute active panels for selected date
+    const activePanelIdsForDate = React.useMemo(() => {
+        const slotsForDate = slots.filter(s => isSameDay(parseISO(s.start_time), parseISO(selectedDate)));
+        return Array.from(new Set(slotsForDate.map(s => s.panel_id))).sort((a, b) => a - b);
+    }, [slots, selectedDate]);
+
+    // Compute active panels for generator date
+    const activePanelIdsForGenDate = React.useMemo(() => {
+        const slotsForDate = slots.filter(s => isSameDay(parseISO(s.start_time), parseISO(genConfig.date)));
+        return Array.from(new Set(slotsForDate.map(s => s.panel_id))).sort((a, b) => a - b);
+    }, [slots, genConfig.date]);
+
+    const updatePanelName = async (panelId: number, name: string) => {
+        if (!name.trim()) return;
+        try {
+            const { error } = await supabase.from('panel_metadata').upsert({
+                panel_id: panelId,
+                date: selectedDate,
+                panel_name: name.trim()
+            }, { onConflict: 'panel_id, date' });
+            if (error) throw error;
+            fetchPanelMetadata();
+        } catch (error) {
+            console.error("Failed to update panel name", error);
+        }
+    };
+
     return (
         <div className="space-y-10">
             {/* Header Area */}
@@ -415,7 +448,9 @@ const InterviewScheduler = () => {
                                             <div className="absolute -top-12 -right-12 w-24 h-24 bg-primary/10 rounded-full blur-3xl"></div>
                                             <div className="flex justify-between items-center relative z-10">
                                                 <div>
-                                                    <h4 className="text-xl font-heading font-bold text-white mb-1">Panel {panelId}</h4>
+                                                    <h4 className="text-xl font-heading font-bold text-white mb-1">
+                                                        {panelMetadata.find(p => p.panel_id === panelId && isSameDay(parseISO(p.date), parseISO(selectedDate)))?.panel_name || `Panel ${panelId}`}
+                                                    </h4>
                                                     <p className="text-[10px] text-primary font-bold uppercase tracking-[0.2em]">{panelSlots.length} Total Slots</p>
                                                 </div>
                                                 <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30 text-[10px] font-bold uppercase tracking-widest px-3 py-1">
@@ -538,18 +573,21 @@ const InterviewScheduler = () => {
                                     </Button>
                                     
                                     <div className="flex items-center gap-2 bg-white/5 p-1 rounded-2xl border border-white/10 h-12">
-                                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-white/10" onClick={() => setVisiblePanels(Math.max(1, visiblePanels - 1))}><Trash2 className="w-4 h-4 text-muted-foreground" /></Button>
-                                        <div className="px-4 text-sm font-heading font-bold text-white min-w-[120px] text-center border-x border-white/10">
-                                            {visiblePanels} PANELS
+                                        <div className="px-4 py-2 text-sm font-heading font-bold text-white min-w-[120px] text-center border-white/10">
+                                            {activePanelIdsForDate.length} ACTIVE PANELS
                                         </div>
-                                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-white/10" onClick={() => setVisiblePanels(visiblePanels + 1)}><Plus className="w-4 h-4 text-primary" /></Button>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                                 <AnimatePresence mode="popLayout">
-                                    {Array.from({ length: visiblePanels }, (_, i) => i + 1).map(panelId => {
+                                    {activePanelIdsForDate.length === 0 && (
+                                        <div className="col-span-full py-12 text-center text-muted-foreground border border-dashed border-white/10 rounded-2xl">
+                                            No slots have been generated for {format(parseISO(selectedDate), 'MMM do')} yet. Generate slots first.
+                                        </div>
+                                    )}
+                                    {activePanelIdsForDate.map(panelId => {
                                         const panelAssignments = assignments.filter(a =>
                                             a.panel_id === panelId &&
                                             isSameDay(parseISO(a.date), parseISO(selectedDate))
@@ -565,8 +603,13 @@ const InterviewScheduler = () => {
                                                 className="p-6 rounded-[2rem] bg-white/[0.03] border border-white/5 backdrop-blur-xl relative group/panel hover:border-primary/30 transition-all duration-500"
                                             >
                                                 <div className="flex justify-between items-center mb-6">
-                                                    <h4 className="text-sm font-heading font-bold text-white tracking-widest uppercase">PANEL {panelId}</h4>
-                                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                                                    <Input
+                                                        defaultValue={panelMetadata.find(p => p.panel_id === panelId && isSameDay(parseISO(p.date), parseISO(selectedDate)))?.panel_name || `PANEL ${panelId}`}
+                                                        onBlur={(e) => updatePanelName(panelId, e.target.value)}
+                                                        className="h-8 w-40 px-2 text-sm font-heading font-bold text-white tracking-widest uppercase bg-transparent border-transparent hover:border-white/20 focus:border-primary/50"
+                                                        placeholder={`PANEL ${panelId}`}
+                                                    />
+                                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
                                                         <User className="w-3.5 h-3.5 text-primary" />
                                                     </div>
                                                 </div>
@@ -684,12 +727,14 @@ const InterviewScheduler = () => {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 overflow-auto max-h-[600px] p-2 scrollbar-thin scrollbar-thumb-white/10">
-                                {Array.from({ length: visiblePanels }, (_, i) => i + 1).map(panelId => {
+                                {activePanelIdsForGenDate.map(panelId => {
                                     const panelSlots = slots.filter(s => s.panel_id === panelId && isSameDay(parseISO(s.start_time), new Date(genConfig.date)));
                                     return (
                                         <div key={panelId} className="space-y-4">
                                             <div className="flex items-center justify-between mb-2">
-                                                <div className="text-[10px] font-heading font-bold text-primary tracking-widest uppercase">PANEL {panelId}</div>
+                                                <div className="text-[10px] font-heading font-bold text-primary tracking-widest uppercase">
+                                                    {panelMetadata.find(p => p.panel_id === panelId && isSameDay(parseISO(p.date), parseISO(genConfig.date)))?.panel_name || `PANEL ${panelId}`}
+                                                </div>
                                                 <Badge variant="outline" className="text-[8px] border-white/5 text-muted-foreground">{panelSlots.length}</Badge>
                                             </div>
                                             <div className="space-y-2">
