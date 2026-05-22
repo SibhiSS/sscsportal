@@ -369,7 +369,7 @@ const Apply = () => {
                 secondary_domains: formData.secondaryDomains,
                 secondary_skills: formData.secondarySkills,
                 secondary_reason: formData.secondaryReason,
-                status: 'pending',
+                status: 'applied',
                 resume_url: formData.resumeUrl || null,
                 resume_filename: formData.resumeFilename || null,
                 resume_uploaded_at: formData.resumeUrl ? new Date().toISOString() : null,
