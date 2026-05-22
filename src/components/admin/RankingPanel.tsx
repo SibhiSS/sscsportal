@@ -208,9 +208,8 @@ export default function RankingPanel({ applications, onUpdateTaskScore, userEmai
           metric_weight_enthusiasm: 0.2,
           metric_weight_leadership: 0.2,
           metric_weight_team_fit: 0.2,
-          weight_resume: 0.33,
-          weight_task: 0.33,
-          weight_interview: 0.34,
+          weight_task: 0.40,
+          weight_interview: 0.60,
         };
 
       newRankedMap.set(dept, rankApplicationsInDept(apps, fMap, deptWeight));
@@ -329,7 +328,6 @@ export default function RankingPanel({ applications, onUpdateTaskScore, userEmai
                   <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider w-12">Rank</th>
                   <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Name</th>
                   <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Dept</th>
-                  <th className="text-right px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Resume</th>
                   <th className="text-right px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Task</th>
                   <th className="text-right px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Interview</th>
                   <th className="text-right px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider w-28">Final Score</th>
@@ -381,11 +379,6 @@ export default function RankingPanel({ applications, onUpdateTaskScore, userEmai
                           </span>
                         </td>
 
-                        {/* Resume score */}
-                        <td className="px-4 py-3 text-right">
-                          <span className="text-xs text-white/60">{ranked.resumeScore.toFixed(1)}</span>
-                        </td>
-
                         {/* Task score — editable */}
                         <td className="px-4 py-3 text-right">
                           <TaskScoreEditor
@@ -434,7 +427,7 @@ export default function RankingPanel({ applications, onUpdateTaskScore, userEmai
       {/* Footer info */}
       {!loading && displayedRanked.length > 0 && (
         <p className="text-xs text-white/20 text-right">
-          Scores computed from resume · task · interview weights. Last operator: {userEmail}
+          Scores computed from task · interview weights. Last operator: {userEmail}
         </p>
       )}
     </div>

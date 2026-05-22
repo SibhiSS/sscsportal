@@ -166,9 +166,7 @@ function KanbanCard({ app, onClick, isOverlay = false }: KanbanCardProps) {
             {app.rollNumber}
           </p>
         </div>
-        {app.resumeUrl && (
-          <FileText className="w-3.5 h-3.5 text-white/30 flex-shrink-0 mt-0.5" />
-        )}
+
       </div>
 
       {/* Primary dept badge */}

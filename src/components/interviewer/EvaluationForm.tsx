@@ -328,12 +328,6 @@ export default function EvaluationForm({
         {/* ── Candidate Profile ──────────────────────────────────────────────────────── */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-4">
           <div className="flex flex-wrap gap-2">
-            {application.resumeUrl && (
-              <Button size="sm" variant="outline" className="border-white/10 hover:bg-white/10 h-8 text-xs" onClick={() => window.open(application.resumeUrl, '_blank')}>
-                <FileText className="w-3 h-3 mr-1.5" />
-                View Resume
-              </Button>
-            )}
             {application.linkedinUrl && (
               <Button size="sm" variant="outline" className="border-white/10 hover:bg-white/10 h-8 text-xs" onClick={() => window.open(application.linkedinUrl, '_blank')}>
                 <svg className="w-3 h-3 mr-1.5 text-[#0A66C2]" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
@@ -346,23 +340,10 @@ export default function EvaluationForm({
                 GitHub
               </Button>
             )}
-            {!application.resumeUrl && !application.linkedinUrl && !application.githubUrl && (
+            {!application.linkedinUrl && !application.githubUrl && (
               <span className="text-xs text-white/30 italic">No external links provided.</span>
             )}
           </div>
-          
-          {application.parsedSkills && application.parsedSkills.length > 0 && (
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2 font-semibold">Parsed Skills</div>
-              <div className="flex flex-wrap gap-1.5">
-                {application.parsedSkills.map(skill => (
-                  <span key={skill} className="px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-md text-[10px] font-medium">
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* ── Score ring + metrics ──────────────────────────────────────────── */}

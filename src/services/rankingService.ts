@@ -33,13 +33,10 @@ export function calculateFinalScore(
     aggregated: AggregatedFeedback | null,
     weights: DepartmentWeights
 ): number {
-    // Resume score: derive from 0-5 star rating → normalize to 0-10
-    const resumeScore = Math.min(10, ((app.rating || 0) / 5) * 10);
     const taskScore = Math.min(10, app.taskScore ?? 0);
     const interviewScore = aggregated ? aggregated.averageScores.total : 0;
 
     const final =
-        (resumeScore * weights.weight_resume) +
         (taskScore * weights.weight_task) +
         (interviewScore * weights.weight_interview);
 
@@ -52,7 +49,6 @@ export interface RankedApplication {
     app: Application;
     finalScore: number;
     rank: number;
-    resumeScore: number;
     taskScore: number;
     interviewScore: number;
 }
@@ -64,12 +60,10 @@ export function rankApplicationsInDept(
 ): RankedApplication[] {
     const scored = apps.map(app => {
         const aggregated = aggregates.get(app.id) ?? null;
-        const resumeScore = Math.min(10, ((app.rating || 0) / 5) * 10);
         const taskScore = Math.min(10, app.taskScore ?? 0);
         const interviewScore = aggregated?.averageScores.total ?? 0;
 
         const finalScore =
-            (resumeScore * weights.weight_resume) +
             (taskScore * weights.weight_task) +
             (interviewScore * weights.weight_interview);
 
@@ -77,7 +71,6 @@ export function rankApplicationsInDept(
             app,
             finalScore: Math.round(finalScore * 100) / 100,
             rank: 0,
-            resumeScore,
             taskScore,
             interviewScore,
         };
@@ -99,7 +92,6 @@ export async function persistRankings(ranked: RankedApplication[]): Promise<void
         id: r.app.id,
         final_score: r.finalScore,
         rank_in_dept: r.rank,
-        resume_score: r.resumeScore,
         task_score: r.taskScore,
     }));
 
@@ -109,7 +101,6 @@ export async function persistRankings(ranked: RankedApplication[]): Promise<void
             .update({
                 final_score: update.final_score,
                 rank_in_dept: update.rank_in_dept,
-                resume_score: update.resume_score,
             })
             .eq('id', update.id);
     }

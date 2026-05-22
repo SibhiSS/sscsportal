@@ -233,22 +233,11 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                             </div>
                         )}
 
-                        {/* Resume & Social Links */}
-                        {(application.resumeUrl || application.githubUrl || application.linkedinUrl) && (
+                        {/* Social Links */}
+                        {(application.githubUrl || application.linkedinUrl) && (
                             <div className="md:col-span-2 border-t border-dashed border-white/10 pt-6 mt-2">
-                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Links & Resume</h4>
+                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Links</h4>
                                 <div className="flex flex-wrap gap-2">
-                                    {application.resumeUrl && (
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="border-white/10 text-muted-foreground hover:text-white text-xs"
-                                            onClick={() => window.open(application.resumeUrl, '_blank')}
-                                        >
-                                            <FileText className="w-3 h-3 mr-1.5" /> Resume
-                                            <ExternalLink className="w-3 h-3 ml-1.5 opacity-50" />
-                                        </Button>
-                                    )}
                                     {application.githubUrl && (
                                         <Button
                                             size="sm"

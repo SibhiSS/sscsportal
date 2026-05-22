@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { validateRegistrationNumber, RegNoDetails } from '@/utils/validation';
 import * as pdfjsLib from 'pdfjs-dist';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-import { extractSkillTags } from '@/utils/resumeParser';
+
 import {
     Select,
     SelectContent,
@@ -36,14 +36,8 @@ const Apply = () => {
         secondaryDept: '',
         secondaryDomains: [] as string[],
         secondarySkills: '',
-        secondaryReason: '',
-        linkedinUrl: '',
-        resumeUrl: '',
-        resumeFilename: ''
+        secondaryReason: ''
     });
-
-    const [isParsingResume, setIsParsingResume] = useState(false);
-    const [parsedResumeSkills, setParsedResumeSkills] = useState<string[]>([]);
 
     useEffect(() => {
         if (user?.uid) {
@@ -51,18 +45,21 @@ const Apply = () => {
             if (savedData) {
                 try {
                     const parsed = JSON.parse(savedData);
-                    setFormData(parsed.formData);
-                    setParsedResumeSkills(parsed.parsedResumeSkills || []);
-                } catch (e) {}
+                    if (parsed.formData) {
+                        setFormData(prev => ({ ...prev, ...parsed.formData }));
+                    }
+                } catch (e) {
+                    console.error("Failed to parse cached form data");
+                }
             }
         }
-    }, [user?.uid]);
+    }, [user]);
 
     useEffect(() => {
         if (user?.uid) {
-            localStorage.setItem(`sscsFormData_${user.uid}`, JSON.stringify({ formData, parsedResumeSkills }));
+            localStorage.setItem(`sscsFormData_${user.uid}`, JSON.stringify({ formData }));
         }
-    }, [formData, parsedResumeSkills, user?.uid]);
+    }, [formData, user?.uid]);
 
     // Validation State
     const [regValidation, setRegValidation] = useState<RegNoDetails | null>(null);
@@ -248,76 +245,6 @@ const Apply = () => {
         });
     };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) {
-            setFormData(prev => ({ ...prev, resumeUrl: '', resumeFilename: '' }));
-            setParsedResumeSkills([]);
-            return;
-        }
-        
-        if (file.type !== 'application/pdf') {
-            alert('Please upload a PDF file.');
-            e.target.value = '';
-            return;
-        }
-
-        if (file.size > 5 * 1024 * 1024) {
-            alert('File size should be less than 5MB.');
-            e.target.value = '';
-            return;
-        }
-
-        setIsParsingResume(true);
-
-        try {
-            // 1. Upload to Supabase immediately
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${user?.uid || 'guest'}-${Date.now()}.${fileExt}`;
-
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('resumes')
-                .upload(fileName, file);
-
-            if (uploadError) {
-                console.error('Upload error:', uploadError);
-                alert("Failed to upload resume. Please try again.");
-                setIsParsingResume(false);
-                return;
-            }
-
-            const { data: { publicUrl } } = supabase.storage.from('resumes').getPublicUrl(fileName);
-            setFormData(prev => ({ ...prev, resumeUrl: publicUrl, resumeFilename: file.name }));
-
-            // 2. Parse PDF
-            const arrayBuffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-            let fullText = '';
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const textContent = await page.getTextContent();
-                const pageText = textContent.items.map((item: any) => item.str).join(' ');
-                fullText += pageText + ' ';
-            }
-            
-            const extracted = extractSkillTags(fullText);
-            setParsedResumeSkills(extracted);
-            
-            if (extracted.length > 0) {
-                setFormData(prev => {
-                    const existing = prev.skills.split(',').map(s => s.trim()).filter(Boolean);
-                    const newSkills = Array.from(new Set([...existing, ...extracted])).join(', ');
-                    return { ...prev, skills: newSkills };
-                });
-            }
-        } catch (error) {
-            console.error('Error parsing PDF:', error);
-            // Fail silently so it doesn't disturb applicants
-        } finally {
-            setIsParsingResume(false);
-        }
-    };
-
     const handleNextStep = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -327,11 +254,6 @@ const Apply = () => {
         }
 
         setStep(2);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const handlePrevStep = () => {
-        setStep(1);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -359,7 +281,6 @@ const Apply = () => {
                 full_name: formData.fullName,
                 roll_number: formData.rollNumber,
                 phone: formData.phone,
-                // Passing empty strings for removed academic fields if needed by DB, otherwise depend on null
 
                 primary_dept: formData.primaryDept,
                 domains: formData.domains,
@@ -370,11 +291,6 @@ const Apply = () => {
                 secondary_skills: formData.secondarySkills,
                 secondary_reason: formData.secondaryReason,
                 status: 'applied',
-                resume_url: formData.resumeUrl || null,
-                resume_filename: formData.resumeFilename || null,
-                resume_uploaded_at: formData.resumeUrl ? new Date().toISOString() : null,
-                parsed_skills: parsedResumeSkills.length > 0 ? parsedResumeSkills : null,
-                linkedin_url: formData.linkedinUrl,
 
                 // Derived Metadata
                 admission_year: regValidation?.admissionYear,
@@ -458,12 +374,10 @@ const Apply = () => {
                 console.log("Confirmation email sent");
             } catch (emailErr) {
                 console.error("Failed to send email", emailErr);
-                // Don't block success UI if email fails
             }
             // -------------------------------
 
             setIsSubmitting(false);
-            // Don't set isSubmitted - let existingApp trigger the status view directly
             setExistingApp({
                 ...formData,
                 full_name: formData.fullName,
@@ -481,9 +395,6 @@ const Apply = () => {
 
                 if (data && data.length > 0) {
                     setExistingApp(data[0]);
-
-                    // --- OPTIONAL: SEND EMAIL FOR DUPLICATE CHECK RECOVERY IF NEEDED
-                    // But usually we don't send "Received" again if it's just a re-login
                 } else {
                     setExistingApp({
                         ...formData,
@@ -528,7 +439,6 @@ const Apply = () => {
                 <TechGridBackground />
                 <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-none -z-10" />
                 
-                {/* Background Blobs */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none -z-20">
                     <div className="absolute top-[20%] left-[20%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px]" />
                 </div>
@@ -562,7 +472,6 @@ const Apply = () => {
                 <TechGridBackground />
                 <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-none -z-10" />
                 
-                {/* Background Blobs */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none -z-20">
                     <div className="absolute top-[10%] left-[20%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[120px]" />
                     <div className="absolute bottom-[10%] right-[20%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[100px]" />
@@ -899,60 +808,6 @@ const Apply = () => {
                                                             placeholder="98765 43210"
                                                         />
                                                     </div>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-muted-foreground">LinkedIn URL</label>
-                                                    <input
-                                                        type="url"
-                                                        name="linkedinUrl"
-                                                        value={formData.linkedinUrl}
-                                                        onChange={handleInputChange}
-                                                        className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
-                                                        placeholder="https://linkedin.com/in/username"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2 md:col-span-2">
-                                                    <label className="text-sm font-medium text-muted-foreground flex justify-between">
-                                                        <span>Resume <span className="text-white/30 text-xs ml-1">(Optional, max 5MB PDF)</span></span>
-                                                        {isParsingResume && <span className="text-primary text-xs animate-pulse">Uploading & Extracting skills...</span>}
-                                                    </label>
-                                                    <div className="relative">
-                                                        {formData.resumeUrl ? (
-                                                            <div className="flex items-center justify-between bg-background/50 border border-white/10 rounded-lg px-4 py-3">
-                                                                <div className="flex items-center gap-2 overflow-hidden">
-                                                                    <FileText className="w-4 h-4 text-primary shrink-0" />
-                                                                    <span className="text-sm text-white/80 truncate">{formData.resumeFilename}</span>
-                                                                </div>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setFormData(prev => ({ ...prev, resumeUrl: '', resumeFilename: '' }));
-                                                                        setParsedResumeSkills([]);
-                                                                    }}
-                                                                    className="text-xs text-red-400 hover:text-red-300 px-2 py-1 bg-red-500/10 rounded-md transition-colors shrink-0"
-                                                                >
-                                                                    Remove
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <input
-                                                                type="file"
-                                                                accept=".pdf"
-                                                                onChange={handleFileUpload}
-                                                                disabled={isParsingResume}
-                                                                className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 disabled:opacity-50"
-                                                            />
-                                                        )}
-                                                    </div>
-                                                    {parsedResumeSkills.length > 0 && (
-                                                        <div className="flex flex-wrap gap-2 mt-3 animate-in fade-in">
-                                                            {parsedResumeSkills.map(s => (
-                                                                <span key={s} className="px-2 py-1 bg-green-500/10 text-green-400 text-xs rounded-full border border-green-500/20">
-                                                                    {s}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    )}
                                                 </div>
                                             </div>
                                         </div>

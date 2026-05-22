@@ -32,18 +32,12 @@ export interface Application {
     notes?: string;
     shortlistNotified?: boolean;
 
-    // Resume & Social Links
-    resumeUrl?: string;
-    resumeFilename?: string;
-    resumeUploadedAt?: string;
     githubUrl?: string;
     linkedinUrl?: string;
     portfolioUrl?: string;
-    parsedSkills?: string[];
 
     // Scoring & Ranking
     taskScore?: number;       // 0-10, set by admin
-    resumeScore?: number;     // 0-10, derived from rating
     finalScore?: number;      // weighted composite
     rankInDept?: number;      // auto-assigned rank within dept
 
@@ -175,7 +169,6 @@ export interface DepartmentWeights {
     metric_weight_leadership: number;
     metric_weight_team_fit: number;
     // Component weights
-    weight_resume: number;
     weight_task: number;
     weight_interview: number;
     updated_at?: string;

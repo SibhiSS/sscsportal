@@ -70,7 +70,6 @@ const Admin = () => {
     const [programFilter, setProgramFilter] = useState('ALL');
     const [yearFilter, setYearFilter] = useState('ALL');
     const [skillFilter, setSkillFilter] = useState('');
-    const [hasResumeFilter, setHasResumeFilter] = useState(false);
     const [currentPhase, setCurrentPhase] = useState<RecruitmentPhase>('APPLICATIONS_OPEN');
 
     // Sorting
@@ -141,15 +140,12 @@ const Admin = () => {
                     programName: doc.program_name,
                     batch: doc.batch,
                     programCategory: doc.program_category,
-                    // Resume & Social
-                    resumeUrl: doc.resume_url || '',
-                    resumeFilename: doc.resume_filename || '',
+                    // Social
                     githubUrl: parsed.githubUrl || doc.github_url || '',
                     linkedinUrl: parsed.linkedinUrl || doc.linkedin_url || '',
                     parsedSkills: doc.parsed_skills?.length ? doc.parsed_skills : parsed.skills,
                     // Scoring
                     taskScore: doc.task_score || 0,
-                    resumeScore: doc.resume_score || 0,
                     finalScore: doc.final_score || 0,
                     rankInDept: doc.rank_in_dept,
                     // Timeline
@@ -179,7 +175,7 @@ const Admin = () => {
             if (updates.rating !== undefined) dbUpdates.rating = updates.rating;
             if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
             if (updates.taskScore !== undefined) dbUpdates.task_score = updates.taskScore;
-            if (updates.resumeUrl !== undefined) dbUpdates.resume_url = updates.resumeUrl;
+            if (updates.status !== undefined) dbUpdates.status = updates.status;
             if (updates.githubUrl !== undefined) dbUpdates.github_url = updates.githubUrl;
             if (updates.linkedinUrl !== undefined) dbUpdates.linkedin_url = updates.linkedinUrl;
 
@@ -305,11 +301,9 @@ const Admin = () => {
             const matchesYear = yearFilter === 'ALL' || (app.admissionYear ? app.admissionYear.toString() === yearFilter : false);
             const matchesSkill = !skillFilter || app.skills.toLowerCase().includes(skillFilter.toLowerCase()) ||
                 app.parsedSkills?.some(s => s.toLowerCase().includes(skillFilter.toLowerCase()));
-            const matchesResume = !hasResumeFilter || !!app.resumeUrl;
-
-            return matchesSearch && matchesDept && matchesStatus && matchesProgram && matchesYear && matchesSkill && matchesResume;
+            return matchesSearch && matchesDept && matchesStatus && matchesProgram && matchesYear && matchesSkill;
         });
-    }, [applications, searchTerm, deptFilter, statusFilter, programFilter, yearFilter, skillFilter, hasResumeFilter]);
+    }, [applications, searchTerm, deptFilter, statusFilter, programFilter, yearFilter, skillFilter]);
 
     // ── Sort Logic ───────────────────────────────────────────────────────────
     const sortedApps = useMemo(() => {

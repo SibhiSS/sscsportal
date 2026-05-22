@@ -21,7 +21,6 @@ const METRIC_CONFIG = [
 ];
 
 const COMPONENT_CONFIG = [
-    { key: 'weight_resume' as const, label: 'Resume / Profile', color: '#3b82f6' },
     { key: 'weight_task' as const, label: 'Task / Portfolio', color: '#f59e0b' },
     { key: 'weight_interview' as const, label: 'Interview Score', color: '#dc143c' },
 ];
@@ -121,9 +120,8 @@ export default function DeptWeightsEditor({ userEmail }: DeptWeightsEditorProps)
             metric_weight_enthusiasm: 0.20,
             metric_weight_leadership: 0.20,
             metric_weight_team_fit: 0.20,
-            weight_resume: 0.20,
-            weight_task: 0.35,
-            weight_interview: 0.45,
+            weight_task: 0.40,
+            weight_interview: 0.60,
         };
         setLocalWeights(prev => ({ ...prev, ...defaults }));
     };
