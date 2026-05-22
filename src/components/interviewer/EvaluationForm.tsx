@@ -298,7 +298,7 @@ export default function EvaluationForm({
           <div className="flex items-center gap-3 mt-1.5 flex-wrap">
             <span className="text-xs text-white/40 font-mono">{application.rollNumber}</span>
             <span className="w-1 h-1 rounded-full bg-white/20" />
-            <span className="text-xs text-white/50">{application.department}</span>
+            <span className="text-xs text-white/50">{application.programName || application.department || 'Unknown'} • {application.batch ? `Batch ${application.batch}` : `Year ${application.admissionYear || application.year || 'Unknown'}`}</span>
             <span className="w-1 h-1 rounded-full bg-white/20" />
             <span
               className="text-xs font-medium px-1.5 py-0.5 rounded-md"

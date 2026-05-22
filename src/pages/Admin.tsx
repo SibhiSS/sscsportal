@@ -543,8 +543,8 @@ const Admin = () => {
                                                                     )}
                                                                 </TableCell>
                                                                 <TableCell>
-                                                                    <div className="text-xs font-medium text-zinc-400">{app.department}</div>
-                                                                    <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-widest">Year {app.year}</div>
+                                                                    <div className="text-xs font-medium text-zinc-400">{app.programName || app.department || 'Unknown'}</div>
+                                                                    <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-widest">{app.batch ? `Batch ${app.batch}` : `Year ${app.admissionYear || app.year || 'Unknown'}`}</div>
                                                                 </TableCell>
                                                                 <TableCell>
                                                                     <Badge variant="outline" className="bg-primary/10 border-primary/20 text-primary text-[10px] font-bold tracking-wider rounded-md">

@@ -177,9 +177,9 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                                 <span className="text-muted-foreground">Phone:</span>
                                 <span>{application.phone}</span>
                                 <span className="text-muted-foreground">Department:</span>
-                                <span>{application.department}</span>
+                                <span>{application.programName || application.department || 'Unknown'}</span>
                                 <span className="text-muted-foreground">Year:</span>
-                                <span>{application.year}</span>
+                                <span>{application.batch || application.admissionYear || application.year || 'Unknown'}</span>
                             </div>
                         </div>
 
