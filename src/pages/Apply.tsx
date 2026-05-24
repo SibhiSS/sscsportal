@@ -29,6 +29,8 @@ const Apply = () => {
         fullName: user?.displayName || '',
         rollNumber: '',
         phone: '',
+        linkedinUrl: '',
+        githubUrl: '',
         primaryDept: '',
         domains: [] as string[],
         skills: '',
@@ -253,6 +255,21 @@ const Apply = () => {
             return;
         }
 
+        if (!formData.primaryDept) {
+            alert("Please select a Primary Department.");
+            return;
+        }
+
+        if (formData.domains.length === 0) {
+            alert("Please select at least one role for your Primary Department.");
+            return;
+        }
+
+        if (!formData.skills.trim()) {
+            alert("Please tell us about your skills for the primary role.");
+            return;
+        }
+
         setStep(2);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -281,6 +298,8 @@ const Apply = () => {
                 full_name: formData.fullName,
                 roll_number: formData.rollNumber,
                 phone: formData.phone,
+                linkedin_url: formData.linkedinUrl,
+                github_url: formData.githubUrl,
 
                 primary_dept: formData.primaryDept,
                 domains: formData.domains,
@@ -809,6 +828,28 @@ const Apply = () => {
                                                         />
                                                     </div>
                                                 </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-muted-foreground">LinkedIn URL</label>
+                                                    <input
+                                                        type="url"
+                                                        name="linkedinUrl"
+                                                        value={formData.linkedinUrl}
+                                                        onChange={handleInputChange}
+                                                        className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
+                                                        placeholder="https://linkedin.com/in/username"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-muted-foreground">GitHub URL <span className="text-white/30 text-xs">(Optional)</span></label>
+                                                    <input
+                                                        type="url"
+                                                        name="githubUrl"
+                                                        value={formData.githubUrl}
+                                                        onChange={handleInputChange}
+                                                        className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
+                                                        placeholder="https://github.com/username"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
 
@@ -820,7 +861,6 @@ const Apply = () => {
                                             <div className="space-y-2">
                                                 <label className="text-sm font-medium text-muted-foreground">Department of Interest</label>
                                                 <Select
-                                                    required
                                                     value={formData.primaryDept}
                                                     onValueChange={(value) => setFormData(prev => ({ ...prev, primaryDept: value, domains: [] }))}
                                                 >
@@ -922,7 +962,6 @@ const Apply = () => {
                                             <div className="space-y-2">
                                                 <label className="text-sm font-medium text-muted-foreground">Department of Interest</label>
                                                 <Select
-                                                    required
                                                     value={formData.secondaryDept}
                                                     onValueChange={(value) => setFormData(prev => ({ ...prev, secondaryDept: value, secondaryDomains: [] }))}
                                                 >

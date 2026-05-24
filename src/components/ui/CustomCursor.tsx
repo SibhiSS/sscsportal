@@ -138,16 +138,6 @@ const CustomCursor = () => {
                 className="absolute flex items-center justify-center"
             >
                 <div className="h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,1)]" />
-                
-                {isHovering && (
-                    <motion.div
-                        initial={{ opacity: 0, x: 8 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="absolute left-3 top-3 font-mono text-[6px] font-bold text-primary uppercase"
-                    >
-                        locked
-                    </motion.div>
-                )}
             </motion.div>
         </div>
     );
