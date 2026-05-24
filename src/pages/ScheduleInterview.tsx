@@ -12,6 +12,7 @@ import SlotCalendar from '@/components/ui/SlotCalendar';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 
 const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
+const PORTAL_URL = 'https://sscsportal.vercel.app';
 const ADMIN_EMAILS = [
     'sibhi.s2024@vitstudent.ac.in',
     'sibhis5223@gmail.com',
@@ -118,6 +119,48 @@ const ScheduleInterview = () => {
                     .from('applications')
                     .update({ status: 'interview_scheduled', shortlisted_at: new Date().toISOString() })
                     .eq('id', existingApp.id);
+
+                // Send confirmation email to candidate
+                if (GOOGLE_SCRIPT_URL) {
+                    const startTime = parseISO(pendingSlot.start_time);
+                    const dateStr = format(startTime, 'EEEE, MMMM d, yyyy');
+                    const timeStr = format(startTime, 'h:mm a');
+                    try {
+                        await fetch(GOOGLE_SCRIPT_URL, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                email: existingApp.email,
+                                subject: 'Interview Slot Confirmed - IEEE SSCS',
+                                message: `<div style="font-family:'Inter',sans-serif;background:#050505;color:#e5e5e5;max-width:600px;margin:0 auto;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;">
+                                    <div style="background:#000;padding:40px 20px;text-align:center;border-bottom:1px solid #1a1a1a;">
+                                        <h1 style="color:#fff;margin:0;text-transform:uppercase;letter-spacing:2px;font-size:16px;font-weight:600;">IEEE Solid-State Circuits Society</h1>
+                                    </div>
+                                    <div style="padding:45px 40px;">
+                                        <h2 style="color:#a855f7;margin-top:0;font-size:24px;font-weight:700;">Interview Confirmed ✓</h2>
+                                        <p style="font-size:15px;line-height:1.6;color:#d1d5db;">Dear <strong>${existingApp.full_name}</strong>,</p>
+                                        <p style="font-size:15px;line-height:1.6;color:#d1d5db;">Your interview slot has been successfully booked. Here are your details:</p>
+                                        <div style="background:#0a0a0a;border:1px solid #1f2937;padding:25px;border-radius:8px;margin:30px 0;">
+                                            <table style="width:100%;border-collapse:collapse;">
+                                                <tr><td style="padding:8px 0;color:#9ca3af;font-size:13px;">Date</td><td style="padding:8px 0;color:#fff;font-weight:600;font-size:13px;">${dateStr}</td></tr>
+                                                <tr><td style="padding:8px 0;color:#9ca3af;font-size:13px;">Time</td><td style="padding:8px 0;color:#a855f7;font-weight:700;font-size:16px;">${timeStr}</td></tr>
+                                                <tr><td style="padding:8px 0;color:#9ca3af;font-size:13px;">Department</td><td style="padding:8px 0;color:#fff;font-weight:600;font-size:13px;">${existingApp.primary_dept}</td></tr>
+                                            </table>
+                                        </div>
+                                        <p style="font-size:14px;color:#9ca3af;">Your meeting link will be sent to you before the interview. You can also check it on our portal.</p>
+                                        <div style="text-align:center;margin:30px 0;">
+                                            <a href="${PORTAL_URL}/apply" style="display:inline-block;background:#7c3aed;color:#fff;padding:14px 28px;text-decoration:none;border-radius:4px;font-weight:600;font-size:14px;">View My Status</a>
+                                        </div>
+                                        <p style="font-size:13px;color:#6b7280;border-top:1px solid #1a1a1a;padding-top:20px;margin-top:20px;">Please be ready 5 minutes before your scheduled time.<br><strong style="color:#fff;">IEEE SSCS Recruitment Team</strong></p>
+                                    </div>
+                                </div>`
+                            })
+                        });
+                    } catch (e) {
+                        console.warn('Confirmation email failed:', e);
+                    }
+                }
 
                 // Last-minute check for urgent alerts
                 const startTime = parseISO(pendingSlot.start_time);

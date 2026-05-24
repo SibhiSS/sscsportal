@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Send, User, Code, FileText, Phone, ArrowRight, ChevronLeft, LogIn, Trophy, Clock, XOctagon, Calendar as CalendarIcon, Video } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
@@ -18,6 +18,94 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+
+// ── Interview Scheduled Status Component ──────────────────────────────────────
+const InterviewScheduledStatus = ({ app }: { app: any }) => {
+    const [slotInfo, setSlotInfo] = useState<{ start_time: string; panel_id: number } | null>(null);
+    const [meetingLink, setMeetingLink] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchSlotInfo = async () => {
+            // Get the booked slot for this application
+            const { data: slot } = await supabase
+                .from('interview_slots')
+                .select('start_time, panel_id')
+                .eq('booked_by', app.id)
+                .single();
+            if (slot) {
+                setSlotInfo(slot);
+                // Get the meeting link from panel_assignments
+                const dateStr = format(parseISO(slot.start_time), 'yyyy-MM-dd');
+                const { data: assignment } = await supabase
+                    .from('panel_assignments')
+                    .select('meeting_link')
+                    .eq('panel_id', slot.panel_id)
+                    .eq('date', dateStr)
+                    .not('meeting_link', 'is', null)
+                    .limit(1)
+                    .single();
+                if (assignment?.meeting_link?.trim()) {
+                    setMeetingLink(assignment.meeting_link.trim());
+                }
+            }
+        };
+        fetchSlotInfo();
+    }, [app.id]);
+
+    return (
+        <>
+            <div className="w-20 h-20 bg-purple-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-purple-500/30">
+                <Video className="w-10 h-10 text-purple-400" />
+            </div>
+            <h2 className="text-3xl font-heading font-bold mb-2 text-white">Interview Scheduled</h2>
+            <div className="inline-block px-4 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 mb-6 text-sm font-medium">
+                ✓ Confirmed
+            </div>
+
+            {/* Slot info */}
+            <div className="p-5 bg-white/5 rounded-xl border border-white/10 text-left mb-5 max-w-sm mx-auto space-y-3">
+                {slotInfo && (
+                    <>
+                        <div>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">Date</div>
+                            <div className="font-medium text-white">{format(parseISO(slotInfo.start_time), 'EEEE, MMMM d, yyyy')}</div>
+                        </div>
+                        <div className="h-px bg-white/5" />
+                        <div>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">Time</div>
+                            <div className="font-bold text-purple-300 text-lg font-mono">{format(parseISO(slotInfo.start_time), 'h:mm a')}</div>
+                        </div>
+                        <div className="h-px bg-white/5" />
+                    </>
+                )}
+                <div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">Department</div>
+                    <div className="font-medium text-primary">{app.primary_dept}</div>
+                </div>
+            </div>
+
+            {/* Meeting link */}
+            {meetingLink ? (
+                <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl mb-6 max-w-sm mx-auto">
+                    <div className="text-[10px] text-green-400 uppercase tracking-widest mb-2 font-bold">Meeting Link Ready</div>
+                    <a
+                        href={meetingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold text-sm transition-colors"
+                    >
+                        <Video className="w-4 h-4" />
+                        Join Interview
+                    </a>
+                </div>
+            ) : (
+                <p className="text-sm text-muted-foreground mb-6">
+                    Your meeting link will appear here and be emailed to you once assigned.
+                </p>
+            )}
+        </>
+    );
+};
 
 const Apply = () => {
     const { user, signInWithGoogle, loading: authLoading } = useAuth();
@@ -401,7 +489,7 @@ const Apply = () => {
                                 </div>
 
                                 <div style="background-color: #000000; padding: 30px 25px; text-align: center; border-top: 1px solid #1a1a1a;">
-                                    <img src="https://ieeesscs.vercel.app/ieee-sscs-logo.png" alt="SSCS" style="height: 25px; margin-bottom: 15px;">
+                                    <img src="https://sscsportal.vercel.app/ieee-sscs-logo.png" alt="SSCS" style="height: 25px; margin-bottom: 15px;">
                                     <p style="color: #4b5563; font-size: 11px; margin: 0; font-family: 'Inter', sans-serif;">
                                         IEEE Solid-State Circuits Society | VIT Chennai Campus
                                     </p>
@@ -572,26 +660,7 @@ const Apply = () => {
                                 </Button>
                             </div>
                         ) : existingApp.status === 'interview_scheduled' ? (
-                            <>
-                                <div className="w-20 h-20 bg-purple-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                                    <Video className="w-10 h-10 text-purple-500" />
-                                </div>
-                                <h2 className="text-3xl font-heading font-bold mb-2 text-white">Interview Scheduled</h2>
-                                <div className="inline-block px-4 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 mb-6 text-sm font-medium">
-                                    Confirmed
-                                </div>
-                                <p className="text-gray-300 mb-8 leading-relaxed">
-                                    Your interview has been booked. You will receive a meeting link via email shortly before the interview.
-                                    <br />
-                                    Please check your spam folder as well.
-                                </p>
-                                <div className="p-4 bg-white/5 rounded-lg border border-white/5 text-left mb-6 max-w-sm mx-auto">
-                                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Status</div>
-                                    <div className="font-medium text-purple-400">Scheduled</div>
-                                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1 mt-3">Note</div>
-                                    <div className="text-sm text-white">Please be ready 5 minutes before your slot.</div>
-                                </div>
-                            </>
+                            <InterviewScheduledStatus app={existingApp} />
                         ) : (
                             <>
                                 <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">

@@ -24,6 +24,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 // CONFIG (Should match Admin.tsx)
 const EMAILJS_PUBLIC_KEY = "bj3DbINQas11jOWqr";
 const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
+const PORTAL_URL = 'https://sscsportal.vercel.app';
 
 const InterviewScheduler = () => {
     const { user } = useAuth();
@@ -203,12 +204,69 @@ const InterviewScheduler = () => {
 
     const updateAssignmentLink = async (id: string, link: string) => {
         try {
+            // Get assignment details before updating
+            const assignment = assignments.find(a => a.id === id);
             const { error } = await supabase.from('panel_assignments').update({ meeting_link: link }).eq('id', id);
             if (error) throw error;
             fetchAssignments();
+
+            // Send meeting link email to any booked candidate on this panel
+            if (link.trim() && assignment && GOOGLE_SCRIPT_URL) {
+                const { data: bookedSlots } = await supabase
+                    .from('interview_slots')
+                    .select('booked_by, start_time, applications(full_name, email, primary_dept)')
+                    .eq('panel_id', assignment.panel_id)
+                    .eq('is_booked', true)
+                    .gte('start_time', `${assignment.date}T00:00:00`)
+                    .lte('start_time', `${assignment.date}T23:59:59`);
+
+                if (bookedSlots && bookedSlots.length > 0) {
+                    for (const slot of bookedSlots) {
+                        const app = (slot as any).applications;
+                        if (!app?.email) continue;
+                        const slotTime = format(parseISO(slot.start_time), 'h:mm a');
+                        const slotDate = format(parseISO(slot.start_time), 'EEEE, MMMM d, yyyy');
+                        try {
+                            await fetch(GOOGLE_SCRIPT_URL, {
+                                method: 'POST',
+                                mode: 'no-cors',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    email: app.email,
+                                    subject: 'Your Interview Meeting Link - IEEE SSCS',
+                                    message: `<div style="font-family:'Inter',sans-serif;background:#050505;color:#e5e5e5;max-width:600px;margin:0 auto;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;">
+                                        <div style="background:#000;padding:40px 20px;text-align:center;border-bottom:1px solid #1a1a1a;">
+                                            <h1 style="color:#fff;margin:0;text-transform:uppercase;letter-spacing:2px;font-size:16px;font-weight:600;">IEEE Solid-State Circuits Society</h1>
+                                        </div>
+                                        <div style="padding:45px 40px;">
+                                            <h2 style="color:#22c55e;margin-top:0;font-size:24px;font-weight:700;">Meeting Link Ready 📹</h2>
+                                            <p style="font-size:15px;line-height:1.6;color:#d1d5db;">Dear <strong>${app.full_name}</strong>,</p>
+                                            <p style="font-size:15px;line-height:1.6;color:#d1d5db;">Your interview meeting link is now ready. Here are your details:</p>
+                                            <div style="background:#0a0a0a;border:1px solid #1f2937;padding:25px;border-radius:8px;margin:30px 0;">
+                                                <table style="width:100%;border-collapse:collapse;">
+                                                    <tr><td style="padding:8px 0;color:#9ca3af;font-size:13px;">Date</td><td style="padding:8px 0;color:#fff;font-weight:600;font-size:13px;">${slotDate}</td></tr>
+                                                    <tr><td style="padding:8px 0;color:#9ca3af;font-size:13px;">Time</td><td style="padding:8px 0;color:#a855f7;font-weight:700;font-size:16px;">${slotTime}</td></tr>
+                                                    <tr><td style="padding:8px 0;color:#9ca3af;font-size:13px;">Department</td><td style="padding:8px 0;color:#fff;font-weight:600;font-size:13px;">${app.primary_dept}</td></tr>
+                                                </table>
+                                            </div>
+                                            <div style="text-align:center;margin:30px 0;">
+                                                <a href="${link}" style="display:inline-block;background:#16a34a;color:#fff;padding:14px 28px;text-decoration:none;border-radius:4px;font-weight:700;font-size:15px;">Join Interview Meeting</a>
+                                            </div>
+                                            <p style="font-size:13px;color:#9ca3af;">You can also access this link anytime from your <a href="${PORTAL_URL}/apply" style="color:#a855f7;">application status page</a>.</p>
+                                            <p style="font-size:13px;color:#6b7280;border-top:1px solid #1a1a1a;padding-top:20px;margin-top:20px;">Please join 5 minutes before your slot.<br><strong style="color:#fff;">IEEE SSCS Recruitment Team</strong></p>
+                                        </div>
+                                    </div>`
+                                })
+                            });
+                        } catch (e) {
+                            console.warn(`Failed to send link email to ${app.email}:`, e);
+                        }
+                    }
+                }
+            }
         } catch (error) {
             console.error(error);
-            alert("Failed to update link.");
+            alert('Failed to update link.');
         }
     };
 
@@ -290,7 +348,7 @@ const InterviewScheduler = () => {
                                     </div>
 
                                     <div style="text-align: center; margin: 40px 0;">
-                                        <a href="https://ieeesscs.vercel.app/schedule" style="display: inline-block; background-color: #7c3aed; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: 600; font-family: 'Inter', sans-serif; font-size: 14px;">Schedule Interview Slot</a>
+                                        <a href="https://sscsportal.vercel.app/schedule" style="display: inline-block; background-color: #7c3aed; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: 600; font-family: 'Inter', sans-serif; font-size: 14px;">Schedule Interview Slot</a>
                                     </div>
 
                                     <p style="margin-top: 45px; border-top: 1px solid #1a1a1a; padding-top: 25px; font-size: 14px; color: #6b7280;">
@@ -300,7 +358,7 @@ const InterviewScheduler = () => {
                                 </div>
 
                                 <div style="background-color: #000000; padding: 30px 25px; text-align: center; border-top: 1px solid #1a1a1a;">
-                                    <img src="https://ieeesscs.vercel.app/ieee-sscs-logo.png" alt="SSCS" style="height: 25px; margin-bottom: 15px;">
+                                    <img src="https://sscsportal.vercel.app/ieee-sscs-logo.png" alt="SSCS" style="height: 25px; margin-bottom: 15px;">
                                 </div>
                             </div>
                         `

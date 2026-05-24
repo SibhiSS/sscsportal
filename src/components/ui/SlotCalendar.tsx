@@ -55,6 +55,20 @@ export default function SlotCalendar({ slots, onSelectSlot }: SlotCalendarProps)
         ? slotsByDate[format(selectedDate, 'yyyy-MM-dd')] || []
         : [];
 
+    // Group by time — user never sees panels. Show one entry per time, pick first available panel.
+    const slotsByTime = useMemo(() => {
+        const map: Record<string, SlotData[]> = {};
+        for (const slot of slotsForSelectedDate) {
+            const key = format(parseISO(slot.start_time), 'HH:mm');
+            if (!map[key]) map[key] = [];
+            map[key].push(slot);
+        }
+        // Sort by time key
+        return Object.entries(map)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([, slots]) => slots); // array of slot groups
+    }, [slotsForSelectedDate]);
+
     const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     return (
@@ -168,8 +182,8 @@ export default function SlotCalendar({ slots, onSelectSlot }: SlotCalendarProps)
                         <h3 className="text-sm font-bold text-white">
                             {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select a Date'}
                         </h3>
-                        {selectedDate && slotsForSelectedDate.length > 0 && (
-                            <p className="text-[10px] text-muted-foreground">{slotsForSelectedDate.length} slot{slotsForSelectedDate.length !== 1 ? 's' : ''} available</p>
+                        {selectedDate && slotsByTime.length > 0 && (
+                            <p className="text-[10px] text-muted-foreground">{slotsByTime.length} time{slotsByTime.length !== 1 ? 's' : ''} available</p>
                         )}
                     </div>
                 </div>
@@ -182,7 +196,7 @@ export default function SlotCalendar({ slots, onSelectSlot }: SlotCalendarProps)
                                 Click a highlighted date<br />to view available slots
                             </p>
                         </div>
-                    ) : slotsForSelectedDate.length === 0 ? (
+                    ) : slotsByTime.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full min-h-[180px] text-center">
                             <Clock className="w-10 h-10 text-muted-foreground/20 mb-3" />
                             <p className="text-sm text-muted-foreground/60">All slots taken for this date</p>
@@ -190,16 +204,18 @@ export default function SlotCalendar({ slots, onSelectSlot }: SlotCalendarProps)
                     ) : (
                         <AnimatePresence mode="wait">
                             <motion.div
-                                key={format(selectedDate, 'yyyy-MM-dd')}
+                                key={format(selectedDate!, 'yyyy-MM-dd')}
                                 initial={{ opacity: 0, y: 8 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -8 }}
                                 transition={{ duration: 0.2 }}
                                 className="space-y-2"
                             >
-                                {slotsForSelectedDate
-                                    .sort((a, b) => a.start_time.localeCompare(b.start_time))
-                                    .map(slot => (
+                                {slotsByTime.map(group => {
+                                    // Pick first available slot from this time group
+                                    const slot = group[0];
+                                    const timeStr = format(parseISO(slot.start_time), 'h:mm a');
+                                    return (
                                         <motion.button
                                             key={slot.id}
                                             whileHover={{ scale: 1.02 }}
@@ -210,10 +226,10 @@ export default function SlotCalendar({ slots, onSelectSlot }: SlotCalendarProps)
                                         >
                                             <div className="text-left">
                                                 <div className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors font-mono">
-                                                    {format(parseISO(slot.start_time), 'h:mm a')}
+                                                    {timeStr}
                                                 </div>
-                                                <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wider">
-                                                    Panel {slot.panel_id}
+                                                <div className="text-[10px] text-muted-foreground mt-0.5">
+                                                    30 min · Available
                                                 </div>
                                             </div>
                                             <Badge
@@ -223,7 +239,8 @@ export default function SlotCalendar({ slots, onSelectSlot }: SlotCalendarProps)
                                                 Book
                                             </Badge>
                                         </motion.button>
-                                    ))}
+                                    );
+                                })}
                             </motion.div>
                         </AnimatePresence>
                     )}
