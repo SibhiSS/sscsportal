@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react';
 import { format, parseISO, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Clock, Calendar, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight, Clock, Calendar, Users, Flame } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface SlotData {
@@ -15,22 +14,22 @@ interface SlotData {
 
 interface SlotCalendarProps {
     slots: SlotData[];
+    /** Receives slotId, slotTime, panelId — triggers confirmation modal upstream */
     onSelectSlot: (slotId: string, slotTime: string, panelId: number) => void;
     isLoading?: boolean;
 }
 
-export default function SlotCalendar({ slots, onSelectSlot, isLoading = false }: SlotCalendarProps) {
+export default function SlotCalendar({ slots, onSelectSlot }: SlotCalendarProps) {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-    const [bookingLoading, setBookingLoading] = useState<string | null>(null);
 
-    // Available (unbooked) slots
+    // Only show available slots in the calendar
     const availableSlots = useMemo(() =>
         slots.filter(s => !s.is_booked),
         [slots]
     );
 
-    // Group slots by date key
+    // Group by date key for fast lookup
     const slotsByDate = useMemo(() => {
         const map: Record<string, SlotData[]> = {};
         for (const slot of availableSlots) {
@@ -41,23 +40,16 @@ export default function SlotCalendar({ slots, onSelectSlot, isLoading = false }:
         return map;
     }, [availableSlots]);
 
-    // Days in current month view
     const daysInMonth = useMemo(() => {
         const start = startOfMonth(currentMonth);
         const end = endOfMonth(currentMonth);
         return eachDayOfInterval({ start, end });
     }, [currentMonth]);
 
-    const startDayOfWeek = getDay(startOfMonth(currentMonth)); // 0=Sun
+    const startDayOfWeek = getDay(startOfMonth(currentMonth));
 
-    // Total booked percentage
-    const bookedPct = slots.length > 0 ? Math.round((slots.filter(s => s.is_booked).length / slots.length) * 100) : 0;
-
-    const handleSelectSlot = async (slot: SlotData) => {
-        setBookingLoading(slot.id);
-        await onSelectSlot(slot.id, slot.start_time, slot.panel_id);
-        setBookingLoading(null);
-    };
+    const totalBooked = slots.filter(s => s.is_booked).length;
+    const bookedPct = slots.length > 0 ? Math.round((totalBooked / slots.length) * 100) : 0;
 
     const slotsForSelectedDate = selectedDate
         ? slotsByDate[format(selectedDate, 'yyyy-MM-dd')] || []
@@ -66,14 +58,14 @@ export default function SlotCalendar({ slots, onSelectSlot, isLoading = false }:
     const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     return (
-        <div className="grid md:grid-cols-[1fr_300px] gap-6 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-[1fr_320px] gap-4">
             {/* ── Calendar ─────────────────────────────────────────────── */}
-            <div className="bg-black/40 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
+            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
                 {/* Month navigation */}
                 <div className="flex items-center justify-between mb-6">
                     <button
-                        onClick={() => setCurrentMonth(m => subMonths(m, 1))}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-muted-foreground hover:text-white"
+                        onClick={() => { setCurrentMonth(m => subMonths(m, 1)); setSelectedDate(null); }}
+                        className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-muted-foreground hover:text-white border border-white/5 hover:border-white/10"
                     >
                         <ChevronLeft className="w-4 h-4" />
                     </button>
@@ -81,17 +73,17 @@ export default function SlotCalendar({ slots, onSelectSlot, isLoading = false }:
                         {format(currentMonth, 'MMMM yyyy')}
                     </h3>
                     <button
-                        onClick={() => setCurrentMonth(m => addMonths(m, 1))}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-muted-foreground hover:text-white"
+                        onClick={() => { setCurrentMonth(m => addMonths(m, 1)); setSelectedDate(null); }}
+                        className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors text-muted-foreground hover:text-white border border-white/5 hover:border-white/10"
                     >
                         <ChevronRight className="w-4 h-4" />
                     </button>
                 </div>
 
                 {/* Day labels */}
-                <div className="grid grid-cols-7 mb-2">
+                <div className="grid grid-cols-7 mb-3">
                     {DAY_LABELS.map(d => (
-                        <div key={d} className="text-center text-[10px] text-muted-foreground font-bold uppercase tracking-wider py-1">
+                        <div key={d} className="text-center text-[10px] text-muted-foreground/60 font-bold uppercase tracking-widest py-1">
                             {d}
                         </div>
                     ))}
@@ -99,7 +91,6 @@ export default function SlotCalendar({ slots, onSelectSlot, isLoading = false }:
 
                 {/* Calendar grid */}
                 <div className="grid grid-cols-7 gap-1">
-                    {/* Empty cells before month starts */}
                     {Array.from({ length: startDayOfWeek }).map((_, i) => (
                         <div key={`empty-${i}`} />
                     ))}
@@ -110,27 +101,31 @@ export default function SlotCalendar({ slots, onSelectSlot, isLoading = false }:
                         const hasSlots = daySlots.length > 0;
                         const isSelected = selectedDate && isSameDay(day, selectedDate);
                         const isToday = isSameDay(day, new Date());
+                        const isFilling = hasSlots && daySlots.length <= 2;
 
                         return (
                             <motion.button
                                 key={key}
-                                whileHover={hasSlots ? { scale: 1.05 } : {}}
+                                whileHover={hasSlots ? { scale: 1.08 } : {}}
                                 whileTap={hasSlots ? { scale: 0.95 } : {}}
                                 onClick={() => hasSlots && setSelectedDate(day)}
                                 disabled={!hasSlots}
                                 className={`
-                                    relative aspect-square flex flex-col items-center justify-center rounded-xl text-sm font-medium transition-all
+                                    relative aspect-square flex flex-col items-center justify-center rounded-xl text-sm font-medium transition-all duration-200
                                     ${isSelected
-                                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
+                                        ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30 border border-purple-400/30'
                                         : hasSlots
-                                            ? 'bg-purple-500/10 border border-purple-500/30 text-purple-300 hover:bg-purple-500/20 hover:border-purple-500/50 cursor-pointer'
-                                            : 'text-muted-foreground/30 cursor-not-allowed'}
+                                            ? isFilling
+                                                ? 'bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 cursor-pointer'
+                                                : 'bg-purple-500/10 border border-purple-500/30 text-purple-300 hover:bg-purple-500/20 hover:border-purple-500/50 cursor-pointer'
+                                            : 'text-muted-foreground/20 cursor-not-allowed'
+                                    }
                                     ${isToday && !isSelected ? 'ring-1 ring-white/20' : ''}
                                 `}
                             >
-                                <span className="text-xs">{format(day, 'd')}</span>
+                                <span className="text-xs font-bold">{format(day, 'd')}</span>
                                 {hasSlots && !isSelected && (
-                                    <span className="absolute bottom-1 text-[8px] font-bold text-purple-400">
+                                    <span className={`absolute bottom-1 text-[7px] font-bold ${isFilling ? 'text-amber-400' : 'text-purple-400'}`}>
                                         {daySlots.length}
                                     </span>
                                 )}
@@ -140,93 +135,103 @@ export default function SlotCalendar({ slots, onSelectSlot, isLoading = false }:
                 </div>
 
                 {/* Legend */}
-                <div className="flex items-center gap-4 mt-4 pt-4 border-t border-white/10 text-[10px] text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-4 mt-5 pt-4 border-t border-white/5 text-[10px] text-muted-foreground">
                     <div className="flex items-center gap-1.5">
                         <div className="w-3 h-3 rounded bg-purple-500/20 border border-purple-500/30" />
                         <span>Available</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-3 rounded bg-purple-600" />
+                        <div className="w-3 h-3 rounded bg-amber-500/15 border border-amber-500/30" />
+                        <span>Filling fast</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 rounded bg-gradient-to-br from-purple-600 to-pink-600" />
                         <span>Selected</span>
                     </div>
-                    {bookedPct > 60 && (
+                    {bookedPct > 50 && (
                         <div className="ml-auto flex items-center gap-1 text-amber-400">
-                            <Clock className="w-3 h-3" />
-                            <span>Filling fast ({bookedPct}% booked)</span>
+                            <Flame className="w-3 h-3" />
+                            <span>{bookedPct}% booked</span>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* ── Time Slot Panel ───────────────────────────────────────── */}
-            <div className="bg-black/40 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
-                <div className="flex items-center gap-2 mb-4">
-                    <Clock className="w-4 h-4 text-purple-400" />
-                    <h3 className="text-sm font-bold text-white">
-                        {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select a Date'}
-                    </h3>
+            {/* ── Time Slot Panel ─────────────────────────────────────── */}
+            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6 backdrop-blur-xl flex flex-col">
+                {/* Panel header */}
+                <div className="flex items-center gap-2 mb-5">
+                    <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                        <Clock className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-bold text-white">
+                            {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select a Date'}
+                        </h3>
+                        {selectedDate && slotsForSelectedDate.length > 0 && (
+                            <p className="text-[10px] text-muted-foreground">{slotsForSelectedDate.length} slot{slotsForSelectedDate.length !== 1 ? 's' : ''} available</p>
+                        )}
+                    </div>
                 </div>
 
-                {!selectedDate ? (
-                    <div className="flex flex-col items-center justify-center h-48 text-center">
-                        <Calendar className="w-12 h-12 text-muted-foreground/30 mb-3" />
-                        <p className="text-sm text-muted-foreground">
-                            Click a highlighted date on the calendar to view available time slots
-                        </p>
-                    </div>
-                ) : slotsForSelectedDate.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-48 text-center">
-                        <Clock className="w-12 h-12 text-muted-foreground/30 mb-3" />
-                        <p className="text-sm text-muted-foreground">No slots left for this date</p>
-                    </div>
-                ) : (
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={format(selectedDate, 'yyyy-MM-dd')}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="space-y-2"
-                        >
-                            {slotsForSelectedDate
-                                .sort((a, b) => a.start_time.localeCompare(b.start_time))
-                                .map(slot => (
-                                    <motion.button
-                                        key={slot.id}
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => handleSelectSlot(slot)}
-                                        disabled={!!bookingLoading}
-                                        className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all group"
-                                    >
-                                        <div className="text-left">
-                                            <div className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">
-                                                {format(parseISO(slot.start_time), 'h:mm a')}
+                <div className="flex-1">
+                    {!selectedDate ? (
+                        <div className="flex flex-col items-center justify-center h-full min-h-[180px] text-center">
+                            <Calendar className="w-10 h-10 text-muted-foreground/20 mb-3" />
+                            <p className="text-sm text-muted-foreground/60 leading-relaxed">
+                                Click a highlighted date<br />to view available slots
+                            </p>
+                        </div>
+                    ) : slotsForSelectedDate.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full min-h-[180px] text-center">
+                            <Clock className="w-10 h-10 text-muted-foreground/20 mb-3" />
+                            <p className="text-sm text-muted-foreground/60">All slots taken for this date</p>
+                        </div>
+                    ) : (
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={format(selectedDate, 'yyyy-MM-dd')}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -8 }}
+                                transition={{ duration: 0.2 }}
+                                className="space-y-2"
+                            >
+                                {slotsForSelectedDate
+                                    .sort((a, b) => a.start_time.localeCompare(b.start_time))
+                                    .map(slot => (
+                                        <motion.button
+                                            key={slot.id}
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={() => onSelectSlot(slot.id, slot.start_time, slot.panel_id)}
+                                            className="w-full flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all group cursor-pointer"
+                                            id={`slot-${slot.id}`}
+                                        >
+                                            <div className="text-left">
+                                                <div className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors font-mono">
+                                                    {format(parseISO(slot.start_time), 'h:mm a')}
+                                                </div>
+                                                <div className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wider">
+                                                    Panel {slot.panel_id}
+                                                </div>
                                             </div>
-                                            <div className="text-[10px] text-muted-foreground mt-0.5">
-                                                Panel {slot.panel_id}
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
                                             <Badge
                                                 variant="outline"
-                                                className="bg-green-500/10 border-green-500/30 text-green-400 text-[10px]"
+                                                className="bg-green-500/10 border-green-500/30 text-green-400 text-[10px] group-hover:bg-purple-500/20 group-hover:border-purple-500/40 group-hover:text-purple-300 transition-all"
                                             >
-                                                Open
+                                                Book
                                             </Badge>
-                                            {bookingLoading === slot.id && (
-                                                <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-                                            )}
-                                        </div>
-                                    </motion.button>
-                                ))}
-                        </motion.div>
-                    </AnimatePresence>
-                )}
+                                        </motion.button>
+                                    ))}
+                            </motion.div>
+                        </AnimatePresence>
+                    )}
+                </div>
 
-                {/* Slot stats */}
+                {/* Slot count footer */}
                 {availableSlots.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between text-[10px] text-muted-foreground">
+                    <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-[10px] text-muted-foreground">
                         <div className="flex items-center gap-1">
                             <Users className="w-3 h-3" />
                             <span>{availableSlots.length} slots remaining</span>
