@@ -260,7 +260,7 @@ const Apply = () => {
             return;
         }
 
-        if (formData.domains.length === 0) {
+        if (!formData.domains || formData.domains.length === 0) {
             alert("Please select at least one role for your Primary Department.");
             return;
         }
@@ -437,7 +437,7 @@ const Apply = () => {
 
     const secondaryDomainsList = formData.secondaryDept 
         ? (domainOptions[formData.secondaryDept] || []).filter(d => 
-            !(formData.primaryDept === formData.secondaryDept && formData.domains.includes(d))
+            !(formData.primaryDept === formData.secondaryDept && (formData.domains || []).includes(d))
           ) 
         : [];
     const secondarySkillLabel = formData.secondaryDept ? (skillLabels[formData.secondaryDept] || skillLabels['default']) : skillLabels['default'];
@@ -890,15 +890,15 @@ const Apply = () => {
                                                                 key={domain}
                                                                 onClick={() => handleDomainToggle(domain)}
                                                                 className={`cursor-pointer px-4 py-3 rounded-lg border transition-all duration-200 flex items-center gap-3
-                                    ${formData.domains.includes(domain)
+                                    ${(formData.domains || []).includes(domain)
                                                                         ? 'bg-primary/20 border-primary text-primary'
                                                                         : 'bg-background/30 border-white/5 hover:border-white/20 text-muted-foreground'
                                                                     }`}
                                                             >
                                                                 <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0
-                                    ${formData.domains.includes(domain) ? 'border-primary bg-primary' : 'border-current'}
+                                    ${(formData.domains || []).includes(domain) ? 'border-primary bg-primary' : 'border-current'}
             `}>
-                                                                    {formData.domains.includes(domain) && <div className="w-2 h-2 bg-background rounded-sm" />}
+                                                                    {(formData.domains || []).includes(domain) && <div className="w-2 h-2 bg-background rounded-sm" />}
                                                                 </div>
                                                                 <span className="text-sm font-medium">{domain}</span>
                                                             </div>
@@ -992,15 +992,15 @@ const Apply = () => {
                                                                 key={domain}
                                                                 onClick={() => handleDomainToggle(domain, true)}
                                                                 className={`cursor-pointer px-4 py-3 rounded-lg border transition-all duration-200 flex items-center gap-3
-                                    ${formData.secondaryDomains.includes(domain)
+                                    ${(formData.secondaryDomains || []).includes(domain)
                                                                         ? 'bg-primary/20 border-primary text-primary'
                                                                         : 'bg-background/30 border-white/5 hover:border-white/20 text-muted-foreground'
                                                                     }`}
                                                             >
                                                                 <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0
-                                    ${formData.secondaryDomains.includes(domain) ? 'border-primary bg-primary' : 'border-current'}
+                                    ${(formData.secondaryDomains || []).includes(domain) ? 'border-primary bg-primary' : 'border-current'}
             `}>
-                                                                    {formData.secondaryDomains.includes(domain) && <div className="w-2 h-2 bg-background rounded-sm" />}
+                                                                    {(formData.secondaryDomains || []).includes(domain) && <div className="w-2 h-2 bg-background rounded-sm" />}
                                                                 </div>
                                                                 <span className="text-sm font-medium">{domain}</span>
                                                             </div>
