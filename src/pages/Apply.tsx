@@ -401,7 +401,7 @@ const Apply = () => {
                                 </div>
 
                                 <div style="background-color: #000000; padding: 30px 25px; text-align: center; border-top: 1px solid #1a1a1a;">
-                                    <img src="https://sscsportal.vercel.app/ieee-sscs-logo.png" alt="SSCS" style="height: 25px; margin-bottom: 15px;">
+                                    <img src="https://ieeesscs.vercel.app/ieee-sscs-logo.png" alt="SSCS" style="height: 25px; margin-bottom: 15px;">
                                     <p style="color: #4b5563; font-size: 11px; margin: 0; font-family: 'Inter', sans-serif;">
                                         IEEE Solid-State Circuits Society | VIT Chennai Campus
                                     </p>
