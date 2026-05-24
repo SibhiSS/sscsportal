@@ -11,9 +11,6 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { validateRegistrationNumber, RegNoDetails } from '@/utils/validation';
-import * as pdfjsLib from 'pdfjs-dist';
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-
 import {
     Select,
     SelectContent,
@@ -250,8 +247,18 @@ const Apply = () => {
     const handleNextStep = (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (!formData.fullName.trim()) {
+            alert("Please enter your Full Name.");
+            return;
+        }
+
         if (regError || !regValidation?.isValid) {
-            alert("Please fix the Registration Number errors before proceeding.");
+            alert("Please enter a valid Registration Number.");
+            return;
+        }
+
+        if (!formData.phone || formData.phone.length !== 10) {
+            alert("Please enter a valid 10-digit phone number.");
             return;
         }
 
@@ -266,7 +273,12 @@ const Apply = () => {
         }
 
         if (!formData.skills.trim()) {
-            alert("Please tell us about your skills for the primary role.");
+            alert("Please fill in your relevant skills.");
+            return;
+        }
+
+        if (!formData.reason.trim()) {
+            alert("Please tell us why you want to join this department.");
             return;
         }
 
@@ -766,7 +778,7 @@ const Apply = () => {
                         </div>
 
                         <HolographicCard className="p-8 md:p-10">
-                            <form onSubmit={step === 1 ? handleNextStep : handleSubmit} className="space-y-8">
+                            <form onSubmit={step === 1 ? handleNextStep : handleSubmit} noValidate className="space-y-8">
                                 {step === 1 && (
                                     <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
                                         <div className="space-y-6">
@@ -777,7 +789,6 @@ const Apply = () => {
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium text-muted-foreground">Full Name</label>
                                                     <input
-                                                        required
                                                         type="text"
                                                         name="fullName"
                                                         value={formData.fullName}
@@ -789,7 +800,6 @@ const Apply = () => {
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium text-muted-foreground">Registration Number</label>
                                                     <input
-                                                        required
                                                         type="text"
                                                         name="rollNumber"
                                                         value={formData.rollNumber}
@@ -818,7 +828,6 @@ const Apply = () => {
                                                     <div className="relative">
                                                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
                                                         <input
-                                                            required
                                                             type="tel"
                                                             name="phone"
                                                             value={formData.phone}
@@ -927,7 +936,6 @@ const Apply = () => {
                                             <div className="space-y-2">
                                                 <label className="text-sm font-medium text-muted-foreground">Why do you want to join this department?</label>
                                                 <textarea
-                                                    required
                                                     name="reason"
                                                     value={formData.reason}
                                                     onChange={handleInputChange}
@@ -1029,7 +1037,6 @@ const Apply = () => {
                                             <div className="space-y-2">
                                                 <label className="text-sm font-medium text-muted-foreground">Why this secondary choice?</label>
                                                 <textarea
-                                                    required
                                                     name="secondaryReason"
                                                     value={formData.secondaryReason}
                                                     onChange={handleInputChange}

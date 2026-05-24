@@ -1,5 +1,5 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 
 interface HolographicCardProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -11,23 +11,34 @@ const HolographicCard: React.FC<HolographicCardProps> = ({ children, className =
     const divRef = useRef<HTMLDivElement>(null);
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [opacity, setOpacity] = useState(0);
+    const rafRef = useRef<number | null>(null);
 
-    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         if (!divRef.current) return;
+        // Cancel any pending RAF before scheduling a new one
+        if (rafRef.current !== null) {
+            cancelAnimationFrame(rafRef.current);
+        }
+        const clientX = e.clientX;
+        const clientY = e.clientY;
+        rafRef.current = requestAnimationFrame(() => {
+            if (!divRef.current) return;
+            const rect = divRef.current.getBoundingClientRect();
+            setPosition({ x: clientX - rect.left, y: clientY - rect.top });
+        });
+    }, []);
 
-        const div = divRef.current;
-        const rect = div.getBoundingClientRect();
-
-        setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    };
-
-    const handleMouseEnter = () => {
+    const handleMouseEnter = useCallback(() => {
         setOpacity(1);
-    };
+    }, []);
 
-    const handleMouseLeave = () => {
+    const handleMouseLeave = useCallback(() => {
         setOpacity(0);
-    };
+        if (rafRef.current !== null) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+        }
+    }, []);
 
     return (
         <motion.div

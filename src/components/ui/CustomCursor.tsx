@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, useSpring, useMotionValue, useTransform } from 'framer-motion';
 
 const CustomCursor = () => {
     const [isHovering, setIsHovering] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
+    const isVisibleRef = useRef(false);
 
     const mouseX = useMotionValue(-100);
     const mouseY = useMotionValue(-100);
@@ -17,7 +18,10 @@ const CustomCursor = () => {
         const moveMouse = (e: MouseEvent) => {
             mouseX.set(e.clientX);
             mouseY.set(e.clientY);
-            if (!isVisible) setIsVisible(true);
+            if (!isVisibleRef.current) {
+                isVisibleRef.current = true;
+                setIsVisible(true);
+            }
         };
 
         const handleMouseOver = (e: MouseEvent) => {
@@ -38,7 +42,7 @@ const CustomCursor = () => {
             window.removeEventListener('mousemove', moveMouse);
             window.removeEventListener('mouseover', handleMouseOver);
         };
-    }, [isVisible]);
+    }, []); // <-- empty deps: only mount/unmount
 
     const pathData = useTransform(
         [mouseX, mouseY, trailX, trailY],
