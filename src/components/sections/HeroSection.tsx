@@ -90,7 +90,7 @@ const HeroSection = () => {
             </motion.div>
  
             {/* Main Title */}
-            <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 mb-8 font-subheading text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight">
+            <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 mb-8 font-heading text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
