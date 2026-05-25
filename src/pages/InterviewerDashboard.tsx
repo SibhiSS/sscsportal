@@ -139,16 +139,32 @@ const InterviewerDashboard = () => {
         setIsSubmitting(false);
     };
 
-    const handleMarkStatus = async (appId: string, slotId: string, status: 'interviewed' | 'shortlisted') => {
+    const handleMarkStatus = async (app: any, slotId: string, status: 'interviewed' | 'shortlisted') => {
         setIsLoading(true);
         if (status === 'shortlisted') {
             // Unbook slot and mark as shortlisted (No Show / Unselect)
             await supabase.from('interview_slots').update({ is_booked: false, booked_application_id: null }).eq('id', slotId);
-            await supabase.from('applications').update({ status }).eq('id', appId);
+            await supabase.from('applications').update({ status }).eq('id', app.id);
+            
+            // Send No Show Email
+            if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== "") {
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST', mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: app.email,
+                            subject: "URGENT: Missed Interview - Please Rebook",
+                            message: `<div style="font-family:'Inter',sans-serif;background:#050505;color:#fff;max-width:600px;margin:0 auto;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;"><div style="background:#000;padding:40px 20px;text-align:center;border-bottom:1px solid #1a1a1a;"><h1 style="color:#fff;margin:0;text-transform:uppercase;letter-spacing:2px;font-size:16px;">IEEE Solid-State Circuits Society</h1></div><div style="padding:45px 40px;"><h2 style="color:#ef4444;margin-top:0;font-size:24px;font-weight:700;">Missed Interview</h2><p style="font-size:15px;line-height:1.6;color:#d1d5db;">Dear <strong>${app.full_name || app.fullName}</strong>,</p><p style="font-size:15px;line-height:1.6;color:#d1d5db;">You were marked as a "No Show" for your scheduled interview slot.</p><p style="font-size:15px;line-height:1.6;color:#d1d5db;">Your application has been moved back to the shortlisting queue. If you still wish to be considered, please log in to the portal and <strong>re-book a new slot immediately</strong>.</p><p style="font-size:15px;line-height:1.6;color:#d1d5db;">Please note that slots are limited and available on a first-come, first-served basis. Failure to attend a re-booked interview may result in disqualification.</p><p style="margin-top:45px;border-top:1px solid #1a1a1a;padding-top:25px;font-size:14px;color:#6b7280;">Best regards,<br><strong style="color:#fff;">IEEE SSCS Recruitment Team</strong></p></div></div>`
+                        })
+                    });
+                } catch (e) { console.error("Failed to send no-show email", e); }
+            }
+            
             setSuccessMsg('Candidate marked as No Show, slot freed.');
         } else {
             // Mark as interviewed
-            await supabase.from('applications').update({ status }).eq('id', appId);
+            await supabase.from('applications').update({ status }).eq('id', app.id);
             setSuccessMsg('Interview marked as finished.');
         }
         setTimeout(() => setSuccessMsg(null), 4000);
@@ -339,7 +355,7 @@ const InterviewerDashboard = () => {
                                                                             variant="outline"
                                                                             size="sm"
                                                                             className="flex-1 text-[10px] h-7 border-green-500/30 text-green-400 hover:bg-green-500/10"
-                                                                            onClick={() => handleMarkStatus(app.id, slot.id, 'interviewed')}
+                                                                            onClick={() => handleMarkStatus(app, slot.id, 'interviewed')}
                                                                         >
                                                                             Mark Interviewed
                                                                         </Button>
@@ -350,7 +366,7 @@ const InterviewerDashboard = () => {
                                                                         className="flex-1 text-[10px] h-7 border-red-500/30 text-red-400 hover:bg-red-500/10"
                                                                         onClick={() => {
                                                                             if (confirm('Mark as No Show? This will cancel the booking.')) {
-                                                                                handleMarkStatus(app.id, slot.id, 'shortlisted');
+                                                                                handleMarkStatus(app, slot.id, 'shortlisted');
                                                                             }
                                                                         }}
                                                                     >
