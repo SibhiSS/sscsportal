@@ -182,6 +182,11 @@ const Admin = () => {
             const { error } = await supabase.from('applications').update(dbUpdates).eq('id', id);
             if (error) throw error;
 
+            if (updates.status && ['shortlisted', 'waitlisted', 'rejected', 'rejected_pending', 'applied', 'under_review'].includes(updates.status)) {
+                // Free up any booked slots if the candidate is downgraded/rejected
+                await supabase.from('interview_slots').update({ is_booked: false, booked_by: null }).eq('booked_by', id);
+            }
+
             if (user?.email) {
                 await logAction(user.email, 'UPDATE_APPLICATION', id, updates);
             }
@@ -201,6 +206,9 @@ const Admin = () => {
         if (!confirm("Are you sure you want to delete this application? This cannot be undone.")) return;
 
         try {
+            // Free up any booked slots before deleting
+            await supabase.from('interview_slots').update({ is_booked: false, booked_by: null }).eq('booked_by', id);
+            
             const { error } = await supabase.from('applications').delete().eq('id', id);
             if (error) throw error;
             setApplications(prev => prev.filter(app => app.id !== id));

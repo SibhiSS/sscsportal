@@ -143,7 +143,7 @@ const InterviewerDashboard = () => {
         setIsLoading(true);
         if (status === 'shortlisted') {
             // Unbook slot and mark as shortlisted (No Show / Unselect)
-            await supabase.from('interview_slots').update({ is_booked: false, booked_application_id: null }).eq('id', slotId);
+            await supabase.from('interview_slots').update({ is_booked: false, booked_by: null }).eq('id', slotId);
             await supabase.from('applications').update({ status }).eq('id', app.id);
             
             // Send No Show Email

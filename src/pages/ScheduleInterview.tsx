@@ -107,6 +107,21 @@ const ScheduleInterview = () => {
         setBookingError(null);
 
         try {
+            // Check if candidate already has a slot booked
+            const { data: existingBooking } = await supabase
+                .from('interview_slots')
+                .select('id')
+                .eq('booked_by', existingApp.id)
+                .limit(1);
+
+            if (existingBooking && existingBooking.length > 0) {
+                setBookingError("You have already booked an interview slot.");
+                setIsBooking(false);
+                setPendingSlot(null);
+                await checkApplicationStatus();
+                return;
+            }
+
             const { data: bookingResult } = await supabase
                 .from('interview_slots')
                 .update({ is_booked: true, booked_by: existingApp.id })
