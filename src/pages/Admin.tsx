@@ -247,12 +247,25 @@ const Admin = () => {
                 }
             }
 
-            for (const app of rejectedPendingApps) {
-                await supabase.from('applications').update({ status: 'rejected', decided_at: new Date().toISOString() }).eq('id', app.id);
-            }
-            
-            for (const app of waitlistedApps) {
-                await supabase.from('applications').update({ status: 'rejected', decided_at: new Date().toISOString() }).eq('id', app.id);
+            const rejectedAppsToEmail = [...rejectedPendingApps, ...waitlistedApps];
+            for (const app of rejectedAppsToEmail) {
+                try {
+                    if (isGoogleScriptConfigured) {
+                        await fetch(GOOGLE_SCRIPT_URL, {
+                            method: 'POST', mode: 'no-cors',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                email: app.email,
+                                subject: "Update on your IEEE SSCS Application",
+                                message: `<div style="font-family:'Inter',sans-serif;background:#050505;color:#fff;max-width:600px;margin:0 auto;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;"><div style="background:#000;padding:40px 20px;text-align:center;border-bottom:1px solid #1a1a1a;"><h1 style="color:#fff;margin:0;text-transform:uppercase;letter-spacing:2px;font-size:16px;">IEEE Solid-State Circuits Society</h1></div><div style="padding:45px 40px;"><h2 style="color:#fff;margin-top:0;font-size:24px;font-weight:700;">Application Update</h2><p style="font-size:15px;line-height:1.6;color:#d1d5db;">Dear <strong>${app.fullName}</strong>,</p><p style="font-size:15px;line-height:1.6;color:#d1d5db;">Thank you for taking the time to apply and interview with IEEE SSCS. We deeply appreciate the effort you put into the process.</p><p style="font-size:15px;line-height:1.6;color:#d1d5db;">After careful consideration, we regret to inform you that we are unable to offer you a position at this time. We had a highly competitive pool of applicants this year, and unfortunately, we have limited slots available.</p><p style="font-size:15px;line-height:1.6;color:#d1d5db;">We encourage you to stay connected with us and apply again in the future.</p><p style="margin-top:45px;border-top:1px solid #1a1a1a;padding-top:25px;font-size:14px;color:#6b7280;">Best wishes,<br><strong style="color:#fff;">IEEE SSCS Executive Committee</strong></p></div></div>`
+                            })
+                        });
+                    }
+                    emailCount++;
+                    await supabase.from('applications').update({ status: 'rejected', decided_at: new Date().toISOString() }).eq('id', app.id);
+                } catch (err) {
+                    console.error(`Failed for ${app.email}:`, err);
+                }
             }
 
             alert(`Results published!\n\n${emailCount} emails sent\n${selectedApps.length} accepted\n${rejectedPendingApps.length + waitlistedApps.length} rejected`);
