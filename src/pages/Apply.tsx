@@ -158,6 +158,7 @@ const Apply = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [existingApp, setExistingApp] = useState<any>(null);
+    const [isEditing, setIsEditing] = useState(false);
     const [checkingStatus, setCheckingStatus] = useState(true);
     const [recruitmentStatus, setRecruitmentStatus] = useState<{ isOpen: boolean, message: string }>({ isOpen: true, message: '' });
 
@@ -222,7 +223,30 @@ const Apply = () => {
             }
 
             if (data && data.length > 0) {
-                setExistingApp(data[0]);
+                const app = data[0];
+                setExistingApp(app);
+                
+                // Populate formData for potential editing
+                setFormData({
+                    fullName: app.full_name || '',
+                    rollNumber: app.roll_number || '',
+                    phone: app.phone || '',
+                    linkedinUrl: app.linkedin_url || '',
+                    githubUrl: app.github_url || '',
+                    primaryDept: app.primary_dept || '',
+                    domains: app.domains || [],
+                    skills: app.skills || '',
+                    reason: app.reason || '',
+                    secondaryDept: app.secondary_dept || '',
+                    secondaryDomains: app.secondary_domains || [],
+                    secondarySkills: app.secondary_skills || '',
+                    secondaryReason: app.secondary_reason || ''
+                });
+                
+                if (app.roll_number) {
+                    const validation = validateRegistrationNumber(app.roll_number);
+                    setRegValidation(validation);
+                }
             } else {
                 setExistingApp(null);
             }
@@ -386,8 +410,8 @@ const Apply = () => {
         e.preventDefault();
         if (!user) return;
 
-        // Final safety check to prevent double submission
-        if (existingApp) {
+        // Final safety check to prevent double submission if not editing
+        if (existingApp && !isEditing) {
             alert("You have already submitted an application!");
             return;
         }
@@ -400,7 +424,7 @@ const Apply = () => {
         setIsSubmitting(true);
 
         try {
-            const { error } = await supabase.from('applications').insert({
+            const applicationData = {
                 user_id: user.uid,
                 email: user.email,
                 full_name: formData.fullName,
@@ -417,7 +441,7 @@ const Apply = () => {
                 secondary_domains: formData.secondaryDomains,
                 secondary_skills: formData.secondarySkills,
                 secondary_reason: formData.secondaryReason,
-                status: 'applied',
+                status: existingApp ? existingApp.status : 'applied',
 
                 // Derived Metadata
                 admission_year: regValidation?.admissionYear,
@@ -425,7 +449,16 @@ const Apply = () => {
                 program_name: regValidation?.programName,
                 batch: regValidation?.batch,
                 program_category: regValidation?.programCategory
-            });
+            };
+
+            let error;
+            if (existingApp && isEditing) {
+                const { error: updateError } = await supabase.from('applications').update(applicationData).eq('id', existingApp.id);
+                error = updateError;
+            } else {
+                const { error: insertError } = await supabase.from('applications').insert(applicationData);
+                error = insertError;
+            }
 
             if (error) throw error;
 
@@ -435,11 +468,12 @@ const Apply = () => {
                 localStorage.removeItem(`sscsFormData_${user.uid}`);
             }
 
-            // --- SEND CONFIRMATION EMAIL ---
-            try {
-                const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSuKNXGi-08iJ_NgkEeh_wpt0AUu3Hjy4CXMTZNMe417idYTviLKK97NBPU1kJbpqTMA/exec";
+            // --- SEND CONFIRMATION EMAIL ONLY FOR NEW APPLICATIONS ---
+            if (!isEditing) {
+                try {
+                    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSuKNXGi-08iJ_NgkEeh_wpt0AUu3Hjy4CXMTZNMe417idYTviLKK97NBPU1kJbpqTMA/exec";
 
-                await fetch(GOOGLE_SCRIPT_URL, {
+                    await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
@@ -502,7 +536,9 @@ const Apply = () => {
             } catch (emailErr) {
                 console.error("Failed to send email", emailErr);
             }
+            } // Close if (!isEditing)
             // -------------------------------
+
 
             setIsSubmitting(false);
             setExistingApp({
@@ -511,6 +547,9 @@ const Apply = () => {
                 primary_dept: formData.primaryDept,
                 status: 'pending'
             });
+            setIsEditing(false);
+            setStep(1);
+            setSubmitted(true);
         } catch (error: any) {
             console.error('Error submitting application:', error);
             if (error?.code === '23505' || error?.message?.includes('duplicate key')) {
@@ -593,7 +632,7 @@ const Apply = () => {
         );
     }
 
-    if (existingApp) {
+    if (existingApp && !isEditing) {
         return (
             <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground bg-[#050505]">
                 <TechGridBackground />
@@ -680,6 +719,32 @@ const Apply = () => {
                                     <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1 mt-3">Primary Choice</div>
                                     <div className="font-medium text-primary">{existingApp.primary_dept}</div>
                                 </div>
+                                
+                                {recruitmentStatus.isOpen && (
+                                    <Button
+                                        onClick={() => {
+                                            setFormData({
+                                                fullName: existingApp.full_name,
+                                                rollNumber: existingApp.roll_number,
+                                                phone: existingApp.phone,
+                                                linkedinUrl: existingApp.linkedin_url || '',
+                                                githubUrl: existingApp.github_url || '',
+                                                primaryDept: existingApp.primary_dept,
+                                                domains: existingApp.domains,
+                                                skills: existingApp.skills,
+                                                reason: existingApp.reason,
+                                                secondaryDept: existingApp.secondary_dept || '',
+                                                secondaryDomains: existingApp.secondary_domains || [],
+                                                secondarySkills: existingApp.secondary_skills || '',
+                                                secondaryReason: existingApp.secondary_reason || ''
+                                            });
+                                            setIsEditing(true);
+                                        }}
+                                        className="w-full bg-white/10 hover:bg-white/20 text-white font-bold h-12 text-lg shadow-lg mb-8"
+                                    >
+                                        Edit Application
+                                    </Button>
+                                )}
 
                                 <div className="bg-white/5 p-6 rounded-xl border border-white/10 mb-8 flex flex-col items-center">
                                     <img
