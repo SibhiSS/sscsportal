@@ -139,6 +139,22 @@ const InterviewerDashboard = () => {
         setIsSubmitting(false);
     };
 
+    const handleMarkStatus = async (appId: string, slotId: string, status: 'interviewed' | 'shortlisted') => {
+        setIsLoading(true);
+        if (status === 'shortlisted') {
+            // Unbook slot and mark as shortlisted (No Show / Unselect)
+            await supabase.from('interview_slots').update({ is_booked: false, booked_application_id: null }).eq('id', slotId);
+            await supabase.from('applications').update({ status }).eq('id', appId);
+            setSuccessMsg('Candidate marked as No Show, slot freed.');
+        } else {
+            // Mark as interviewed
+            await supabase.from('applications').update({ status }).eq('id', appId);
+            setSuccessMsg('Interview marked as finished.');
+        }
+        setTimeout(() => setSuccessMsg(null), 4000);
+        await fetchMySlots();
+    };
+
     const uniqueDates = Array.from(
         new Set(mySlots.map(s => format(parseISO(s.start_time), 'yyyy-MM-dd')))
     ).sort();
@@ -245,10 +261,13 @@ const InterviewerDashboard = () => {
                                         .map(slot => {
                                             const app = slot.applications;
                                             const hasLink = !!meetingLinks[slot.panel_id];
+                                            const timeDiffMins = (parseISO(slot.start_time).getTime() - new Date().getTime()) / 60000;
+                                            const isUrgent = timeDiffMins > 0 && timeDiffMins <= 15;
+                                            const isMissingLink = timeDiffMins > 0 && timeDiffMins <= 60 && !hasLink;
 
                                             return (
-                                                <Card key={slot.id} className="bg-white/5 border-purple-500/20 hover:border-purple-500/40 transition-all">
-                                                    <CardHeader className="bg-purple-500/10 border-b border-purple-500/20 pb-3 pt-4 px-4">
+                                                <Card key={slot.id} className={`bg-white/5 transition-all ${isUrgent ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)] animate-pulse-slow' : 'border-purple-500/20 hover:border-purple-500/40'}`}>
+                                                    <CardHeader className={`${isUrgent ? 'bg-red-500/20 border-red-500/30' : 'bg-purple-500/10 border-purple-500/20'} border-b pb-3 pt-4 px-4`}>
                                                         <div className="flex justify-between items-center">
                                                             <span className="font-mono text-sm font-bold text-purple-300">
                                                                 {format(parseISO(slot.start_time), 'h:mm a')}
@@ -263,11 +282,21 @@ const InterviewerDashboard = () => {
                                                         {slot.is_booked && app ? (
                                                             <>
                                                                 <div>
-                                                                    <div className="font-bold text-white">{app.full_name}</div>
+                                                                    <div className="font-bold text-white flex items-center gap-2">
+                                                                        {app.full_name}
+                                                                        {isUrgent && <Badge className="bg-red-500/20 text-red-400 border-red-500/50 hover:bg-red-500/30 text-[10px] uppercase">Starting Soon</Badge>}
+                                                                    </div>
                                                                     <div className="text-xs text-muted-foreground mt-0.5">
                                                                         {app.roll_number} · {app.primary_dept}
                                                                     </div>
                                                                 </div>
+
+                                                                {isMissingLink && (
+                                                                    <div className="bg-red-500/10 border border-red-500/30 rounded p-2 text-xs text-red-400 flex items-start gap-2">
+                                                                        <ShieldAlert className="w-4 h-4 shrink-0" />
+                                                                        <span>Add Meeting Link in Admin Panel!</span>
+                                                                    </div>
+                                                                )}
 
                                                                 <div className="flex gap-2">
                                                                     {app.resume_url && (
@@ -303,6 +332,31 @@ const InterviewerDashboard = () => {
                                                                     <BarChart2 className="w-3 h-3 mr-2" />
                                                                     Evaluate Candidate
                                                                 </Button>
+                                                                
+                                                                <div className="flex gap-2 pt-2 border-t border-white/5">
+                                                                    {app.status === 'interview_scheduled' && (
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            className="flex-1 text-[10px] h-7 border-green-500/30 text-green-400 hover:bg-green-500/10"
+                                                                            onClick={() => handleMarkStatus(app.id, slot.id, 'interviewed')}
+                                                                        >
+                                                                            Mark Interviewed
+                                                                        </Button>
+                                                                    )}
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="flex-1 text-[10px] h-7 border-red-500/30 text-red-400 hover:bg-red-500/10"
+                                                                        onClick={() => {
+                                                                            if (confirm('Mark as No Show? This will cancel the booking.')) {
+                                                                                handleMarkStatus(app.id, slot.id, 'shortlisted');
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        No Show / Unselect
+                                                                    </Button>
+                                                                </div>
                                                             </>
                                                         ) : (
                                                             <div className="flex flex-col items-center justify-center h-24 text-muted-foreground/40 border-2 border-dashed border-white/5 rounded-lg">

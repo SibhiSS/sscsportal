@@ -212,20 +212,22 @@ const Admin = () => {
     };
 
     const publishResults = async () => {
-        const shortlistedApps = applications.filter(app => app.status === 'shortlisted');
+        const selectedApps = applications.filter(app => app.status === 'selected');
         const rejectedPendingApps = applications.filter(app => app.status === 'rejected_pending');
-        if (shortlistedApps.length === 0 && rejectedPendingApps.length === 0) {
+        const waitlistedApps = applications.filter(app => app.status === 'waitlisted');
+        
+        if (selectedApps.length === 0 && rejectedPendingApps.length === 0 && waitlistedApps.length === 0) {
             alert("No applications pending publication.");
             return;
         }
-        if (!confirm(`Publish results?\n\n${shortlistedApps.length} → Selected\n${rejectedPendingApps.length} → Rejected`)) return;
+        if (!confirm(`Publish results?\n\n${selectedApps.length} → Active Member\n${rejectedPendingApps.length + waitlistedApps.length} → Rejected`)) return;
 
         setIsPublishing(true);
         try {
             let emailCount = 0;
             const isGoogleScriptConfigured = GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== "";
 
-            for (const app of shortlistedApps) {
+            for (const app of selectedApps) {
                 try {
                     if (isGoogleScriptConfigured) {
                         await fetch(GOOGLE_SCRIPT_URL, {
@@ -239,7 +241,7 @@ const Admin = () => {
                         });
                     }
                     emailCount++;
-                    await supabase.from('applications').update({ status: 'selected', decided_at: new Date().toISOString() }).eq('id', app.id);
+                    await supabase.from('applications').update({ status: 'active_member', decided_at: new Date().toISOString() }).eq('id', app.id);
                 } catch (err) {
                     console.error(`Failed for ${app.email}:`, err);
                 }
@@ -248,12 +250,16 @@ const Admin = () => {
             for (const app of rejectedPendingApps) {
                 await supabase.from('applications').update({ status: 'rejected', decided_at: new Date().toISOString() }).eq('id', app.id);
             }
+            
+            for (const app of waitlistedApps) {
+                await supabase.from('applications').update({ status: 'rejected', decided_at: new Date().toISOString() }).eq('id', app.id);
+            }
 
-            alert(`Results published!\n\n${emailCount} emails sent\n${shortlistedApps.length} selected\n${rejectedPendingApps.length} rejected`);
+            alert(`Results published!\n\n${emailCount} emails sent\n${selectedApps.length} accepted\n${rejectedPendingApps.length + waitlistedApps.length} rejected`);
             if (user?.email) {
                 await logAction(user.email, 'PUBLISHED_RESULTS', 'BATCH_OPERATION', {
-                    selectedCount: shortlistedApps.length,
-                    rejectedCount: rejectedPendingApps.length,
+                    selectedCount: selectedApps.length,
+                    rejectedCount: rejectedPendingApps.length + waitlistedApps.length,
                 });
             }
             fetchApplications();
@@ -660,6 +666,7 @@ const Admin = () => {
                     onClose={() => setSelectedApp(null)}
                     onUpdate={updateApplication}
                     onDelete={deleteApplication}
+                    currentPhase={currentPhase}
                 />
             </div>
         </div>

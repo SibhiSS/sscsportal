@@ -74,7 +74,17 @@ function automationCheck() {
         else if (timeDiffMinutes >= 3 && timeDiffMinutes <= 8) {
             sendApplicantReminder(slot.applications.email, slot, "5 minutes");
         }
+        
+        // --- LOGIC 5: Missing Meeting Link Alert ---
+        if (timeDiffMinutes >= 55 && timeDiffMinutes <= 65 && !slot.meeting_link) {
+            assignedInterviewers.forEach(interviewer => {
+                sendMissingLinkAlert(interviewer.interviewer_email, slot);
+            });
+        }
     });
+    
+    // Check for expired shortlisted applications (older than 48 hours)
+    checkShortlistedExpiry();
 }
 
 /**
@@ -91,6 +101,34 @@ function fetchSupabase(endpoint) {
     };
     const response = UrlFetchApp.fetch(url, options);
     return JSON.parse(response.getContentText());
+}
+
+function patchSupabase(endpoint, payload) {
+    const url = CONFIG.SUPABASE_URL + endpoint;
+    const options = {
+        method: "patch",
+        contentType: "application/json",
+        headers: {
+            "apikey": CONFIG.SUPABASE_KEY,
+            "Authorization": "Bearer " + CONFIG.SUPABASE_KEY
+        },
+        payload: JSON.stringify(payload)
+    };
+    UrlFetchApp.fetch(url, options);
+}
+
+function checkShortlistedExpiry() {
+    const apps = fetchSupabase("/rest/v1/applications?select=id,shortlisted_at&status=eq.shortlisted");
+    const now = new Date();
+    apps.forEach(app => {
+        if (!app.shortlisted_at) return;
+        const shortlistedTime = new Date(app.shortlisted_at);
+        const hoursDiff = (now - shortlistedTime) / (1000 * 60 * 60);
+        if (hoursDiff > 48) {
+            patchSupabase("/rest/v1/applications?id=eq." + app.id, { status: "waitlisted" });
+            console.log("Moved expired shortlisted app to waitlisted: " + app.id);
+        }
+    });
 }
 
 function sendInterviewerReminder(email, slot, includeLink) {
@@ -143,5 +181,23 @@ function sendAdminAlert(slot) {
         subject: "!!! URGENT: No Interviewer for Upcoming Slot",
         htmlBody: body,
         name: "NOVA System Alert"
+    });
+}
+
+function sendMissingLinkAlert(email, slot) {
+    const body = `
+    <h2 style="color: red;">URGENT: Missing Meeting Link</h2>
+    <p>Hi,</p>
+    <p>Your interview with <b>${slot.applications.full_name}</b> starts in less than 1 hour!</p>
+    <p><b>Time:</b> ${new Date(slot.start_time).toLocaleTimeString()}</p>
+    <p><b>Panel:</b> ${slot.panel_id}</p>
+    <p><b>You have not provided a meeting link for this slot.</b> Please log in to your dashboard immediately and add a GMeet link so the candidate can join.</p>
+    <p>Login to Dashboard: <a href="https://novacps.vercel.app/interviewer">Interviewer Dashboard</a></p>
+  `;
+    MailApp.sendEmail({
+        to: email,
+        subject: "URGENT: Add Meeting Link for Upcoming Interview",
+        htmlBody: body,
+        name: CONFIG.SENDER_NAME
     });
 }

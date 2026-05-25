@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { Star, CheckCircle, XCircle, MinusCircle, Trash2, Calendar, Clock, Save, Github, Linkedin, FileText, ExternalLink, Users } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
-import { Application, ApplicationStatus } from '@/types';
-import { canTransition } from '@/lib/fsm';
+import { Application, ApplicationStatus, RecruitmentPhase } from '@/types';
+import { canTransition, canPerformAction } from '@/lib/fsm';
 import { useAuth } from '@/contexts/AuthContext';
 import CandidateTimeline from '@/components/admin/CandidateTimeline';
 import MultiInterviewerPanel from '@/components/admin/MultiInterviewerPanel';
@@ -22,6 +22,7 @@ interface ApplicationModalProps {
     onClose: () => void;
     onUpdate: (id: string, updates: Partial<Application>) => Promise<void>;
     onDelete: (id: string) => Promise<void>;
+    currentPhase?: RecruitmentPhase;
 }
 
 const ApplicationModal: React.FC<ApplicationModalProps> = ({
@@ -29,7 +30,8 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
     open,
     onClose,
     onUpdate,
-    onDelete
+    onDelete,
+    currentPhase = 'APPLICATIONS_OPEN'
 }) => {
     const { user } = useAuth();
     const [localNotes, setLocalNotes] = React.useState(application?.notes || '');
@@ -134,7 +136,7 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                                     size="sm"
                                     variant={application.status === 'rejected_pending' ? 'destructive' : 'outline'}
                                     onClick={() => onUpdate(application.id, { status: 'rejected_pending' })}
-                                    disabled={!canTransition(application.status, 'rejected_pending')}
+                                    disabled={!canTransition(application.status, 'rejected_pending') || !canPerformAction(currentPhase, 'canReview')}
                                     className={application.status === 'rejected_pending' ? '' : 'border-red-500/50 text-red-500 hover:bg-red-500/10 hover:border-red-500'}
                                 >
                                     <XCircle className="w-4 h-4 mr-2" />
@@ -144,7 +146,7 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                                     size="sm"
                                     variant={application.status === 'under_review' ? 'secondary' : 'outline'}
                                     onClick={() => onUpdate(application.id, { status: 'under_review' })}
-                                    disabled={!canTransition(application.status, 'under_review')}
+                                    disabled={!canTransition(application.status, 'under_review') || !canPerformAction(currentPhase, 'canReview')}
                                     className={application.status === 'under_review' ? 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30' : 'border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10 hover:border-yellow-500'}
                                 >
                                     <MinusCircle className="w-4 h-4 mr-2" />
@@ -154,7 +156,7 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                                     size="sm"
                                     variant={application.status === 'shortlisted' ? 'default' : 'outline'}
                                     onClick={() => onUpdate(application.id, { status: 'shortlisted' })}
-                                    disabled={!canTransition(application.status, 'shortlisted')}
+                                    disabled={!canTransition(application.status, 'shortlisted') || !canPerformAction(currentPhase, 'canReview')}
                                     className={application.status === 'shortlisted'
                                         ? 'bg-cyan-600 hover:bg-cyan-700 text-white'
                                         : 'border-cyan-500/50 text-cyan-500 hover:bg-cyan-500/10 hover:border-cyan-500'
@@ -162,6 +164,44 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                                 >
                                     <CheckCircle className="w-4 h-4 mr-2" />
                                     {application.status === 'shortlisted' ? 'Shortlisted' : 'Shortlist'}
+                                </Button>
+                            </div>
+                        )}
+                        
+                        {isSuperAdmin && ['interview_scheduled', 'interviewed', 'waitlisted', 'selected', 'rejected'].includes(application.status) && (
+                            <div className="flex gap-2 flex-wrap justify-end mt-2 sm:mt-0 w-full sm:w-auto">
+                                <Button
+                                    size="sm"
+                                    variant={application.status === 'rejected' ? 'destructive' : 'outline'}
+                                    onClick={() => onUpdate(application.id, { status: 'rejected' })}
+                                    disabled={!canTransition(application.status, 'rejected') || !canPerformAction(currentPhase, 'canDecide')}
+                                    className={application.status === 'rejected' ? '' : 'border-red-500/50 text-red-500 hover:bg-red-500/10 hover:border-red-500'}
+                                >
+                                    <XCircle className="w-4 h-4 mr-2" />
+                                    Reject
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant={application.status === 'waitlisted' ? 'secondary' : 'outline'}
+                                    onClick={() => onUpdate(application.id, { status: 'waitlisted' })}
+                                    disabled={!canTransition(application.status, 'waitlisted') || !canPerformAction(currentPhase, 'canDecide')}
+                                    className={application.status === 'waitlisted' ? 'bg-amber-500/20 text-amber-500 hover:bg-amber-500/30' : 'border-amber-500/50 text-amber-500 hover:bg-amber-500/10 hover:border-amber-500'}
+                                >
+                                    <MinusCircle className="w-4 h-4 mr-2" />
+                                    Waitlist
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant={application.status === 'selected' ? 'default' : 'outline'}
+                                    onClick={() => onUpdate(application.id, { status: 'selected' })}
+                                    disabled={!canTransition(application.status, 'selected') || !canPerformAction(currentPhase, 'canDecide')}
+                                    className={application.status === 'selected'
+                                        ? 'bg-green-600 hover:bg-green-700 text-white'
+                                        : 'border-green-500/50 text-green-500 hover:bg-green-500/10 hover:border-green-500'
+                                    }
+                                >
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    Select
                                 </Button>
                             </div>
                         )}
