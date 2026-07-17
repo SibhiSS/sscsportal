@@ -69,6 +69,12 @@ const COLUMN_STYLES: Record<string, { border: string; text: string; badge: strin
     badge: 'bg-green-500/20 text-green-300 border-green-500/30',
     glow: 'shadow-green-500/10',
   },
+  active_member: {
+    border: 'border-t-emerald-400/80',
+    text: 'text-emerald-300',
+    badge: 'bg-emerald-400/20 text-emerald-200 border-emerald-400/40',
+    glow: 'shadow-emerald-400/20',
+  },
   waitlisted: {
     border: 'border-t-amber-500/60',
     text: 'text-amber-400',

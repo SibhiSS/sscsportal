@@ -48,6 +48,7 @@ export const PIPELINE_STAGES: ApplicationStatus[] = [
     'interview_scheduled',
     'interviewed',
     'selected',
+    'active_member',
     'waitlisted',
     'rejected',
 ];
@@ -59,6 +60,7 @@ export const STAGE_LABELS: Record<string, string> = {
     interview_scheduled:  'Interview Scheduled',
     interviewed:          'Interviewed',
     selected:             'Selected',
+    active_member:        'Placed',
     waitlisted:           'Waitlisted',
     rejected:             'Rejected',
     // Legacy
@@ -74,6 +76,7 @@ export const STAGE_COLORS: Record<string, string> = {
     interview_scheduled:  'purple',
     interviewed:          'orange',
     selected:             'green',
+    active_member:        'emerald',
     waitlisted:           'amber',
     rejected:             'red',
 };
