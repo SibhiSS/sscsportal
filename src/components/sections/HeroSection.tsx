@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 
 const HeroSection = () => {
+  const { user } = useAuth();
   const [hasApplied, setHasApplied] = useState(false);
   const [canBookSlot, setCanBookSlot] = useState(false);
   const [isSelected, setIsSelected] = useState(false);
