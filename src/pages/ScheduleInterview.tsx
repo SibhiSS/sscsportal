@@ -53,6 +53,7 @@ const ScheduleInterview = () => {
             .from('interview_slots')
             .select('*')
             .eq('is_booked', false)
+            .gte('start_time', new Date().toISOString())
             .order('start_time', { ascending: true });
         if (data) setSlots(data);
         setSlotsLoading(false);
@@ -104,6 +105,14 @@ const ScheduleInterview = () => {
         if (!pendingSlot || !existingApp || !user) return;
         setIsBooking(true);
         setBookingError(null);
+
+        if (parseISO(pendingSlot.start_time).getTime() <= Date.now()) {
+            setBookingError("This slot time has already passed. Please select an upcoming slot.");
+            setIsBooking(false);
+            setPendingSlot(null);
+            fetchSlots();
+            return;
+        }
 
         try {
             // Check if candidate already has a slot booked

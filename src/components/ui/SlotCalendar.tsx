@@ -23,11 +23,11 @@ export default function SlotCalendar({ slots, onSelectSlot }: SlotCalendarProps)
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-    // Only show available slots in the calendar
-    const availableSlots = useMemo(() =>
-        slots.filter(s => !s.is_booked),
-        [slots]
-    );
+    // Only show future available slots in the calendar
+    const availableSlots = useMemo(() => {
+        const now = new Date();
+        return slots.filter(s => !s.is_booked && parseISO(s.start_time) > now);
+    }, [slots]);
 
     // Group by date key for fast lookup
     const slotsByDate = useMemo(() => {
