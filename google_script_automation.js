@@ -15,7 +15,7 @@ const CONFIG = {
     SUPABASE_URL: "https://your-project-id.supabase.co",
     SUPABASE_KEY: "your-service-role-key", // Use service_role key for full read access
     ADMIN_ALERT_EMAIL: "sibhi.s2024@vitstudent.ac.in",
-    SENDER_NAME: "NOVA CPS Recruitment Team"
+    SENDER_NAME: "IEEE SSCS Recruitment Team"
 };
 
 /**
@@ -132,7 +132,7 @@ function checkShortlistedExpiry() {
 }
 
 function sendInterviewerReminder(email, slot, includeLink) {
-    const subject = includeLink ? "ACTION REQUIRED: Join Interview & GMeet Link - NOVA CPS" : "REMINDER: Interview starting in " + Math.round((new Date(slot.start_time) - new Date()) / 60000) + "m";
+    const subject = includeLink ? "ACTION REQUIRED: Join Interview & GMeet Link - IEEE SSCS" : "REMINDER: Interview starting in " + Math.round((new Date(slot.start_time) - new Date()) / 60000) + "m";
     const body = `
     <h3>Interview Reminder</h3>
     <p>Hi,</p>
@@ -140,7 +140,7 @@ function sendInterviewerReminder(email, slot, includeLink) {
     <p><b>Time:</b> ${new Date(slot.start_time).toLocaleTimeString()} - ${new Date(slot.end_time).toLocaleTimeString()}</p>
     <p><b>Panel:</b> ${slot.panel_id}</p>
     ${includeLink ? '<p>Please ensure you have generated a GMeet link and shared it or joined the designated room.</p>' : ''}
-    <p>Login to Dashboard: <a href="https://novacps.vercel.app/interviewer">Interviewer Dashboard</a></p>
+    <p>Login to Dashboard: <a href="https://sscsportal.netlify.app/interviewer">Interviewer Dashboard</a></p>
   `;
     MailApp.sendEmail({
         to: email,
@@ -156,17 +156,17 @@ function sendApplicantReminder(email, slot, threshold, meetingLink) {
         : `<p>Your meeting link will be shared shortly.</p>`;
 
     const body = `
-    <h3>Interview Reminder - NOVA CPS</h3>
+    <h3>Interview Reminder - IEEE SSCS</h3>
     <p>Hi ${slot.applications.full_name},</p>
     <p>This is a reminder that your interview starts in <b>${threshold}</b>.</p>
     <p><b>Time:</b> ${new Date(slot.start_time).toLocaleTimeString()}</p>
     ${linkHtml}
     <p>Please be ready 5 minutes before the slot starts.</p>
-    <p>Best regards,<br/>NOVA CPS Team</p>
+    <p>Best regards,<br/>IEEE SSCS Team</p>
   `;
     MailApp.sendEmail({
         to: email,
-        subject: "Reminder: Your Interview with NOVA CPS",
+        subject: "Reminder: Your Interview with IEEE SSCS",
         htmlBody: body,
         name: CONFIG.SENDER_NAME
     });
@@ -179,13 +179,13 @@ function sendAdminAlert(slot) {
     <p><b>Candidate:</b> ${slot.applications.full_name} (${slot.applications.email})</p>
     <p><b>Time:</b> ${slot.start_time}</p>
     <p><b>Panel:</b> ${slot.panel_id}</p>
-    <p>Please assign an interviewer immediately in the Admin Dashboard: <a href="https://novacps.vercel.app/admin">Admin Panel</a></p>
+    <p>Please assign an interviewer immediately in the Admin Dashboard: <a href="https://sscsportal.netlify.app/admin">Admin Panel</a></p>
   `;
     MailApp.sendEmail({
         to: CONFIG.ADMIN_ALERT_EMAIL,
         subject: "!!! URGENT: No Interviewer for Upcoming Slot",
         htmlBody: body,
-        name: "NOVA System Alert"
+        name: "IEEE SSCS System Alert"
     });
 }
 
@@ -197,7 +197,7 @@ function sendMissingLinkAlert(email, slot) {
     <p><b>Time:</b> ${new Date(slot.start_time).toLocaleTimeString()}</p>
     <p><b>Panel:</b> ${slot.panel_id}</p>
     <p><b>You have not provided a meeting link for this slot.</b> Please log in to your dashboard immediately and add a GMeet link so the candidate can join.</p>
-    <p>Login to Dashboard: <a href="https://novacps.vercel.app/interviewer">Interviewer Dashboard</a></p>
+    <p>Login to Dashboard: <a href="https://sscsportal.netlify.app/interviewer">Interviewer Dashboard</a></p>
   `;
     MailApp.sendEmail({
         to: email,
