@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
-import { ShieldAlert, Eye, Star, ArrowUpDown, LayoutGrid, List, Trophy, BarChart3, Settings2 } from 'lucide-react';
+import { ShieldAlert, Eye, Star, ArrowUpDown, LayoutGrid, List, Trophy, BarChart3, Settings2, UploadCloud } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 import { useAuth } from '@/contexts/AuthContext';
 import HolographicCard from '@/components/ui/HolographicCard';
@@ -33,6 +33,7 @@ import KanbanBoard from '@/components/admin/KanbanBoard';
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
 import RankingPanel from '@/components/admin/RankingPanel';
 import DeptWeightsEditor from '@/components/admin/DeptWeightsEditor';
+import ImportApplications from '@/components/admin/ImportApplications';
 import { logAction } from '@/services/auditService';
 import CircuitBoardBackground from '@/components/ui/CircuitBoardBackground';
 import { ArrowLeft, LayoutDashboard, Calendar, History } from 'lucide-react';
@@ -465,9 +466,14 @@ const Admin = () => {
                                     <Calendar className="w-3.5 h-3.5 mr-1.5" />INTERVIEWS
                                 </TabsTrigger>
                                 {isSuperAdmin && (
-                                    <TabsTrigger value="positions" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
-                                        <Trophy className="w-3.5 h-3.5 mr-1.5" />POSITIONS
-                                    </TabsTrigger>
+                                    <>
+                                        <TabsTrigger value="positions" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                            <Trophy className="w-3.5 h-3.5 mr-1.5" />POSITIONS
+                                        </TabsTrigger>
+                                        <TabsTrigger value="import" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                            <UploadCloud className="w-3.5 h-3.5 mr-1.5" />IMPORT
+                                        </TabsTrigger>
+                                    </>
                                 )}
                                 {isAdmin && (
                                     <>
@@ -654,6 +660,18 @@ const Admin = () => {
                             <TabsContent value="analytics" className="outline-none">
                                 <AnalyticsDashboard applications={applications} />
                             </TabsContent>
+                        )}
+                        
+                        {/* ── SUPER ADMIN TABS ────────────────────────────────── */}
+                        {isSuperAdmin && (
+                            <>
+                                <TabsContent value="positions" className="outline-none">
+                                    <PositionManager applications={applications} />
+                                </TabsContent>
+                                <TabsContent value="import" className="outline-none">
+                                    <ImportApplications />
+                                </TabsContent>
+                            </>
                         )}
 
                         {/* ── RANKINGS TAB ─────────────────────────────────── */}
