@@ -33,6 +33,7 @@ interface PositionManagerProps {
 }
 
 const PositionManager = ({ applications, onUpdate }: PositionManagerProps) => {
+    const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
     const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
     const [confirmText, setConfirmText] = useState('');
     const [isSending, setIsSending] = useState(false);

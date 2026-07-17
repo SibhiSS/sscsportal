@@ -710,9 +710,6 @@ const Admin = () => {
                         {isAdmin && (
                             <TabsContent value="settings" className="space-y-12 outline-none">
                                 <AdminSettings />
-                                <div className="border-t border-white/10 pt-10">
-                                    <DeptWeightsEditor userEmail={user?.email || ''} />
-                                </div>
                             </TabsContent>
                         )}
                     </Tabs>

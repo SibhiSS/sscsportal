@@ -30,6 +30,7 @@ const AdminSettings = () => {
     const [admins, setAdmins] = useState<AdminUser[]>([]);
     const [newAdminEmail, setNewAdminEmail] = useState('');
     const [loading, setLoading] = useState(true);
+    const [savingSettings, setSavingSettings] = useState(false);
 
     const isSuperAdmin = currentUser?.role === 'super_admin';
 
@@ -65,10 +66,18 @@ const AdminSettings = () => {
         const newSettings = { ...settings, isOpen: checked };
         setSettings(newSettings);
 
-        await supabase.from('app_settings').upsert({
+        const { error } = await supabase.from('app_settings').upsert({
             key: 'recruitment_status',
-            value: newSettings
+            value: newSettings,
+            updated_at: new Date().toISOString()
         });
+
+        if (error) {
+            console.error("Failed to save recruitment status:", error);
+            toast.error("Failed to update status: " + error.message);
+        } else {
+            toast.success(checked ? "Applications are now OPEN" : "Emergency Stop activated - Form CLOSED");
+        }
 
         logAction(currentUser?.email || 'unknown', 'TOGGLE_RECRUITMENT', undefined, { isOpen: checked });
     };
@@ -85,12 +94,42 @@ const AdminSettings = () => {
 
         setSettings(newSettings);
 
-        await supabase.from('app_settings').upsert({
+        const { error } = await supabase.from('app_settings').upsert({
             key: 'recruitment_status',
-            value: newSettings
+            value: newSettings,
+            updated_at: new Date().toISOString()
         });
 
+        if (error) {
+            console.error("Failed to save phase change:", error);
+            toast.error("Failed to save phase: " + error.message);
+        } else {
+            toast.success(`Recruitment phase updated to ${phase.replace(/_/g, ' ')}`);
+        }
+
         logAction(currentUser?.email || 'unknown', 'CHANGE_PHASE', undefined, { phase });
+    };
+
+    const saveRecruitmentSettings = async () => {
+        setSavingSettings(true);
+        try {
+            const { error } = await supabase.from('app_settings').upsert({
+                key: 'recruitment_status',
+                value: settings,
+                updated_at: new Date().toISOString()
+            });
+
+            if (error) throw error;
+            toast.success("All recruitment settings saved successfully!");
+            if (currentUser?.email) {
+                await logAction(currentUser.email, 'UPDATE_RECRUITMENT_SETTINGS', undefined, settings);
+            }
+        } catch (err: any) {
+            console.error("Error saving recruitment settings:", err);
+            toast.error("Failed to save settings: " + (err.message || 'Unknown error'));
+        } finally {
+            setSavingSettings(false);
+        }
     };
 
     const addAdmin = async () => {
@@ -323,6 +362,16 @@ const AdminSettings = () => {
                                     checked={!settings.isOpen}
                                     onCheckedChange={(checked) => toggleRecruitment(!checked)}
                                 />
+                            </div>
+
+                            <div className="pt-4 flex justify-end">
+                                <Button
+                                    onClick={saveRecruitmentSettings}
+                                    disabled={savingSettings}
+                                    className="bg-primary hover:bg-primary/90 text-white font-bold h-11 px-8 rounded-xl shadow-lg"
+                                >
+                                    {savingSettings ? 'Saving Settings...' : 'Save Recruitment Settings'}
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>

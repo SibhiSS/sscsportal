@@ -32,8 +32,19 @@ const Navigation = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(true);
+
   useEffect(() => {
     const checkStatus = async () => {
+      try {
+        const { data: setRes } = await supabase.from('app_settings').select('value').eq('key', 'recruitment_status').single();
+        if (setRes && setRes.value) {
+          setIsRecruitmentOpen(setRes.value.isOpen !== false);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+
       if (!user) {
         setHasApplied(false);
         return;
@@ -126,12 +137,18 @@ const Navigation = () => {
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-3">
               {hasApplied ? (
-                <Button size="sm" variant="outline" className="border-white/10 text-primary/60 backdrop-blur-md rounded-full bg-white/5 cursor-not-allowed px-6" disabled>
-                  Applied
+                <Link to="/apply">
+                  <Button size="sm" variant="outline" className="border-primary/40 text-primary hover:bg-primary/10 backdrop-blur-md rounded-full bg-white/5 px-6 font-bold">
+                    View Status
+                  </Button>
+                </Link>
+              ) : !isRecruitmentOpen ? (
+                <Button size="sm" variant="outline" className="border-white/10 text-muted-foreground backdrop-blur-md rounded-full bg-white/5 cursor-not-allowed px-6" disabled>
+                  Closed
                 </Button>
               ) : (
                 <Link to="/apply">
-                  <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 shadow-[0_0_15px_rgba(220,20,60,0.2)]">
+                  <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 shadow-[0_0_15px_rgba(220,20,60,0.2)] font-bold">
                     Join Us
                   </Button>
                 </Link>

@@ -9,12 +9,24 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 
 const HeroSection = () => {
-  const { user } = useAuth();
   const [hasApplied, setHasApplied] = useState(false);
   const [canBookSlot, setCanBookSlot] = useState(false);
+  const [isSelected, setIsSelected] = useState(false);
+  const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(true);
 
   useEffect(() => {
     const checkStatus = async () => {
+      // 1. Fetch recruitment status
+      try {
+        const { data: setRes } = await supabase.from('app_settings').select('value').eq('key', 'recruitment_status').single();
+        if (setRes && setRes.value) {
+          setIsRecruitmentOpen(setRes.value.isOpen !== false);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+
+      // 2. Fetch user application status
       if (!user) return;
       const { data } = await supabase
         .from('applications')
@@ -24,8 +36,11 @@ const HeroSection = () => {
 
       if (data && data.length > 0) {
         setHasApplied(true);
-        if (data[0].status === 'shortlisted') {
+        const st = data[0].status;
+        if (st === 'shortlisted') {
           setCanBookSlot(true);
+        } else if (['selected', 'active_member'].includes(st)) {
+          setIsSelected(true);
         }
       }
     };
@@ -146,13 +161,36 @@ const HeroSection = () => {
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Link>
                 </Button>
+              ) : isSelected ? (
+                <Button
+                  size="lg"
+                  className="px-10 h-14 bg-emerald-600 hover:bg-emerald-700 text-white font-heading rounded-full shadow-[0_0_25px_rgba(16,185,129,0.5)] transition-all hover:scale-105"
+                  asChild
+                >
+                  <Link to="/apply">
+                    APPLICATION SELECTED
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Link>
+                </Button>
               ) : hasApplied ? (
                 <Button
                   size="lg"
-                  className="px-10 h-14 bg-primary/20 text-primary/50 border border-primary/20 font-heading cursor-not-allowed rounded-full"
+                  variant="outline"
+                  className="px-10 h-14 border-primary/40 text-primary hover:bg-primary/10 font-heading rounded-full backdrop-blur-md"
+                  asChild
+                >
+                  <Link to="/apply">
+                    VIEW APPLICATION
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Link>
+                </Button>
+              ) : !isRecruitmentOpen ? (
+                <Button
+                  size="lg"
+                  className="px-10 h-14 bg-white/5 border border-white/10 text-muted-foreground font-heading rounded-full cursor-not-allowed"
                   disabled
                 >
-                  Application Received
+                  RECRUITMENT CLOSED
                 </Button>
               ) : (
                 <Button
