@@ -467,16 +467,28 @@ const InterviewScheduler = () => {
                                                 <Label className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Session Link</Label>
                                                 <div className="flex gap-2 group/link">
                                                     <Input
+                                                        id={`session-link-input-${panelId}`}
                                                         placeholder="Enter Virtual Meeting Link..."
                                                         className="h-9 bg-black/40 border-white/5 focus:border-primary/50 text-[11px] font-medium"
                                                         defaultValue={myAssignments.find(a => a.panel_id === panelId)?.meeting_link || ''}
-                                                        onBlur={(e) => {
+                                                    />
+                                                    <Button
+                                                        size="sm"
+                                                        className="h-9 px-4 bg-primary text-white hover:bg-primary/90 text-xs font-bold shrink-0"
+                                                        onClick={async () => {
                                                             const assign = myAssignments.find(a => a.panel_id === panelId);
-                                                            if (assign && e.target.value !== (assign.meeting_link || '')) {
-                                                                updateAssignmentLink(assign.id, e.target.value);
+                                                            const inputEl = document.getElementById(`session-link-input-${panelId}`) as HTMLInputElement;
+                                                            if (assign && inputEl) {
+                                                                await updateAssignmentLink(assign.id, inputEl.value);
+                                                                alert("Meeting link saved and emailed to candidate(s)!");
+                                                            } else if (!assign) {
+                                                                alert("No panel assignment found for this panel.");
                                                             }
                                                         }}
-                                                    />
+                                                    >
+                                                        <Send className="w-3.5 h-3.5 mr-1" />
+                                                        Send Mail
+                                                    </Button>
                                                 </div>
                                             </div>
                                         </div>
