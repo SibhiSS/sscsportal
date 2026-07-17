@@ -408,7 +408,7 @@ const ScheduleInterview = () => {
                         {[
                             { label: 'Available Slots', value: slots.length, icon: Calendar, color: 'text-purple-400' },
                             { label: 'Interview Panels', value: [...new Set(slots.map(s => s.panel_id))].length, icon: Users, color: 'text-pink-400' },
-                            { label: 'Slot Duration', value: '30 min', icon: Clock, color: 'text-cyan-400' },
+                            { label: 'Slot Duration', value: '15 min', icon: Clock, color: 'text-cyan-400' },
                         ].map((stat) => (
                             <div key={stat.label} className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 text-center backdrop-blur-xl">
                                 <stat.icon className={`w-5 h-5 mx-auto mb-2 ${stat.color}`} />
