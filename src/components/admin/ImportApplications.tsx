@@ -23,13 +23,13 @@ interface ParsedApplication {
 const COLUMN_ALIASES: Record<keyof Omit<ParsedApplication, 'user_id' | 'status'>, string[]> = {
   full_name: ['name', 'full name', 'applicant name', 'first name', 'student name'],
   email: ['email', 'email address', 'mail'],
-  phone: ['phone', 'mobile', 'contact', 'phone number'],
-  roll_number: ['roll number', 'roll no', 'registration number', 'reg no', 'reg number'],
-  primary_dept: ['primary department', 'choice 1', 'domain 1', 'department 1', 'primary', 'domain'],
-  reason: ['reason', 'why this department?', 'primary reason', 'why this domain?', 'why?'],
-  secondary_dept: ['secondary department', 'choice 2', 'domain 2', 'department 2', 'secondary'],
-  secondary_reason: ['secondary reason', 'why this secondary department?'],
-  skills: ['skills', 'technical skills', 'your skills', 'tools'],
+  phone: ['phone', 'mobile', 'contact', 'phone number', 'whatsapp number'],
+  roll_number: ['roll number', 'roll no', 'registration number', 'reg no', 'reg number', 'register number'],
+  primary_dept: ['primary department', 'choice 1', 'domain 1', 'department 1', 'primary', 'domain', 'what domain do you prefer to apply for', 'first preferred domain'],
+  reason: ['reason', 'why this department', 'primary reason', 'why this domain', 'why', 'why did you choose this particular domain'],
+  secondary_dept: ['secondary department', 'choice 2', 'domain 2', 'department 2', 'secondary', '2nd preferred domain', 'what is your 2nd preferred domain', 'second preferred domain'],
+  secondary_reason: ['secondary reason', 'why this secondary department', 'why did you choose your 2nd preferred domain'],
+  skills: ['skills', 'technical skills', 'your skills', 'tools', 'portfolio', 'github', 'linkedin', 'previous experience', 'could you attach your portfoliogithub profilelinkedin profile link below', 'have you had any previous experience related to the domain chosen above if yes briefly explain'],
 };
 
 export default function ImportApplications() {

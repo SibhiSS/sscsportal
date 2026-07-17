@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
-import { ShieldAlert, Eye, Star, ArrowUpDown, LayoutGrid, List, Trophy, BarChart3, Settings2, UploadCloud } from 'lucide-react';
+import { ShieldAlert, Eye, Star, ArrowUpDown, LayoutGrid, List, Trophy, BarChart3, Settings2, UploadCloud, Video } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 import { useAuth } from '@/contexts/AuthContext';
 import HolographicCard from '@/components/ui/HolographicCard';
@@ -462,8 +462,11 @@ const Admin = () => {
                                         </TabsTrigger>
                                     </>
                                 )}
-                                <TabsTrigger value="interviews" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
-                                    <Calendar className="w-3.5 h-3.5 mr-1.5" />INTERVIEWS
+                                <TabsTrigger value="schedule" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                    <Calendar className="w-3.5 h-3.5 mr-1.5" />SCHEDULE
+                                </TabsTrigger>
+                                <TabsTrigger value="evaluate" onClick={() => navigate('/interviewer')} className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                    <Video className="w-3.5 h-3.5 mr-1.5" />EVALUATE
                                 </TabsTrigger>
                                 {isSuperAdmin && (
                                     <>
@@ -544,8 +547,8 @@ const Admin = () => {
                                                         <TableHead onClick={() => requestSort('primaryDept')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
                                                             <div className="flex items-center gap-2">Choice 1 <ArrowUpDown className="w-3 h-3" /></div>
                                                         </TableHead>
-                                                        <TableHead onClick={() => requestSort('interviewScore')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
-                                                            <div className="flex items-center gap-2">Int. Score <ArrowUpDown className="w-3 h-3" /></div>
+                                                        <TableHead onClick={() => requestSort('finalScore')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
+                                                            <div className="flex items-center gap-2">Score <ArrowUpDown className="w-3 h-3" /></div>
                                                         </TableHead>
                                                         <TableHead onClick={() => requestSort('status')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5 text-center">
                                                             <div className="flex items-center justify-center gap-2">Status <ArrowUpDown className="w-3 h-3" /></div>
@@ -600,13 +603,13 @@ const Admin = () => {
                                                                     </div>
                                                                 </TableCell>
                                                                 <TableCell>
-                                                                    {app.interviewScore && app.interviewScore > 0 ? (
-                                                                        <span className={`font-mono text-sm font-bold ${app.interviewScore >= 7 ? 'text-green-400' : app.interviewScore >= 5 ? 'text-yellow-400' : 'text-red-400'}`}>
-                                                                            {app.interviewScore.toFixed(1)}
-                                                                        </span>
-                                                                    ) : app.finalScore && app.finalScore > 0 ? (
+                                                                    {app.finalScore && app.finalScore > 0 ? (
                                                                         <span className={`font-mono text-sm font-bold ${app.finalScore >= 7 ? 'text-green-400' : app.finalScore >= 5 ? 'text-yellow-400' : 'text-red-400'}`}>
                                                                             {app.finalScore.toFixed(1)}
+                                                                        </span>
+                                                                    ) : app.interviewScore && app.interviewScore > 0 ? (
+                                                                        <span className={`font-mono text-sm font-bold ${app.interviewScore >= 7 ? 'text-green-400' : app.interviewScore >= 5 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                                                            {app.interviewScore.toFixed(1)}
                                                                         </span>
                                                                     ) : (
                                                                         <div className="flex gap-0.5">
@@ -685,8 +688,8 @@ const Admin = () => {
                             </TabsContent>
                         )}
 
-                        {/* ── INTERVIEWS TAB ────────────────────────────────── */}
-                        <TabsContent value="interviews" className="outline-none">
+                        {/* ── SCHEDULE TAB ────────────────────────────────── */}
+                        <TabsContent value="schedule" className="outline-none">
                             <InterviewScheduler />
                         </TabsContent>
 
