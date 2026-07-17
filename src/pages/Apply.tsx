@@ -599,7 +599,7 @@ const Apply = () => {
         );
     }
 
-    if (user && !existingApp) {
+    if (user && !existingApp && !recruitmentStatus.isOpen) {
         return (
             <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground bg-[#050505]">
                 <TechGridBackground />
