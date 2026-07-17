@@ -17,17 +17,23 @@ const benefits = [
 const JoinSection = () => {
   const { user } = useAuth();
   const [hasApplied, setHasApplied] = useState(false);
+  const [canBookSlot, setCanBookSlot] = useState(false);
 
   useEffect(() => {
     const checkStatus = async () => {
       if (!user) return;
       const { data } = await supabase
         .from('applications')
-        .select('id')
+        .select('id, status')
         .or(`user_id.eq.${user.uid},email.eq.${user.email}`)
         .limit(1);
 
-      if (data && data.length > 0) setHasApplied(true);
+      if (data && data.length > 0) {
+        setHasApplied(true);
+        if (data[0].status === 'shortlisted') {
+          setCanBookSlot(true);
+        }
+      }
     };
 
     checkStatus();
@@ -81,7 +87,18 @@ const JoinSection = () => {
 
           {/* CTA Button */}
           <div className="flex flex-col items-center">
-            {hasApplied ? (
+            {canBookSlot ? (
+              <Button
+                size="lg"
+                className="px-12 h-16 bg-purple-600 hover:bg-purple-700 text-white font-heading rounded-full shadow-[0_0_30px_rgba(168,85,247,0.5)] transition-all hover:scale-105 text-lg animate-pulse"
+                asChild
+              >
+                <Link to="/schedule">
+                  BOOK SLOT
+                  <ArrowRight className="w-6 h-6 ml-2" />
+                </Link>
+              </Button>
+            ) : hasApplied ? (
               <Button
                 size="lg"
                 className="px-10 h-14 bg-primary/20 text-primary/50 border border-primary/20 font-heading cursor-not-allowed rounded-full"
