@@ -435,11 +435,13 @@ const Admin = () => {
                                         <TabsTrigger value="rankings" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
                                             <Trophy className="w-3.5 h-3.5 mr-1.5" />RANKINGS
                                         </TabsTrigger>
-                                        {isSuperAdmin && (
-                                            <TabsTrigger value="interviews" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
-                                                <Calendar className="w-3.5 h-3.5 mr-1.5" />INTERVIEWS
-                                            </TabsTrigger>
-                                        )}
+                                    </>
+                                )}
+                                <TabsTrigger value="interviews" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                    <Calendar className="w-3.5 h-3.5 mr-1.5" />INTERVIEWS
+                                </TabsTrigger>
+                                {isAdmin && (
+                                    <>
                                         <TabsTrigger value="activity" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
                                             <History className="w-3.5 h-3.5 mr-1.5" />ACTIVITY
                                         </TabsTrigger>
@@ -632,11 +634,9 @@ const Admin = () => {
                         )}
 
                         {/* ── INTERVIEWS TAB ────────────────────────────────── */}
-                        {isAdmin && isSuperAdmin && (
-                            <TabsContent value="interviews" className="outline-none">
-                                <InterviewScheduler />
-                            </TabsContent>
-                        )}
+                        <TabsContent value="interviews" className="outline-none">
+                            <InterviewScheduler />
+                        </TabsContent>
 
                         {/* ── ACTIVITY LOG TAB ──────────────────────────────── */}
                         {isAdmin && (
