@@ -229,7 +229,7 @@ export default function SlotCalendar({ slots, onSelectSlot }: SlotCalendarProps)
                                                     {timeStr}
                                                 </div>
                                                 <div className="text-[10px] text-muted-foreground mt-0.5">
-                                                    30 min · Available
+                                                    Available
                                                 </div>
                                             </div>
                                             <Badge
