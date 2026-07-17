@@ -23,13 +23,13 @@ interface ParsedApplication {
 const COLUMN_ALIASES: Record<keyof Omit<ParsedApplication, 'user_id' | 'status'>, string[]> = {
   full_name: ['name', 'full name', 'applicant name', 'first name', 'student name'],
   email: ['email', 'email address', 'mail'],
-  phone: ['phone', 'mobile', 'contact', 'phone number', 'whatsapp number'],
-  roll_number: ['roll number', 'roll no', 'registration number', 'reg no', 'reg number', 'register number'],
-  primary_dept: ['primary department', 'choice 1', 'domain 1', 'department 1', 'primary', 'domain', 'what domain do you prefer to apply for', 'first preferred domain'],
+  phone: ['phone', 'mobile', 'contact', 'phone number', 'whatsapp number', 'contact number'],
+  roll_number: ['roll number', 'roll no', 'registration number', 'reg no', 'reg number', 'register number', 'register no', 'registration no', 'university id'],
+  primary_dept: ['primary department', 'choice 1', 'domain 1', 'department 1', 'primary', 'domain', 'what domain do you prefer to apply for', 'first preferred domain', 'department', 'preferred domain', 'first preferred lead position', 'lead preferences 1'],
   reason: ['reason', 'why this department', 'primary reason', 'why this domain', 'why', 'why did you choose this particular domain'],
-  secondary_dept: ['secondary department', 'choice 2', 'domain 2', 'department 2', 'secondary', '2nd preferred domain', 'what is your 2nd preferred domain', 'second preferred domain'],
+  secondary_dept: ['secondary department', 'choice 2', 'domain 2', 'department 2', 'secondary', '2nd preferred domain', 'what is your 2nd preferred domain', 'second preferred domain', 'second preferred lead position', 'lead preferences 2'],
   secondary_reason: ['secondary reason', 'why this secondary department', 'why did you choose your 2nd preferred domain'],
-  skills: ['skills', 'technical skills', 'your skills', 'tools', 'portfolio', 'github', 'linkedin', 'previous experience', 'could you attach your portfoliogithub profilelinkedin profile link below', 'have you had any previous experience related to the domain chosen above if yes briefly explain'],
+  skills: ['skills', 'technical skills', 'your skills', 'tools', 'portfolio', 'github', 'linkedin', 'previous experience', 'could you attach your portfoliogithub profilelinkedin profile link below', 'have you had any previous experience related to the domain chosen above if yes briefly explain', 'linkedin profile link', 'github previous works personal website if applicable'],
 };
 
 export default function ImportApplications() {
@@ -44,27 +44,50 @@ export default function ImportApplications() {
     const mapped: any = {};
     const keys = Object.keys(row);
 
+    const mappedOriginalKeys = new Set<string>();
+
     // Map each expected field to the matching column in the row
     for (const [field, aliases] of Object.entries(COLUMN_ALIASES)) {
       const match = keys.find(k => aliases.includes(normalizeKey(k)));
       if (match) {
         mapped[field] = String(row[match]).trim();
+        mappedOriginalKeys.add(match);
       }
     }
 
-    // Check mandatory fields
-    if (!mapped.full_name || !mapped.email || !mapped.roll_number || !mapped.primary_dept) {
+    // Check mandatory fields (Require at least an email, name, or roll number to consider it a real row, to avoid parsing empty trailing rows)
+    if (!mapped.full_name && !mapped.email && !mapped.roll_number) {
       return null;
+    }
+
+    // Collect all unmapped columns (like custom form questions) and format them into the reason field
+    const unmappedAnswers: string[] = [];
+    for (const k of keys) {
+      if (!mappedOriginalKeys.has(k) && row[k] !== undefined && row[k] !== null) {
+        const val = String(row[k]).trim();
+        // Ignore empty values or timestamps if desired, but we'll just ignore empty strings
+        if (val && normalizeKey(k) !== 'timestamp') {
+          unmappedAnswers.push(`Q: ${k}\nA: ${val}`);
+        }
+      }
+    }
+
+    let finalReason = mapped.reason || '';
+    if (unmappedAnswers.length > 0) {
+      if (finalReason) {
+        finalReason += '\n\n';
+      }
+      finalReason += '--- Additional Questions ---\n\n' + unmappedAnswers.join('\n\n');
     }
 
     return {
       user_id: `imported-${crypto.randomUUID()}`,
-      full_name: mapped.full_name,
-      email: mapped.email.toLowerCase(),
+      full_name: mapped.full_name || 'Unknown Name',
+      email: mapped.email ? mapped.email.toLowerCase() : `unknown-${crypto.randomUUID().slice(0, 8)}@example.com`,
       phone: mapped.phone || 'N/A',
-      roll_number: mapped.roll_number.toUpperCase(),
-      primary_dept: mapped.primary_dept,
-      reason: mapped.reason || '',
+      roll_number: mapped.roll_number ? mapped.roll_number.toUpperCase() : 'N/A',
+      primary_dept: mapped.primary_dept || 'Unknown Dept',
+      reason: finalReason,
       secondary_dept: mapped.secondary_dept || null,
       secondary_reason: mapped.secondary_reason || null,
       skills: mapped.skills || '',
@@ -100,7 +123,7 @@ export default function ImportApplications() {
         if (parsedData.length > 0) {
           toast.success(`Successfully parsed ${parsedData.length} applicants.`);
           if (skipped > 0) {
-            toast.warning(`Skipped ${skipped} rows due to missing required fields (Name, Email, Roll No, or Primary Dept).`);
+            toast.warning(`Skipped ${skipped} empty or completely invalid rows.`);
           }
         } else {
           toast.error("No valid data found. Please check your column headers.");
