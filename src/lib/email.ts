@@ -28,13 +28,29 @@ export async function sendEmail(
         return false;
     }
 
+    // Clean up HTML whitespace & append unique hidden ref tag so Gmail never collapses the body into quoted text [...]
+    const cleanedMessage = message
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join('\n');
+
+    const formattedBody = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #18181b; font-size: 14px; line-height: 1.6; max-width: 600px;">
+            ${cleanedMessage}
+            <div style="display:none !important; font-size:1px; color:#ffffff; opacity:0; overflow:hidden; mso-hide:all;">
+                Ref ID: ${Date.now()}-${Math.random().toString(36).substring(2, 7)}
+            </div>
+        </div>
+    `.trim();
+
     for (let attempt = 1; attempt <= 2; attempt++) {
         try {
             await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-                body: JSON.stringify({ email, subject, message }),
+                body: JSON.stringify({ email, subject, message: formattedBody }),
             });
             console.log(`[Email] ✓ Dispatched to ${email} — "${subject}"`);
             return true;

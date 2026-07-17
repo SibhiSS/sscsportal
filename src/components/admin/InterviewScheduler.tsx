@@ -303,12 +303,16 @@ const InterviewScheduler = () => {
                 const portalUrl = window.location.origin;
                 await sendEmail(
                     app.email,
-                    'ACTION REQUIRED: Book Your Interview Slot - IEEE SSCS',
+                    `Action Required: Book Your Interview Slot - IEEE SSCS [${app.fullName}]`,
                     `<p>Dear <strong>${app.fullName}</strong>,</p>
-                    <p>Congratulations! We were impressed with your application and would like to invite you for an interview.</p>
-                    <p>Please book your interview slot using the link below. Slots are allocated on a first-come, first-served basis.</p>
-                    <p><strong>Book your slot:</strong> <a href="${portalUrl}/schedule">${portalUrl}/schedule</a></p>
-                    <p>Regards,<br>IEEE SSCS Recruitment Team</p>`
+                    <p>Congratulations! Your application for IEEE SSCS has been shortlisted for an interview.</p>
+                    <p>Please click the button below to choose your preferred interview time slot:</p>
+                    <p style="margin: 20px 0;">
+                        <a href="${portalUrl}/schedule" style="background-color: #dc143c; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Book Interview Slot</a>
+                    </p>
+                    <p>Direct Link: <a href="${portalUrl}/schedule">${portalUrl}/schedule</a></p>
+                    <p><em>Note: Slots are allocated on a first-come, first-served basis.</em></p>
+                    <p>Best regards,<br>IEEE SSCS Recruitment Team</p>`
                 );
 
                 // Update DB flag
@@ -465,30 +469,23 @@ const InterviewScheduler = () => {
 
                                             <div className="mt-6 space-y-2 relative z-10">
                                                 <Label className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Session Link</Label>
-                                                <div className="flex gap-2 group/link">
-                                                    <Input
-                                                        id={`session-link-input-${panelId}`}
-                                                        placeholder="Enter Virtual Meeting Link..."
-                                                        className="h-9 bg-black/40 border-white/5 focus:border-primary/50 text-[11px] font-medium"
-                                                        defaultValue={myAssignments.find(a => a.panel_id === panelId)?.meeting_link || ''}
-                                                    />
-                                                    <Button
-                                                        size="sm"
-                                                        className="h-9 px-4 bg-primary text-white hover:bg-primary/90 text-xs font-bold shrink-0"
-                                                        onClick={async () => {
-                                                            const assign = myAssignments.find(a => a.panel_id === panelId);
-                                                            const inputEl = document.getElementById(`session-link-input-${panelId}`) as HTMLInputElement;
-                                                            if (assign && inputEl) {
-                                                                await updateAssignmentLink(assign.id, inputEl.value);
-                                                                alert("Meeting link saved and emailed to candidate(s)!");
-                                                            } else if (!assign) {
-                                                                alert("No panel assignment found for this panel.");
-                                                            }
-                                                        }}
-                                                    >
-                                                        <Send className="w-3.5 h-3.5 mr-1" />
-                                                        Send Mail
-                                                    </Button>
+                                                <div className="flex gap-2 items-center">
+                                                    <div className="text-xs font-mono bg-black/40 border border-white/5 px-3 py-2 rounded-lg flex-1 truncate text-zinc-300">
+                                                        {myAssignments.find(a => a.panel_id === panelId)?.meeting_link || 'No virtual link assigned yet'}
+                                                    </div>
+                                                    {myAssignments.find(a => a.panel_id === panelId)?.meeting_link && (
+                                                        <Button
+                                                            size="sm"
+                                                            className="h-8 px-3 bg-primary text-white hover:bg-primary/90 text-xs font-bold shrink-0"
+                                                            onClick={() => {
+                                                                const link = myAssignments.find(a => a.panel_id === panelId)?.meeting_link;
+                                                                if (link) window.open(link, '_blank');
+                                                            }}
+                                                        >
+                                                            <Video className="w-3.5 h-3.5 mr-1" />
+                                                            Join
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -627,64 +624,54 @@ const InterviewScheduler = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="space-y-4">
+                                                <div className="flex items-center gap-2 mb-6">
+                                                    <div className="relative flex-1">
+                                                        <Video className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                                                        <Input
+                                                            className="h-8 pl-8 pr-3 text-[10px] bg-black/40 border-white/5 rounded-lg focus:border-primary/40"
+                                                            placeholder="Set Panel Meeting Link..."
+                                                            defaultValue={panelAssignments[0]?.meeting_link || ''}
+                                                            id={`panel-link-input-${panelId}`}
+                                                        />
+                                                    </div>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="h-8 text-[10px] bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 shrink-0 font-bold"
+                                                        onClick={async () => {
+                                                            const inputEl = document.getElementById(`panel-link-input-${panelId}`) as HTMLInputElement;
+                                                            if (inputEl && panelAssignments.length > 0) {
+                                                                for (const assign of panelAssignments) {
+                                                                    await updateAssignmentLink(assign.id, inputEl.value);
+                                                                }
+                                                                alert("Panel meeting link saved and emailed to booked candidates!");
+                                                            } else if (panelAssignments.length === 0) {
+                                                                alert("Please assign an interviewer to this panel first.");
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Send className="w-3 h-3 mr-1" />
+                                                        Send Link
+                                                    </Button>
+                                                </div>
+
+                                                <div className="space-y-3">
                                                     {panelAssignments.map(assign => (
-                                                        <div key={assign.id} className="bg-white/5 p-4 rounded-2xl border border-white/5 space-y-3 group/assign">
-                                                            <div className="flex justify-between items-start">
-                                                                <div className="min-w-0 flex-1">
-                                                                    <div className="text-[11px] font-bold text-white truncate uppercase tracking-tighter" title={assign.interviewer_email}>
-                                                                        {assign.interviewer_email.split('@')[0]}
-                                                                    </div>
-                                                                    <div className="text-[9px] text-muted-foreground truncate opacity-60">{assign.interviewer_email}</div>
+                                                        <div key={assign.id} className="bg-white/5 p-3 rounded-xl border border-white/5 flex justify-between items-center group/assign">
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="text-[11px] font-bold text-white truncate uppercase tracking-tighter" title={assign.interviewer_email}>
+                                                                    {assign.interviewer_email.split('@')[0]}
                                                                 </div>
-                                                                <Button 
-                                                                    variant="ghost" 
-                                                                    size="icon" 
-                                                                    className="h-7 w-7 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 opacity-0 group-assign:opacity-100 transition-opacity" 
-                                                                    onClick={() => unassignInterviewer(assign.id)}
-                                                                >
-                                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                                </Button>
+                                                                <div className="text-[9px] text-muted-foreground truncate opacity-60">{assign.interviewer_email}</div>
                                                             </div>
-                                                            <div className="flex items-center gap-2 relative">
-                                                                <div className="relative flex-1">
-                                                                    <Video className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-                                                                    <Input
-                                                                        className="h-8 pl-8 pr-3 text-[10px] bg-black/40 border-white/5 rounded-lg focus:border-primary/40"
-                                                                        placeholder="Add Virtual Link"
-                                                                        defaultValue={assign.meeting_link || ''}
-                                                                        id={`link-input-${assign.id}`}
-                                                                        onBlur={(e) => {
-                                                                            if (e.target.value !== (assign.meeting_link || '')) {
-                                                                                // Silently save but don't email on blur anymore? Wait, the user wants a Send button. Let's keep the blur save, but if they want to explicitly send emails, they click the button. 
-                                                                                // Actually, updateAssignmentLink already sends the email! 
-                                                                                // So if we just call it onBlur, it sends the email. 
-                                                                                // If they want a button, they can click the button. Let's make the button call it.
-                                                                                // We'll update state locally or just let the button read the input value.
-                                                                            }
-                                                                        }}
-                                                                        onChange={(e) => {
-                                                                            // we can update it in db without emailing, or just wait for explicit save.
-                                                                            // to keep it simple, we'll let the user click the send button.
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                                <Button 
-                                                                    size="sm" 
-                                                                    variant="outline"
-                                                                    className="h-8 text-[10px] bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 shrink-0"
-                                                                    onClick={() => {
-                                                                        const inputEl = document.getElementById(`link-input-${assign.id}`) as HTMLInputElement;
-                                                                        if (inputEl) {
-                                                                            updateAssignmentLink(assign.id, inputEl.value);
-                                                                            alert("Meeting link saved and emailed to booked candidates.");
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    <Send className="w-3 h-3 mr-1" />
-                                                                    Send
-                                                                </Button>
-                                                            </div>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 opacity-0 group-assign:opacity-100 transition-opacity" 
+                                                                onClick={() => unassignInterviewer(assign.id)}
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </Button>
                                                         </div>
                                                     ))}
 

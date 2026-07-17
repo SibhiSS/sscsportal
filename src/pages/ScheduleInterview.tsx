@@ -150,14 +150,17 @@ const ScheduleInterview = () => {
                 const portalUrl = window.location.origin;
                 sendEmail(
                     existingApp.email,
-                    'Interview Slot Confirmed - IEEE SSCS',
+                    `Interview Slot Confirmed - ${dateStr2} - IEEE SSCS`,
                     `<p>Dear <strong>${existingApp.full_name}</strong>,</p>
-                    <p>Your interview slot has been confirmed.</p>
-                    <p><strong>Date:</strong> ${dateStr2}<br>
-                    <strong>Time:</strong> ${timeStr2}<br>
-                    <strong>Department:</strong> ${existingApp.primary_dept}</p>
-                    <p>Your meeting link will be sent before the interview. You can check your status at: <a href="${portalUrl}/apply">${portalUrl}/apply</a></p>
-                    <p>Please be ready 5 minutes before your scheduled time.<br>IEEE SSCS Recruitment Team</p>`
+                    <p>Your interview slot has been successfully booked and confirmed.</p>
+                    <div style="background:#f4f4f5;padding:16px;border-radius:8px;margin:16px 0;border-left:4px solid #dc143c;">
+                        <p style="margin:4px 0;"><strong>Date:</strong> ${dateStr2}</p>
+                        <p style="margin:4px 0;"><strong>Time:</strong> ${timeStr2}</p>
+                        <p style="margin:4px 0;"><strong>Department:</strong> ${existingApp.primary_dept}</p>
+                    </div>
+                    <p>Your meeting link will be sent before the interview starts. You can track your status anytime at: <a href="${portalUrl}/apply">${portalUrl}/apply</a></p>
+                    <p>Please be ready 5 minutes before your scheduled time slot.</p>
+                    <p>Best regards,<br>IEEE SSCS Recruitment Team</p>`
                 );
 
                 // Last-minute check for urgent alerts
