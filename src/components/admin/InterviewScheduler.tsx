@@ -20,6 +20,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { sendEmail } from '@/lib/email';
 import HolographicCard from '@/components/ui/HolographicCard';
 import { motion, AnimatePresence } from 'framer-motion';
+import EvaluationForm from '@/components/interviewer/EvaluationForm';
+import { submitEvaluation } from '@/services/interviewService';
 
 
 
@@ -55,7 +57,7 @@ const InterviewScheduler = () => {
 
     // Evaluation Modal
     const [evalApp, setEvalApp] = useState<Application | null>(null);
-    const [evalForm, setEvalForm] = useState({ score: 0, comments: '', recommends_committee: false });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Generator Form
     const [genConfig, setGenConfig] = useState({
@@ -87,7 +89,7 @@ const InterviewScheduler = () => {
     const fetchSlots = async () => {
         const { data } = await supabase
             .from('interview_slots')
-            .select('*, applications(id, full_name, primary_dept, roll_number)')
+            .select('*, applications(*)')
             .order('start_time', { ascending: true });
         if (data) setSlots(data);
     };
@@ -506,29 +508,25 @@ const InterviewScheduler = () => {
                                                             </div>
 
                                                             {slot.is_booked && app ? (
-                                                                <div className="space-y-4 animate-in slide-in-from-right-2 duration-300">
+                                                                <div 
+                                                                    className="space-y-4 animate-in slide-in-from-right-2 duration-300 cursor-pointer group-hover:bg-white/5 p-2 rounded-xl transition-all"
+                                                                    onClick={() => {
+                                                                        const mappedApp: Application = {
+                                                                            ...app,
+                                                                            fullName: app.full_name || app.fullName,
+                                                                            rollNumber: app.roll_number || app.rollNumber,
+                                                                            primaryDept: app.primary_dept || app.primaryDept,
+                                                                        } as any;
+                                                                        setEvalApp(mappedApp);
+                                                                    }}
+                                                                >
                                                                     <div>
-                                                                        <div className="font-heading text-sm text-white group-hover:text-primary transition-colors">{app.full_name}</div>
-                                                                        <div className="text-[10px] text-muted-foreground font-mono mt-1 opacity-70 uppercase tracking-tighter">{app.roll_number} • {app.primary_dept}</div>
+                                                                        <div className="font-heading text-sm text-white group-hover:text-primary transition-colors">{app.full_name || app.fullName}</div>
+                                                                        <div className="text-[10px] text-muted-foreground font-mono mt-1 opacity-70 uppercase tracking-tighter">{app.roll_number || app.rollNumber} • {app.primary_dept || app.primaryDept}</div>
+                                                                        <div className="text-[10px] text-primary mt-2 font-bold tracking-widest uppercase">
+                                                                            {existingFeedback ? <><CheckCircle className="w-3 h-3 inline mr-1 text-green-500" /> View/Edit Evaluation</> : 'Click to Evaluate'}
+                                                                        </div>
                                                                     </div>
-                                                                    <Button
-                                                                        size="sm"
-                                                                        className={`w-full h-9 rounded-xl transition-all duration-300 text-[10px] font-bold tracking-widest uppercase ${existingFeedback ? 'bg-white/5 border-white/10 hover:bg-white/10' : 'bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20'}`}
-                                                                        onClick={() => {
-                                                                            setEvalApp(app as Application);
-                                                                            setEvalForm({
-                                                                                score: existingFeedback?.score || 0,
-                                                                                comments: existingFeedback?.comments || '',
-                                                                                recommends_committee: existingFeedback?.recommends_committee || false
-                                                                            });
-                                                                        }}
-                                                                    >
-                                                                        {existingFeedback ? (
-                                                                            <><CheckCircle className="w-3 h-3 mr-2 text-green-500" /> EDIT FEEDBACK</>
-                                                                        ) : (
-                                                                            'START EVALUATION'
-                                                                        )}
-                                                                    </Button>
                                                                 </div>
                                                             ) : (
                                                                 <div className="py-2">
@@ -764,95 +762,45 @@ const InterviewScheduler = () => {
             </Tabs>
 
             {/* EVALUATION DIALOG */}
-            <Dialog open={!!evalApp} onOpenChange={(open) => !open && setEvalApp(null)}>
-                <DialogContent className="max-w-xl bg-zinc-950/80 border-white/10 text-white backdrop-blur-3xl rounded-[2rem] overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
-                    
-                    <DialogHeader className="pt-6">
-                        <DialogTitle className="text-2xl font-bold font-heading text-center">
-                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
-                                Candidate Evaluation
-                            </span>
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    {evalApp && (
-                        <div className="space-y-8 p-4">
-                            <div className="bg-white/5 p-6 rounded-2xl border border-white/5 relative overflow-hidden group">
-                                <div className="absolute -right-8 -top-8 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all duration-500"></div>
-                                <div className="relative z-10">
-                                    <h3 className="font-heading text-lg text-white mb-1">{evalApp.fullName}</h3>
-                                    <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest opacity-60">
-                                        {evalApp.rollNumber} • {evalApp.primaryDept}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-6">
-                                <div className="space-y-3">
-                                    <Label className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">Performance Metric</Label>
-                                    <div className="flex items-center gap-6 bg-white/5 p-4 rounded-2xl border border-white/5">
-                                        <Input
-                                            type="number"
-                                            min="0"
-                                            max="10"
-                                            value={evalForm.score}
-                                            onChange={e => setEvalForm({ ...evalForm, score: parseInt(e.target.value) })}
-                                            className="bg-black/40 w-24 h-12 border-white/10 rounded-xl text-center font-heading text-xl text-primary focus:ring-primary/20"
-                                        />
-                                        <div className="flex-1">
-                                            <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                                                <motion.div 
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${(evalForm.score / 10) * 100}%` }}
-                                                    className="h-full bg-primary shadow-[0_0_10px_rgba(220,20,60,0.5)]"
-                                                />
-                                            </div>
-                                            <p className="text-[10px] text-muted-foreground mt-2 font-bold uppercase tracking-widest opacity-40 text-right">Raw Score / 10.0</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <Label className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold">Interview Notes</Label>
-                                    <Textarea
-                                        value={evalForm.comments}
-                                        onChange={e => setEvalForm({ ...evalForm, comments: e.target.value })}
-                                        className="bg-white/5 border-white/10 rounded-2xl min-h-[120px] focus:border-primary/40 focus:ring-primary/10 text-sm p-4 placeholder:opacity-30"
-                                        placeholder="Record key observations, technical proficiency, and soft skills..."
-                                    />
-                                </div>
-
-                                <div className="flex items-center space-x-3 bg-primary/5 p-4 rounded-2xl border border-primary/20 group cursor-pointer hover:bg-primary/10 transition-all" onClick={() => setEvalForm({ ...evalForm, recommends_committee: !evalForm.recommends_committee })}>
-                                    <Checkbox
-                                        id="committee"
-                                        checked={evalForm.recommends_committee}
-                                        onCheckedChange={(checked) => setEvalForm({ ...evalForm, recommends_committee: checked as boolean })}
-                                        className="border-primary/40 data-[state=checked]:bg-primary rounded-md"
-                                    />
-                                    <label
-                                        htmlFor="committee"
-                                        className="text-[11px] font-bold uppercase tracking-widest leading-none cursor-pointer group-hover:text-primary transition-colors"
-                                    >
-                                        Recommend for Committee Core?
-                                    </label>
-                                </div>
-                            </div>
-
-                            <Button onClick={submitFeedback} className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold tracking-[0.2em] uppercase text-xs shadow-xl shadow-primary/20 transition-all active:scale-[0.98]">
-                                <Save className="w-4 h-4 mr-2" /> 
-                                COMMIT EVALUATION
-                            </Button>
+            <AnimatePresence>
+                {evalApp && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+                        {/* Backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            onClick={() => setEvalApp(null)}
+                        />
+                        <div className="relative z-10 w-full max-w-2xl">
+                            <EvaluationForm
+                                application={evalApp}
+                                existingFeedback={feedbacks.find(f => f.application_id === evalApp.id && f.interviewer_email === user?.email) || null}
+                                onSubmit={async (payload) => {
+                                    if (!user?.email) return;
+                                    setIsSubmitting(true);
+                                    await submitEvaluation({
+                                        application_id: evalApp.id,
+                                        interviewer_email: user.email,
+                                        ...payload,
+                                    });
+                                    setEvalApp(null);
+                                    setIsSubmitting(false);
+                                    fetchFeedbacks();
+                                }}
+                                onClose={() => setEvalApp(null)}
+                                readOnly={false}
+                            />
                         </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* NOTIFY SHORTLISTED DIALOG */}
             <Dialog open={isNotifyDialogOpen} onOpenChange={setIsNotifyDialogOpen}>
                 <DialogContent className="max-w-2xl bg-zinc-950/90 border-white/10 text-white backdrop-blur-3xl rounded-[2.5rem] overflow-hidden flex flex-col p-0 h-[85vh]">
                     <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-primary to-transparent opacity-40"></div>
-                    
                     <div className="p-8 pb-4">
                         <DialogHeader>
                             <DialogTitle className="text-3xl font-bold font-heading flex items-center gap-4">
