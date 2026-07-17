@@ -670,9 +670,6 @@ const Admin = () => {
                         {/* ── SUPER ADMIN TABS ────────────────────────────────── */}
                         {isSuperAdmin && (
                             <>
-                                <TabsContent value="positions" className="outline-none">
-                                    <PositionManager applications={applications} />
-                                </TabsContent>
                                 <TabsContent value="import" className="outline-none">
                                     <ImportApplications />
                                 </TabsContent>

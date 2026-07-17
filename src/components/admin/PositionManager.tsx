@@ -31,9 +31,9 @@ interface PositionManagerProps {
 const PositionManager = ({ applications, onUpdate }: PositionManagerProps) => {
     const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
 
-    // Filter to candidates who are eligible for positions (e.g., selected or interviewed)
+    // Filter to candidates who have completed their interview (or already assigned)
     const eligibleCandidates = applications.filter(app => 
-        ['selected', 'interviewed', 'shortlisted', 'active_member'].includes(app.status)
+        ['interviewed', 'selected', 'active_member'].includes(app.status)
     ).sort((a, b) => a.fullName.localeCompare(b.fullName));
 
     const handleAssignPosition = async (candidateId: string, positionName: string) => {
