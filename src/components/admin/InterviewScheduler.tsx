@@ -17,14 +17,11 @@ import { Calendar as CalendarIcon, Clock, Link as LinkIcon, Plus, User, Video, A
 import LogoSpinner from '@/components/ui/LogoSpinner';
 import { logAction } from '@/services/auditService';
 import { useAuth } from '@/contexts/AuthContext';
-import emailjs from '@emailjs/browser';
+import { sendEmail } from '@/lib/email';
 import HolographicCard from '@/components/ui/HolographicCard';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// CONFIG (Should match Admin.tsx)
-const EMAILJS_PUBLIC_KEY = "bj3DbINQas11jOWqr";
-const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
-const PORTAL_URL = window.location.origin;
+
 
 const InterviewScheduler = () => {
     const { user } = useAuth();
@@ -71,7 +68,6 @@ const InterviewScheduler = () => {
 
     useEffect(() => {
         fetchData();
-        emailjs.init(EMAILJS_PUBLIC_KEY);
     }, []);
 
     const fetchData = async () => {
@@ -211,7 +207,7 @@ const InterviewScheduler = () => {
             fetchAssignments();
 
             // Send meeting link email to any booked candidate on this panel
-            if (link.trim() && assignment && GOOGLE_SCRIPT_URL) {
+            if (link.trim() && assignment) {
                 const { data: bookedSlots } = await supabase
                     .from('interview_slots')
                     .select('booked_by, start_time, applications(full_name, email, primary_dept)')
@@ -227,37 +223,19 @@ const InterviewScheduler = () => {
                         const slotTime = format(parseISO(slot.start_time), 'h:mm a');
                         const slotDate = format(parseISO(slot.start_time), 'EEEE, MMMM d, yyyy');
                         try {
-                            await fetch(GOOGLE_SCRIPT_URL, {
-                                method: 'POST',
-                                mode: 'no-cors',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    email: app.email,
-                                    subject: 'Your Interview Meeting Link - IEEE SSCS',
-                                    message: `<div style="font-family:'Inter',sans-serif;background:#050505;color:#e5e5e5;max-width:600px;margin:0 auto;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;">
-                                        <div style="background:#000;padding:40px 20px;text-align:center;border-bottom:1px solid #1a1a1a;">
-                                            <h1 style="color:#fff;margin:0;text-transform:uppercase;letter-spacing:2px;font-size:16px;font-weight:600;">IEEE Solid-State Circuits Society</h1>
-                                        </div>
-                                        <div style="padding:45px 40px;">
-                                            <h2 style="color:#22c55e;margin-top:0;font-size:24px;font-weight:700;">Meeting Link Ready 📹</h2>
-                                            <p style="font-size:15px;line-height:1.6;color:#d1d5db;">Dear <strong>${app.full_name}</strong>,</p>
-                                            <p style="font-size:15px;line-height:1.6;color:#d1d5db;">Your interview meeting link is now ready. Here are your details:</p>
-                                            <div style="background:#0a0a0a;border:1px solid #1f2937;padding:25px;border-radius:8px;margin:30px 0;">
-                                                <table style="width:100%;border-collapse:collapse;">
-                                                    <tr><td style="padding:8px 0;color:#9ca3af;font-size:13px;">Date</td><td style="padding:8px 0;color:#fff;font-weight:600;font-size:13px;">${slotDate}</td></tr>
-                                                    <tr><td style="padding:8px 0;color:#9ca3af;font-size:13px;">Time</td><td style="padding:8px 0;color:#a855f7;font-weight:700;font-size:16px;">${slotTime}</td></tr>
-                                                    <tr><td style="padding:8px 0;color:#9ca3af;font-size:13px;">Department</td><td style="padding:8px 0;color:#fff;font-weight:600;font-size:13px;">${app.primary_dept}</td></tr>
-                                                </table>
-                                            </div>
-                                            <div style="text-align:center;margin:30px 0;">
-                                                <a href="${link}" style="display:inline-block;background:#16a34a;color:#fff;padding:14px 28px;text-decoration:none;border-radius:4px;font-weight:700;font-size:15px;">Join Interview Meeting</a>
-                                            </div>
-                                            <p style="font-size:13px;color:#9ca3af;">You can also access this link anytime from your <a href="${PORTAL_URL}/apply" style="color:#a855f7;">application status page</a>.</p>
-                                            <p style="font-size:13px;color:#6b7280;border-top:1px solid #1a1a1a;padding-top:20px;margin-top:20px;">Please join 5 minutes before your slot.<br><strong style="color:#fff;">IEEE SSCS Recruitment Team</strong></p>
-                                        </div>
-                                    </div>`
-                                })
-                            });
+                            const portalUrl = window.location.origin;
+                            await sendEmail(
+                                app.email,
+                                'Your Interview Meeting Link - IEEE SSCS',
+                                `<p>Dear <strong>${app.full_name}</strong>,</p>
+                                <p>Your interview meeting link is ready.</p>
+                                <p><strong>Date:</strong> ${slotDate}<br>
+                                <strong>Time:</strong> ${slotTime}<br>
+                                <strong>Department:</strong> ${app.primary_dept}</p>
+                                <p><strong>Join your interview:</strong> <a href="${link}">${link}</a></p>
+                                <p>You can also check your status at: <a href="${portalUrl}/apply">${portalUrl}/apply</a></p>
+                                <p>Please join 5 minutes before your slot.<br>IEEE SSCS Recruitment Team</p>`
+                            );
                         } catch (e) {
                             console.warn(`Failed to send link email to ${app.email}:`, e);
                         }
@@ -322,48 +300,16 @@ const InterviewScheduler = () => {
         let count = 0;
         try {
             for (const app of shortlistedToNotify) {
-                await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: app.email,
-                        subject: "ACTION REQUIRED: Book Your Interview Slot - IEEE SSCS",
-                        message: `
-                            <div style="font-family: 'Raleway', sans-serif; background-color: #050505; color: #e5e5e5; max-width: 600px; margin: 0 auto; border: 1px solid #1a1a1a; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
-                                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-                                
-                                <div style="background-color: #000000; padding: 40px 20px; text-align: center; border-bottom: 1px solid #1a1a1a;">
-                                    <h1 style="color: #ffffff; font-family: 'Inter', sans-serif; margin: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 16px; font-weight: 600;">IEEE Solid-State Circuits Society</h1>
-                                </div>
-
-                                <div style="padding: 45px 40px;">
-                                    <h2 style="color: #7c3aed; font-family: 'Inter', sans-serif; margin-top: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em;">Interview Invitation</h2>
-                                    <p style="font-size: 15px; line-height: 1.6; color: #d1d5db;">Dear <strong>${app.fullName}</strong>,</p>
-                                    <p style="font-size: 15px; line-height: 1.6; color: #d1d5db;">Congratulations. We were impressed with your application and would like to invite you to the interview phase of our recruitment process.</p>
-                                    
-                                    <div style="background-color: #0a0a0a; border: 1px solid #1f2937; padding: 25px; border-radius: 8px; margin: 30px 0;">
-                                        <p style="margin: 0; font-size: 14px; color: #ffffff; font-family: 'Inter', sans-serif; font-weight: 600;">Next Step Required:</p>
-                                        <p style="margin: 8px 0 0; font-size: 13px; color: #9ca3af; font-family: 'Inter', sans-serif; line-height: 1.5;">Please book an interview slot immediately using our automated scheduler. Slots are allocated on a first-come, first-serve basis.</p>
-                                    </div>
-
-                                    <div style="text-align: center; margin: 40px 0;">
-                                        <a href="${PORTAL_URL}/schedule" style="display: inline-block; background-color: #7c3aed; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: 600; font-family: 'Inter', sans-serif; font-size: 14px;">Schedule Interview Slot</a>
-                                    </div>
-
-                                    <p style="margin-top: 45px; border-top: 1px solid #1a1a1a; padding-top: 25px; font-size: 14px; color: #6b7280;">
-                                        Regards,<br>
-                                        <strong style="color: #ffffff; font-family: 'Inter', sans-serif;">IEEE SSCS Recruitment Team</strong>
-                                    </p>
-                                </div>
-
-                                <div style="background-color: #000000; padding: 30px 25px; text-align: center; border-top: 1px solid #1a1a1a;">
-                                    <img src="${PORTAL_URL}/ieee-sscs-logo.png" alt="SSCS" style="height: 25px; margin-bottom: 15px;">
-                                </div>
-                            </div>
-                        `
-                    })
-                });
+                const portalUrl = window.location.origin;
+                await sendEmail(
+                    app.email,
+                    'ACTION REQUIRED: Book Your Interview Slot - IEEE SSCS',
+                    `<p>Dear <strong>${app.fullName}</strong>,</p>
+                    <p>Congratulations! We were impressed with your application and would like to invite you for an interview.</p>
+                    <p>Please book your interview slot using the link below. Slots are allocated on a first-come, first-served basis.</p>
+                    <p><strong>Book your slot:</strong> <a href="${portalUrl}/schedule">${portalUrl}/schedule</a></p>
+                    <p>Regards,<br>IEEE SSCS Recruitment Team</p>`
+                );
 
                 // Update DB flag
                 await supabase.from('applications').update({ shortlist_notified: true }).eq('id', app.id);

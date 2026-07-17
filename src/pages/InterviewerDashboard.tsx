@@ -14,6 +14,7 @@ import EvaluationForm from '@/components/interviewer/EvaluationForm';
 import { submitEvaluation, fetchFeedbacksForApplication } from '@/services/interviewService';
 import { motion, AnimatePresence } from 'framer-motion';
 import CircuitBoardBackground from '@/components/ui/CircuitBoardBackground';
+import { sendEmail } from '@/lib/email';
 
 const InterviewerDashboard = () => {
     const { user, loading: authLoading } = useAuth();
@@ -147,19 +148,15 @@ const InterviewerDashboard = () => {
             await supabase.from('applications').update({ status }).eq('id', app.id);
             
             // Send No Show Email
-            if (GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== "") {
-                try {
-                    await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST', mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            email: app.email,
-                            subject: "URGENT: Missed Interview - Please Rebook",
-                            message: `<div style="font-family:'Inter',sans-serif;background:#050505;color:#fff;max-width:600px;margin:0 auto;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;"><div style="background:#000;padding:40px 20px;text-align:center;border-bottom:1px solid #1a1a1a;"><h1 style="color:#fff;margin:0;text-transform:uppercase;letter-spacing:2px;font-size:16px;">IEEE Solid-State Circuits Society</h1></div><div style="padding:45px 40px;"><h2 style="color:#ef4444;margin-top:0;font-size:24px;font-weight:700;">Missed Interview</h2><p style="font-size:15px;line-height:1.6;color:#d1d5db;">Dear <strong>${app.full_name || app.fullName}</strong>,</p><p style="font-size:15px;line-height:1.6;color:#d1d5db;">You were marked as a "No Show" for your scheduled interview slot.</p><p style="font-size:15px;line-height:1.6;color:#d1d5db;">Your application has been moved back to the shortlisting queue. If you still wish to be considered, please log in to the portal and <strong>re-book a new slot immediately</strong>.</p><p style="font-size:15px;line-height:1.6;color:#d1d5db;">Please note that slots are limited and available on a first-come, first-served basis. Failure to attend a re-booked interview may result in disqualification.</p><p style="margin-top:45px;border-top:1px solid #1a1a1a;padding-top:25px;font-size:14px;color:#6b7280;">Best regards,<br><strong style="color:#fff;">IEEE SSCS Recruitment Team</strong></p></div></div>`
-                        })
-                    });
-                } catch (e) { console.error("Failed to send no-show email", e); }
-            }
+            sendEmail(
+                app.email,
+                'Missed Interview - Please Rebook - IEEE SSCS',
+                `<p>Dear <strong>${app.full_name || app.fullName}</strong>,</p>
+                <p>You were marked as a "No Show" for your scheduled interview slot.</p>
+                <p>Your application has been moved back to the shortlisting queue. If you still wish to be considered, please log in to the portal and re-book a new slot immediately.</p>
+                <p>Slots are limited and available on a first-come, first-served basis. Failure to attend a re-booked interview may result in disqualification.</p>
+                <p>Regards,<br>IEEE SSCS Recruitment Team</p>`
+            );
             
             setSuccessMsg('Candidate marked as No Show, slot freed.');
         } else {

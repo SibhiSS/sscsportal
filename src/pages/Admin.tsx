@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import emailjs from '@emailjs/browser';
+import { sendEmail } from '@/lib/email';
 
 import { Application, RecruitmentPhase } from '@/types';
 import AdminStats from '@/components/admin/AdminStats';
@@ -37,11 +37,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { parseApplicationText } from '@/utils/resumeParser';
 
-// ── Email config ─────────────────────────────────────────────────────────────
-const EMAILJS_SERVICE_ID = "service_32a77yo";
-const EMAILJS_TEMPLATE_ID = "template_5p399mj";
-const EMAILJS_PUBLIC_KEY = "bj3DbINQas11jOWqr";
-const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
+
 
 const ADMIN_EMAILS = [
     'sibhi.s2024@vitstudent.ac.in',
@@ -78,9 +74,7 @@ const Admin = () => {
     const [selectedApp, setSelectedApp] = useState<Application | null>(null);
     const [isPublishing, setIsPublishing] = useState(false);
 
-    useEffect(() => {
-        emailjs.init(EMAILJS_PUBLIC_KEY);
-    }, []);
+
 
     useEffect(() => {
         if (!authLoading && !user) return;
@@ -233,21 +227,17 @@ const Admin = () => {
         setIsPublishing(true);
         try {
             let emailCount = 0;
-            const isGoogleScriptConfigured = GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL !== "";
 
             for (const app of selectedApps) {
                 try {
-                    if (isGoogleScriptConfigured) {
-                        await fetch(GOOGLE_SCRIPT_URL, {
-                            method: 'POST', mode: 'no-cors',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                email: app.email,
-                                subject: "Congratulations! You're in - IEEE SSCS",
-                                message: `<div style="font-family:'Inter',sans-serif;background:#050505;color:#fff;max-width:600px;margin:0 auto;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;"><div style="background:#000;padding:40px 20px;text-align:center;border-bottom:1px solid #1a1a1a;"><h1 style="color:#fff;margin:0;text-transform:uppercase;letter-spacing:2px;font-size:16px;">IEEE Solid-State Circuits Society</h1></div><div style="padding:45px 40px;"><h2 style="color:#FFE100;margin-top:0;font-size:24px;font-weight:700;">Membership Acceptance</h2><p style="font-size:15px;line-height:1.6;color:#d1d5db;">Dear <strong>${app.fullName}</strong>,</p><p style="font-size:15px;line-height:1.6;color:#d1d5db;">We are pleased to offer you a position in the <strong>${app.primaryDept}</strong> department at IEEE SSCS.</p><p style="font-size:14px;color:#9ca3af;">Our team will contact you shortly regarding onboarding.</p><p style="margin-top:45px;border-top:1px solid #1a1a1a;padding-top:25px;font-size:14px;color:#6b7280;">Sincerely,<br><strong style="color:#fff;">IEEE SSCS Executive Committee</strong></p></div></div>`
-                            })
-                        });
-                    }
+                    await sendEmail(
+                        app.email,
+                        'Congratulations! You\'re in - IEEE SSCS',
+                        `<p>Dear <strong>${app.fullName}</strong>,</p>
+                        <p>We are pleased to offer you a position in the <strong>${app.primaryDept}</strong> department at IEEE SSCS.</p>
+                        <p>Our team will contact you shortly regarding onboarding.</p>
+                        <p>Regards,<br>IEEE SSCS Executive Committee</p>`
+                    );
                     emailCount++;
                     await supabase.from('applications').update({ status: 'active_member', decided_at: new Date().toISOString() }).eq('id', app.id);
                 } catch (err) {
@@ -258,17 +248,15 @@ const Admin = () => {
             const rejectedAppsToEmail = [...rejectedPendingApps, ...waitlistedApps];
             for (const app of rejectedAppsToEmail) {
                 try {
-                    if (isGoogleScriptConfigured) {
-                        await fetch(GOOGLE_SCRIPT_URL, {
-                            method: 'POST', mode: 'no-cors',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                email: app.email,
-                                subject: "Update on your IEEE SSCS Application",
-                                message: `<div style="font-family:'Inter',sans-serif;background:#050505;color:#fff;max-width:600px;margin:0 auto;border:1px solid #1a1a1a;border-radius:12px;overflow:hidden;"><div style="background:#000;padding:40px 20px;text-align:center;border-bottom:1px solid #1a1a1a;"><h1 style="color:#fff;margin:0;text-transform:uppercase;letter-spacing:2px;font-size:16px;">IEEE Solid-State Circuits Society</h1></div><div style="padding:45px 40px;"><h2 style="color:#fff;margin-top:0;font-size:24px;font-weight:700;">Application Update</h2><p style="font-size:15px;line-height:1.6;color:#d1d5db;">Dear <strong>${app.fullName}</strong>,</p><p style="font-size:15px;line-height:1.6;color:#d1d5db;">Thank you for taking the time to apply and interview with IEEE SSCS. We deeply appreciate the effort you put into the process.</p><p style="font-size:15px;line-height:1.6;color:#d1d5db;">After careful consideration, we regret to inform you that we are unable to offer you a position at this time. We had a highly competitive pool of applicants this year, and unfortunately, we have limited slots available.</p><p style="font-size:15px;line-height:1.6;color:#d1d5db;">We encourage you to stay connected with us and apply again in the future.</p><p style="margin-top:45px;border-top:1px solid #1a1a1a;padding-top:25px;font-size:14px;color:#6b7280;">Best wishes,<br><strong style="color:#fff;">IEEE SSCS Executive Committee</strong></p></div></div>`
-                            })
-                        });
-                    }
+                    await sendEmail(
+                        app.email,
+                        'Update on your IEEE SSCS Application',
+                        `<p>Dear <strong>${app.fullName}</strong>,</p>
+                        <p>Thank you for applying and interviewing with IEEE SSCS. We deeply appreciate the effort you put into the process.</p>
+                        <p>After careful consideration, we regret to inform you that we are unable to offer you a position at this time. We had a highly competitive pool of applicants this year.</p>
+                        <p>We encourage you to stay connected and apply again in the future.</p>
+                        <p>Best wishes,<br>IEEE SSCS Executive Committee</p>`
+                    );
                     emailCount++;
                     await supabase.from('applications').update({ status: 'rejected', decided_at: new Date().toISOString() }).eq('id', app.id);
                 } catch (err) {

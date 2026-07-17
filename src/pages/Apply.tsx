@@ -10,6 +10,7 @@ import RevealText from '@/components/ui/RevealText';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { sendEmail } from '@/lib/email';
 import { validateRegistrationNumber, RegNoDetails } from '@/utils/validation';
 import {
     Select,
@@ -470,74 +471,20 @@ const Apply = () => {
 
             // --- SEND CONFIRMATION EMAIL ONLY FOR NEW APPLICATIONS ---
             if (!isEditing) {
-                try {
-                    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSuKNXGi-08iJ_NgkEeh_wpt0AUu3Hjy4CXMTZNMe417idYTviLKK97NBPU1kJbpqTMA/exec";
-
-                    await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: user.email,
-                        subject: "Application Confirmation - IEEE SSCS Recruitment",
-                        message: `
-                            <div style="font-family: 'Raleway', sans-serif; background-color: #050505; color: #e5e5e5; max-width: 600px; margin: 0 auto; border: 1px solid #1a1a1a; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
-                                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-                                
-                                <div style="background-color: #000000; padding: 40px 20px; text-align: center; border-bottom: 1px solid #1a1a1a;">
-                                    <h1 style="color: #ffffff; font-family: 'Inter', sans-serif; margin: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 16px; font-weight: 600;">IEEE Solid-State Circuits Society</h1>
-                                </div>
-
-                                <div style="padding: 45px 40px;">
-                                    <h2 style="color: #FFE100; font-family: 'Inter', sans-serif; margin-top: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em;">Application Confirmation</h2>
-                                    <p style="font-size: 15px; line-height: 1.6; color: #d1d5db;">Dear <strong>${formData.fullName}</strong>,</p>
-                                    <p style="font-size: 15px; line-height: 1.6; color: #d1d5db;">Thank you for your interest in joining the IEEE SSCS. Your application has been successfully received and is now under review by our recruitment committee.</p>
-                                    
-                                    <div style="background-color: #0a0a0a; border: 1px solid #1f2937; padding: 25px; border-radius: 8px; margin: 30px 0;">
-                                        <table style="width: 100%; border-collapse: collapse; font-family: 'Inter', sans-serif; font-size: 14px;">
-                                            <tr>
-                                                <td style="color: #9ca3af; padding-bottom: 12px; width: 120px;">Registration:</td>
-                                                <td style="color: #ffffff; padding-bottom: 12px; font-weight: 500;">${formData.rollNumber}</td>
-                                            </tr>
-                                            <tr>
-                                                <td style="color: #9ca3af; padding-bottom: 12px;">Department:</td>
-                                                <td style="color: #ffffff; padding-bottom: 12px; font-weight: 500;">${formData.primaryDept}</td>
-                                            </tr>
-                                            <tr>
-                                                <td style="color: #9ca3af;">Status:</td>
-                                                <td style="color: #FFE100; font-weight: 500;">Under Review</td>
-                                            </tr>
-                                        </table>
-                                    </div>
-
-                                    <p style="font-size: 14px; line-height: 1.6; color: #9ca3af;">Our team will evaluate your submission. Please stay updated via our official communication channels.</p>
-
-                                    <div style="text-align: center; margin: 40px 0;">
-                                        <a href="https://chat.whatsapp.com/FDMlBGlnzrc7qlwqSp2hDe" style="display: inline-block; background-color: #FFE100; color: #000000; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: 600; font-family: 'Inter', sans-serif; font-size: 14px;">Join Official WhatsApp Group</a>
-                                    </div>
-
-                                    <p style="margin-top: 45px; border-top: 1px solid #1a1a1a; padding-top: 25px; font-size: 14px; color: #6b7280;">
-                                        Regards,<br>
-                                        <strong style="color: #ffffff; font-family: 'Inter', sans-serif;">IEEE SSCS Recruitment Team</strong>
-                                    </p>
-                                </div>
-
-                                <div style="background-color: #000000; padding: 30px 25px; text-align: center; border-top: 1px solid #1a1a1a;">
-                                    <img src="${window.location.origin}/ieee-sscs-logo.png" alt="SSCS" style="height: 25px; margin-bottom: 15px;">
-                                    <p style="color: #4b5563; font-size: 11px; margin: 0; font-family: 'Inter', sans-serif;">
-                                        IEEE Solid-State Circuits Society | VIT Chennai Campus
-                                    </p>
-                                </div>
-                            </div>
-                        `
-                    })
-                });
-                console.log("Confirmation email sent");
-            } catch (emailErr) {
-                console.error("Failed to send email", emailErr);
+                const portalUrl = window.location.origin;
+                sendEmail(
+                    user.email || '',
+                    'Application Received - IEEE SSCS Recruitment',
+                    `<p>Dear <strong>${formData.fullName}</strong>,</p>
+                    <p>Thank you for applying to IEEE SSCS. Your application has been received and is under review.</p>
+                    <p><strong>Registration:</strong> ${formData.rollNumber}<br>
+                    <strong>Department:</strong> ${formData.primaryDept}<br>
+                    <strong>Status:</strong> Under Review</p>
+                    <p>You can check your application status anytime: <a href="${portalUrl}/apply">${portalUrl}/apply</a></p>
+                    <p>Join our WhatsApp group for updates: <a href="https://chat.whatsapp.com/FDMlBGlnzrc7qlwqSp2hDe">Join Here</a></p>
+                    <p>Regards,<br>IEEE SSCS Recruitment Team</p>`
+                );
             }
-            } // Close if (!isEditing)
-            // -------------------------------
 
 
             setIsSubmitting(false);
@@ -549,7 +496,7 @@ const Apply = () => {
             });
             setIsEditing(false);
             setStep(1);
-            setSubmitted(true);
+            setIsSubmitted(true);
         } catch (error: any) {
             console.error('Error submitting application:', error);
             if (error?.code === '23505' || error?.message?.includes('duplicate key')) {
