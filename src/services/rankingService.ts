@@ -33,13 +33,16 @@ export function calculateFinalScore(
     aggregated: AggregatedFeedback | null,
     weights: DepartmentWeights
 ): number {
-    const taskScore = Math.min(10, app.taskScore ?? 0);
-    const interviewScore = aggregated ? aggregated.averageScores.total : 0;
+    const taskScore = app.taskScore && app.taskScore > 0 ? Math.min(10, app.taskScore) : 0;
+    const interviewScore = aggregated ? aggregated.averageScores.total : (app.interviewScore ?? 0);
 
-    const final =
-        (taskScore * weights.weight_task) +
-        (interviewScore * weights.weight_interview);
+    if (taskScore > 0 && interviewScore > 0) {
+        const totalW = (weights.weight_task || 0) + (weights.weight_interview || 0);
+        const raw = (taskScore * weights.weight_task) + (interviewScore * weights.weight_interview);
+        return Math.round((totalW > 0 ? raw / totalW : (taskScore + interviewScore) / 2) * 100) / 100;
+    }
 
+    const final = interviewScore > 0 ? interviewScore : taskScore;
     return Math.round(final * 100) / 100;
 }
 
@@ -60,12 +63,17 @@ export function rankApplicationsInDept(
 ): RankedApplication[] {
     const scored = apps.map(app => {
         const aggregated = aggregates.get(app.id) ?? null;
-        const taskScore = Math.min(10, app.taskScore ?? 0);
-        const interviewScore = aggregated?.averageScores.total ?? 0;
+        const taskScore = app.taskScore && app.taskScore > 0 ? Math.min(10, app.taskScore) : 0;
+        const interviewScore = aggregated?.averageScores.total ?? app.interviewScore ?? 0;
 
-        const finalScore =
-            (taskScore * weights.weight_task) +
-            (interviewScore * weights.weight_interview);
+        let finalScore = 0;
+        if (taskScore > 0 && interviewScore > 0) {
+            const totalW = (weights.weight_task || 0) + (weights.weight_interview || 0);
+            const raw = (taskScore * weights.weight_task) + (interviewScore * weights.weight_interview);
+            finalScore = totalW > 0 ? raw / totalW : (taskScore + interviewScore) / 2;
+        } else {
+            finalScore = interviewScore > 0 ? interviewScore : taskScore;
+        }
 
         return {
             app,
