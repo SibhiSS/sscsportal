@@ -41,9 +41,7 @@ import { parseApplicationText } from '@/utils/resumeParser';
 
 const ADMIN_EMAILS = [
     'sibhi.s2024@vitstudent.ac.in',
-    'sibhis5223@gmail.com',
-    'santhosh.v2024d@vitstudent.ac.in',
-    'tspradeepkumar@vit.ac.in'
+    'sibhis5223@gmail.com'
 ];
 
 type ViewMode = 'table' | 'kanban';

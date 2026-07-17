@@ -32,9 +32,7 @@ const InterviewScheduler = () => {
     // Static Admin Emails Fallback (Matches Admin.tsx)
     const ADMIN_EMAILS = [
         'sibhi.s2024@vitstudent.ac.in',
-        'sibhis5223@gmail.com',
-        'santhosh.v2024d@vitstudent.ac.in',
-        'tspradeepkumar@vit.ac.in'
+        'sibhis5223@gmail.com'
     ];
     const isSuperAdmin = user?.role === 'super_admin' || (user?.email && ADMIN_EMAILS.includes(user.email) && !user?.role);
 
