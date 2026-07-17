@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Application, InterviewFeedback, EvaluationRecommendation } from '@/types';
 import { format, parseISO, isSameDay } from 'date-fns';
-import { Calendar as CalendarIcon, Clock, Video, User, ShieldAlert, CheckCircle, FileText, ExternalLink, BarChart2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Video, User, ShieldAlert, CheckCircle, FileText, ExternalLink, BarChart2, Send } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 import EvaluationForm from '@/components/interviewer/EvaluationForm';
 import { submitEvaluation, fetchFeedbacksForApplication } from '@/services/interviewService';
@@ -316,7 +316,7 @@ const InterviewerDashboard = () => {
                                                                         <Button
                                                                             variant="outline"
                                                                             size="sm"
-                                                                            className="flex-1 text-xs border-white/10 text-muted-foreground hover:text-white"
+                                                                            className="text-xs border-white/10 text-muted-foreground hover:text-white"
                                                                             onClick={() => window.open(app.resume_url, '_blank')}
                                                                         >
                                                                             <FileText className="w-3 h-3 mr-1" />
@@ -335,6 +335,35 @@ const InterviewerDashboard = () => {
                                                                         <Video className="w-3 h-3 mr-1" />
                                                                         {hasLink ? 'Join Meet' : 'No Link'}
                                                                     </Button>
+                                                                    {hasLink && (
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            className="text-xs border-primary/30 text-primary hover:bg-primary/10"
+                                                                            onClick={async () => {
+                                                                                const link = meetingLinks[slot.panel_id];
+                                                                                const slotTime = format(parseISO(slot.start_time), 'h:mm a');
+                                                                                const slotDate = format(parseISO(slot.start_time), 'EEEE, MMMM d, yyyy');
+                                                                                const portalUrl = window.location.origin;
+                                                                                await sendEmail(
+                                                                                    app.email,
+                                                                                    'Your Interview Meeting Link - IEEE SSCS',
+                                                                                    `<p>Dear <strong>${app.full_name || app.fullName}</strong>,</p>
+                                                                                    <p>Your interview meeting link is ready.</p>
+                                                                                    <p><strong>Date:</strong> ${slotDate}<br>
+                                                                                    <strong>Time:</strong> ${slotTime}<br>
+                                                                                    <strong>Department:</strong> ${app.primary_dept}</p>
+                                                                                    <p><strong>Join your interview:</strong> <a href="${link}">${link}</a></p>
+                                                                                    <p>You can also check your status at: <a href="${portalUrl}/apply">${portalUrl}/apply</a></p>
+                                                                                    <p>Please join 5 minutes before your slot.<br>IEEE SSCS Recruitment Team</p>`
+                                                                                );
+                                                                                alert(`Meeting link email sent to ${app.full_name || app.fullName}!`);
+                                                                            }}
+                                                                        >
+                                                                            <Send className="w-3 h-3 mr-1" />
+                                                                            Send Mail
+                                                                        </Button>
+                                                                    )}
                                                                 </div>
 
                                                                 <Button
