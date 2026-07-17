@@ -131,11 +131,9 @@ const Navigation = () => {
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-3">
               {hasApplied ? (
-                <Link to="/apply">
-                  <Button size="sm" variant="outline" className="border-primary/40 text-primary hover:bg-primary/10 backdrop-blur-md rounded-full bg-white/5 px-6 font-bold">
-                    View Status
-                  </Button>
-                </Link>
+                <Button size="sm" variant="outline" className="border-white/10 text-primary/60 backdrop-blur-md rounded-full bg-white/5 cursor-not-allowed px-6" disabled>
+                  Applied
+                </Button>
               ) : !isRecruitmentOpen ? (
                 <Button size="sm" variant="outline" className="border-white/10 text-muted-foreground backdrop-blur-md rounded-full bg-white/5 cursor-not-allowed px-6" disabled>
                   Closed
@@ -170,12 +168,6 @@ const Navigation = () => {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-white/5" />
                   <div className="p-1">
-                    {hasApplied && (
-                      <DropdownMenuItem onClick={() => navigate('/apply')} className="rounded-xl focus:bg-white/10 cursor-pointer p-3">
-                        <Eye className="mr-3 h-4 w-4 text-primary" />
-                        <span>Application Status</span>
-                      </DropdownMenuItem>
-                    )}
                     {user.role && ['super_admin', 'admin', 'interviewer'].includes(user.role) && (
                       <DropdownMenuItem onClick={() => {
                         if (user.role === 'super_admin' || user.role === 'admin') navigate('/admin');

@@ -169,14 +169,10 @@ const HeroSection = () => {
               ) : hasApplied ? (
                 <Button
                   size="lg"
-                  variant="outline"
-                  className="px-10 h-14 border-primary/40 text-primary hover:bg-primary/10 font-heading rounded-full backdrop-blur-md"
-                  asChild
+                  className="px-10 h-14 bg-primary/20 text-primary/50 border border-primary/20 font-heading cursor-not-allowed rounded-full"
+                  disabled
                 >
-                  <Link to="/apply">
-                    VIEW APPLICATION
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Link>
+                  Application Received
                 </Button>
               ) : !isRecruitmentOpen ? (
                 <Button

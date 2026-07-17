@@ -660,38 +660,7 @@ const Apply = () => {
                                     We have received your application and it is currently being reviewed by our team.
                                     Hold tight! We will update you soon.
                                 </p>
-                                <div className="p-4 bg-white/5 rounded-lg border border-white/5 text-left mb-6">
-                                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Applicant</div>
-                                    <div className="font-medium text-white">{existingApp.full_name}</div>
-                                    <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1 mt-3">Primary Choice</div>
-                                    <div className="font-medium text-primary">{existingApp.primary_dept}</div>
-                                </div>
-                                
-                                {recruitmentStatus.isOpen && (
-                                    <Button
-                                        onClick={() => {
-                                            setFormData({
-                                                fullName: existingApp.full_name,
-                                                rollNumber: existingApp.roll_number,
-                                                phone: existingApp.phone,
-                                                linkedinUrl: existingApp.linkedin_url || '',
-                                                githubUrl: existingApp.github_url || '',
-                                                primaryDept: existingApp.primary_dept,
-                                                domains: existingApp.domains,
-                                                skills: existingApp.skills,
-                                                reason: existingApp.reason,
-                                                secondaryDept: existingApp.secondary_dept || '',
-                                                secondaryDomains: existingApp.secondary_domains || [],
-                                                secondarySkills: existingApp.secondary_skills || '',
-                                                secondaryReason: existingApp.secondary_reason || ''
-                                            });
-                                            setIsEditing(true);
-                                        }}
-                                        className="w-full bg-white/10 hover:bg-white/20 text-white font-bold h-12 text-lg shadow-lg mb-8"
-                                    >
-                                        Edit Application
-                                    </Button>
-                                )}
+
 
                                 <div className="bg-white/5 p-6 rounded-xl border border-white/10 mb-8 flex flex-col items-center">
                                     <img

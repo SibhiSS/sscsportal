@@ -261,7 +261,8 @@ export default function ImportApplications() {
                     <TableHead className="text-[10px] font-bold tracking-wider uppercase text-white">Email</TableHead>
                     <TableHead className="text-[10px] font-bold tracking-wider uppercase text-white">Roll No</TableHead>
                     <TableHead className="text-[10px] font-bold tracking-wider uppercase text-white">Primary Dept</TableHead>
-                    <TableHead className="text-[10px] font-bold tracking-wider uppercase text-white text-right">Secondary Dept</TableHead>
+                    <TableHead className="text-[10px] font-bold tracking-wider uppercase text-white">Secondary Dept</TableHead>
+                    <TableHead className="text-[10px] font-bold tracking-wider uppercase text-white text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -273,12 +274,23 @@ export default function ImportApplications() {
                       <TableCell className="text-xs">
                         <span className="px-2 py-1 rounded bg-primary/10 text-primary font-semibold">{app.primary_dept}</span>
                       </TableCell>
-                      <TableCell className="text-xs text-right">
+                      <TableCell className="text-xs">
                         {app.secondary_dept ? (
                           <span className="px-2 py-1 rounded bg-white/5 text-white/70">{app.secondary_dept}</span>
                         ) : (
                           <span className="text-white/20">—</span>
                         )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setData(prev => prev.filter((_, i) => i !== idx))}
+                          className="text-white/40 hover:text-red-400 hover:bg-red-500/10 h-8 w-8 p-0 rounded-full"
+                          title="Remove applicant"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
