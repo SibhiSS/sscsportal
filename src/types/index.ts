@@ -45,6 +45,9 @@ export interface Application {
     shortlistedAt?: string;
     interviewedAt?: string;
     decidedAt?: string;
+
+    // Post-Selection Position
+    assignedPosition?: string;
 }
 
 export type ApplicationStatus =

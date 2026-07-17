@@ -27,3 +27,6 @@ ALTER TABLE public.interview_feedback ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow All Access" ON public.panel_assignments FOR ALL USING (true);
 CREATE POLICY "Allow All Access" ON public.interview_feedback FOR ALL USING (true);
+
+-- Adding assigned_position column for final role selection
+ALTER TABLE public.applications ADD COLUMN IF NOT EXISTS assigned_position TEXT;

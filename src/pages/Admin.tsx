@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { sendEmail } from '@/lib/email';
@@ -26,6 +28,7 @@ import ApplicationModal from '@/components/admin/ApplicationModal';
 import AdminSettings from '@/components/admin/AdminSettings';
 import AuditLogViewer from '@/components/admin/AuditLogViewer';
 import InterviewScheduler from '@/components/admin/InterviewScheduler';
+import PositionManager from '@/components/admin/PositionManager';
 import KanbanBoard from '@/components/admin/KanbanBoard';
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
 import RankingPanel from '@/components/admin/RankingPanel';
@@ -71,6 +74,11 @@ const Admin = () => {
 
     const [selectedApp, setSelectedApp] = useState<Application | null>(null);
     const [isPublishing, setIsPublishing] = useState(false);
+
+    // Publish Dialog State
+    const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+    const [publishConfirm1, setPublishConfirm1] = useState('');
+    const [publishConfirm2, setPublishConfirm2] = useState('');
 
 
 
@@ -144,6 +152,8 @@ const Admin = () => {
                     shortlistedAt: doc.shortlisted_at,
                     interviewedAt: doc.interviewed_at,
                     decidedAt: doc.decided_at,
+                    // Post-Selection Position
+                    assignedPosition: doc.assigned_position,
                 };
             });
 
@@ -170,6 +180,7 @@ const Admin = () => {
             if (updates.status !== undefined) dbUpdates.status = updates.status;
             if (updates.githubUrl !== undefined) dbUpdates.github_url = updates.githubUrl;
             if (updates.linkedinUrl !== undefined) dbUpdates.linkedin_url = updates.linkedinUrl;
+            if (updates.assignedPosition !== undefined) dbUpdates.assigned_position = updates.assignedPosition;
 
             const { error } = await supabase.from('applications').update(dbUpdates).eq('id', id);
             if (error) throw error;
@@ -211,7 +222,7 @@ const Admin = () => {
         }
     };
 
-    const publishResults = async () => {
+    const handlePublishClick = () => {
         const selectedApps = applications.filter(app => app.status === 'selected');
         const rejectedPendingApps = applications.filter(app => app.status === 'rejected_pending');
         const waitlistedApps = applications.filter(app => app.status === 'waitlisted');
@@ -220,19 +231,31 @@ const Admin = () => {
             alert("No applications pending publication.");
             return;
         }
-        if (!confirm(`Publish results?\n\n${selectedApps.length} → Active Member\n${rejectedPendingApps.length + waitlistedApps.length} → Rejected`)) return;
+        setPublishConfirm1('');
+        setPublishConfirm2('');
+        setIsPublishDialogOpen(true);
+    };
 
+    const executePublishResults = async () => {
+        setIsPublishDialogOpen(false);
         setIsPublishing(true);
+        const selectedApps = applications.filter(app => app.status === 'selected');
+        const rejectedPendingApps = applications.filter(app => app.status === 'rejected_pending');
+        const waitlistedApps = applications.filter(app => app.status === 'waitlisted');
         try {
             let emailCount = 0;
 
             for (const app of selectedApps) {
                 try {
+                    const positionText = app.assignedPosition 
+                        ? `the position of <strong>${app.assignedPosition}</strong>`
+                        : `a position in the <strong>${app.primaryDept}</strong> department`;
+                        
                     await sendEmail(
                         app.email,
                         'Congratulations! You\'re in - IEEE SSCS',
                         `<p>Dear <strong>${app.fullName}</strong>,</p>
-                        <p>We are pleased to offer you a position in the <strong>${app.primaryDept}</strong> department at IEEE SSCS.</p>
+                        <p>We are pleased to offer you ${positionText} at IEEE SSCS.</p>
                         <p>Our team will contact you shortly regarding onboarding.</p>
                         <p>Regards,<br>IEEE SSCS Executive Committee</p>`
                     );
@@ -440,6 +463,11 @@ const Admin = () => {
                                 <TabsTrigger value="interviews" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
                                     <Calendar className="w-3.5 h-3.5 mr-1.5" />INTERVIEWS
                                 </TabsTrigger>
+                                {isSuperAdmin && (
+                                    <TabsTrigger value="positions" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                        <Trophy className="w-3.5 h-3.5 mr-1.5" />POSITIONS
+                                    </TabsTrigger>
+                                )}
                                 {isAdmin && (
                                     <>
                                         <TabsTrigger value="activity" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
@@ -472,8 +500,9 @@ const Admin = () => {
                                         yearFilter={yearFilter}
                                         onYearFilterChange={setYearFilter}
                                         isPublishing={isPublishing}
-                                        onPublish={publishResults}
+                                        onPublish={handlePublishClick}
                                         onExport={downloadExcel}
+                                        currentPhase={currentPhase}
                                         canPublish={isSuperAdmin}
                                     />
 
@@ -638,6 +667,13 @@ const Admin = () => {
                             <InterviewScheduler />
                         </TabsContent>
 
+                        {/* ── POSITIONS TAB ─────────────────────────────────── */}
+                        {isSuperAdmin && (
+                            <TabsContent value="positions" className="outline-none">
+                                <PositionManager applications={applications} onUpdate={updateApplication} />
+                            </TabsContent>
+                        )}
+
                         {/* ── ACTIVITY LOG TAB ──────────────────────────────── */}
                         {isAdmin && (
                             <TabsContent value="activity" className="outline-none">
@@ -667,14 +703,66 @@ const Admin = () => {
                 </motion.div>
 
                 {/* Application Detail Modal */}
-                <ApplicationModal
-                    application={selectedApp}
-                    open={!!selectedApp}
-                    onClose={() => setSelectedApp(null)}
-                    onUpdate={updateApplication}
-                    onDelete={deleteApplication}
-                    currentPhase={currentPhase}
-                />
+                {selectedApp && (
+                    <ApplicationModal
+                        application={selectedApp}
+                        open={!!selectedApp}
+                        onClose={() => setSelectedApp(null)}
+                        onUpdate={updateApplication}
+                        onDelete={deleteApplication}
+                        currentPhase={currentPhase}
+                    />
+                )}
+
+                <Dialog open={isPublishDialogOpen} onOpenChange={setIsPublishDialogOpen}>
+                    <DialogContent className="bg-black/90 border-white/10 backdrop-blur-2xl text-white">
+                        <DialogHeader>
+                            <DialogTitle className="text-2xl font-bold text-red-500 flex items-center gap-2">
+                                <ShieldAlert className="w-6 h-6" /> Publish Results
+                            </DialogTitle>
+                            <DialogDescription className="text-muted-foreground pt-4">
+                                You are about to publish the final results and send out decision emails to all pending candidates. This action CANNOT be undone.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold uppercase tracking-widest text-white/70">
+                                    Type 'CONFIRM' below to proceed:
+                                </label>
+                                <Input 
+                                    value={publishConfirm1}
+                                    onChange={(e) => setPublishConfirm1(e.target.value)}
+                                    className="bg-white/5 border-white/10 font-mono tracking-widest uppercase"
+                                    placeholder="CONFIRM"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold uppercase tracking-widest text-white/70">
+                                    Type 'CONFIRM' again to double-verify:
+                                </label>
+                                <Input 
+                                    value={publishConfirm2}
+                                    onChange={(e) => setPublishConfirm2(e.target.value)}
+                                    className="bg-white/5 border-white/10 font-mono tracking-widest uppercase"
+                                    placeholder="CONFIRM"
+                                />
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button variant="ghost" onClick={() => setIsPublishDialogOpen(false)}>Cancel</Button>
+                            <Button 
+                                variant="destructive" 
+                                disabled={publishConfirm1 !== 'CONFIRM' || publishConfirm2 !== 'CONFIRM'}
+                                onClick={executePublishResults}
+                                className="bg-red-500/20 text-red-500 border border-red-500/50 hover:bg-red-500 hover:text-white"
+                            >
+                                Launch Emails
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     );
