@@ -320,8 +320,8 @@ const AdminSettings = () => {
                                 </div>
                                 <Switch
                                     id="recruitment-mode"
-                                    checked={settings.isOpen}
-                                    onCheckedChange={toggleRecruitment}
+                                    checked={!settings.isOpen}
+                                    onCheckedChange={(checked) => toggleRecruitment(!checked)}
                                 />
                             </div>
                         </CardContent>
