@@ -146,6 +146,7 @@ const Admin = () => {
                     parsedSkills: doc.parsed_skills?.length ? doc.parsed_skills : parsed.skills,
                     // Scoring
                     taskScore: doc.task_score || 0,
+                    interviewScore: doc.interview_score || 0,
                     finalScore: doc.final_score || 0,
                     rankInDept: doc.rank_in_dept,
                     // Timeline
@@ -537,8 +538,8 @@ const Admin = () => {
                                                         <TableHead onClick={() => requestSort('primaryDept')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
                                                             <div className="flex items-center gap-2">Choice 1 <ArrowUpDown className="w-3 h-3" /></div>
                                                         </TableHead>
-                                                        <TableHead onClick={() => requestSort('finalScore')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
-                                                            <div className="flex items-center gap-2">Score <ArrowUpDown className="w-3 h-3" /></div>
+                                                        <TableHead onClick={() => requestSort('interviewScore')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
+                                                            <div className="flex items-center gap-2">Int. Score <ArrowUpDown className="w-3 h-3" /></div>
                                                         </TableHead>
                                                         <TableHead onClick={() => requestSort('status')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5 text-center">
                                                             <div className="flex items-center justify-center gap-2">Status <ArrowUpDown className="w-3 h-3" /></div>
@@ -593,7 +594,11 @@ const Admin = () => {
                                                                     </div>
                                                                 </TableCell>
                                                                 <TableCell>
-                                                                    {app.finalScore && app.finalScore > 0 ? (
+                                                                    {app.interviewScore && app.interviewScore > 0 ? (
+                                                                        <span className={`font-mono text-sm font-bold ${app.interviewScore >= 7 ? 'text-green-400' : app.interviewScore >= 5 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                                                            {app.interviewScore.toFixed(1)}
+                                                                        </span>
+                                                                    ) : app.finalScore && app.finalScore > 0 ? (
                                                                         <span className={`font-mono text-sm font-bold ${app.finalScore >= 7 ? 'text-green-400' : app.finalScore >= 5 ? 'text-yellow-400' : 'text-red-400'}`}>
                                                                             {app.finalScore.toFixed(1)}
                                                                         </span>

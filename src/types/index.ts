@@ -38,6 +38,7 @@ export interface Application {
 
     // Scoring & Ranking
     taskScore?: number;       // 0-10, set by admin
+    interviewScore?: number;  // 0-10, live average from interview feedbacks
     finalScore?: number;      // weighted composite
     rankInDept?: number;      // auto-assigned rank within dept
 

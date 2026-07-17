@@ -93,6 +93,7 @@ export async function persistRankings(ranked: RankedApplication[]): Promise<void
         final_score: r.finalScore,
         rank_in_dept: r.rank,
         task_score: r.taskScore,
+        interview_score: r.interviewScore,
     }));
 
     for (const update of updates) {
@@ -101,6 +102,7 @@ export async function persistRankings(ranked: RankedApplication[]): Promise<void
             .update({
                 final_score: update.final_score,
                 rank_in_dept: update.rank_in_dept,
+                interview_score: update.interview_score
             })
             .eq('id', update.id);
     }

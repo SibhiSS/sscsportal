@@ -96,12 +96,31 @@ export async function submitEvaluation(payload: EvaluationPayload): Promise<{ er
 
     if (error) return { error: error.message };
 
-    // Mark application as 'interviewed' if it wasn't already
+    // Calculate new live interview average
+    const allFeedbacks = await fetchFeedbacksForApplication(payload.application_id);
+    const aggregated = aggregateFeedbacks(allFeedbacks);
+    const newInterviewScore = aggregated?.averageScores.total ?? 0;
+
+    // Fetch current status to conditionally update it
+    const { data: currentApp } = await supabase
+        .from('applications')
+        .select('status')
+        .eq('id', payload.application_id)
+        .single();
+        
+    const shouldUpdateStatus = currentApp && ['interview_scheduled', 'shortlisted'].includes(currentApp.status);
+    const updateData: any = { interview_score: newInterviewScore };
+    
+    if (shouldUpdateStatus) {
+        updateData.status = 'interviewed';
+        updateData.interviewed_at = new Date().toISOString();
+    }
+
+    // Update application with new interview score
     await supabase
         .from('applications')
-        .update({ status: 'interviewed', interviewed_at: new Date().toISOString() })
-        .eq('id', payload.application_id)
-        .in('status', ['interview_scheduled', 'shortlisted']);
+        .update(updateData)
+        .eq('id', payload.application_id);
 
     return { error: null };
 }
