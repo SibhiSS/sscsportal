@@ -314,6 +314,7 @@ const InterviewScheduler = () => {
                 // Update DB flag
                 await supabase.from('applications').update({ shortlist_notified: true }).eq('id', app.id);
                 count++;
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limit protection
             }
             alert(`Successfully sent booking links to ${count} candidates!`);
             if (user?.email) logAction(user.email, 'SEND_BOOKING_LINKS', 'BATCH', { count, candidateIds: selectedCandidateIds });
@@ -633,18 +634,44 @@ const InterviewScheduler = () => {
                                                                     <Trash2 className="w-3.5 h-3.5" />
                                                                 </Button>
                                                             </div>
-                                                            <div className="relative">
-                                                                <Video className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-                                                                <Input
-                                                                    className="h-8 pl-8 pr-3 text-[10px] bg-black/40 border-white/5 rounded-lg focus:border-primary/40"
-                                                                    placeholder="Add Virtual Link"
-                                                                    defaultValue={assign.meeting_link || ''}
-                                                                    onBlur={(e) => {
-                                                                        if (e.target.value !== (assign.meeting_link || '')) {
-                                                                            updateAssignmentLink(assign.id, e.target.value);
+                                                            <div className="flex items-center gap-2 relative">
+                                                                <div className="relative flex-1">
+                                                                    <Video className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                                                                    <Input
+                                                                        className="h-8 pl-8 pr-3 text-[10px] bg-black/40 border-white/5 rounded-lg focus:border-primary/40"
+                                                                        placeholder="Add Virtual Link"
+                                                                        defaultValue={assign.meeting_link || ''}
+                                                                        id={`link-input-${assign.id}`}
+                                                                        onBlur={(e) => {
+                                                                            if (e.target.value !== (assign.meeting_link || '')) {
+                                                                                // Silently save but don't email on blur anymore? Wait, the user wants a Send button. Let's keep the blur save, but if they want to explicitly send emails, they click the button. 
+                                                                                // Actually, updateAssignmentLink already sends the email! 
+                                                                                // So if we just call it onBlur, it sends the email. 
+                                                                                // If they want a button, they can click the button. Let's make the button call it.
+                                                                                // We'll update state locally or just let the button read the input value.
+                                                                            }
+                                                                        }}
+                                                                        onChange={(e) => {
+                                                                            // we can update it in db without emailing, or just wait for explicit save.
+                                                                            // to keep it simple, we'll let the user click the send button.
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                                <Button 
+                                                                    size="sm" 
+                                                                    variant="outline"
+                                                                    className="h-8 text-[10px] bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 shrink-0"
+                                                                    onClick={() => {
+                                                                        const inputEl = document.getElementById(`link-input-${assign.id}`) as HTMLInputElement;
+                                                                        if (inputEl) {
+                                                                            updateAssignmentLink(assign.id, inputEl.value);
+                                                                            alert("Meeting link saved and emailed to booked candidates.");
                                                                         }
                                                                     }}
-                                                                />
+                                                                >
+                                                                    <Send className="w-3 h-3 mr-1" />
+                                                                    Send
+                                                                </Button>
                                                             </div>
                                                         </div>
                                                     ))}

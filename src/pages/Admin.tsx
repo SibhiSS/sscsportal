@@ -263,6 +263,7 @@ const Admin = () => {
                     );
                     emailCount++;
                     await supabase.from('applications').update({ status: 'active_member', decided_at: new Date().toISOString() }).eq('id', app.id);
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limit protection
                 } catch (err) {
                     console.error(`Failed for ${app.email}:`, err);
                 }
@@ -282,6 +283,7 @@ const Admin = () => {
                     );
                     emailCount++;
                     await supabase.from('applications').update({ status: 'rejected', decided_at: new Date().toISOString() }).eq('id', app.id);
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limit protection
                 } catch (err) {
                     console.error(`Failed for ${app.email}:`, err);
                 }

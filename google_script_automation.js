@@ -68,11 +68,11 @@ function automationCheck() {
         // --- LOGIC 4: Applicant Reminders ---
         // A: 1 Hour Before
         if (timeDiffMinutes >= 55 && timeDiffMinutes <= 65) {
-            sendApplicantReminder(slot.applications.email, slot, "1 hour");
+            sendApplicantReminder(slot.applications.email, slot, "1 hour", assignedInterviewers.length > 0 ? assignedInterviewers[0].meeting_link : null);
         }
-        // B: 5 Mins Before
-        else if (timeDiffMinutes >= 3 && timeDiffMinutes <= 8) {
-            sendApplicantReminder(slot.applications.email, slot, "5 minutes");
+        // B: 15 Mins Before
+        else if (timeDiffMinutes >= 10 && timeDiffMinutes <= 20) {
+            sendApplicantReminder(slot.applications.email, slot, "15 minutes", assignedInterviewers.length > 0 ? assignedInterviewers[0].meeting_link : null);
         }
         
         // --- LOGIC 5: Missing Meeting Link Alert ---
@@ -150,12 +150,17 @@ function sendInterviewerReminder(email, slot, includeLink) {
     });
 }
 
-function sendApplicantReminder(email, slot, threshold) {
+function sendApplicantReminder(email, slot, threshold, meetingLink) {
+    const linkHtml = meetingLink 
+        ? `<p><b>Meeting Link:</b> <a href="${meetingLink}">${meetingLink}</a></p>`
+        : `<p>Your meeting link will be shared shortly.</p>`;
+
     const body = `
     <h3>Interview Reminder - NOVA CPS</h3>
     <p>Hi ${slot.applications.full_name},</p>
     <p>This is a reminder that your interview starts in <b>${threshold}</b>.</p>
     <p><b>Time:</b> ${new Date(slot.start_time).toLocaleTimeString()}</p>
+    ${linkHtml}
     <p>Please be ready 5 minutes before the slot starts.</p>
     <p>Best regards,<br/>NOVA CPS Team</p>
   `;
