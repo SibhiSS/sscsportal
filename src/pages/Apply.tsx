@@ -481,7 +481,7 @@ const Apply = () => {
                     <strong>Department:</strong> ${formData.primaryDept}<br>
                     <strong>Status:</strong> Under Review</p>
                     <p>You can check your application status anytime: <a href="${portalUrl}/apply">${portalUrl}/apply</a></p>
-                    <p>Join our WhatsApp group for updates: <a href="https://chat.whatsapp.com/FDMlBGlnzrc7qlwqSp2hDe">Join Here</a></p>
+                    <p>Join our WhatsApp group for updates: <a href="https://chat.whatsapp.com/IAjNCx7E0j643jZz3tLxeP">Join Here</a></p>
                     <p>Regards,<br>IEEE SSCS Recruitment Team</p>`
                 );
             }
@@ -671,7 +671,7 @@ const Apply = () => {
                                     <p className="text-sm text-muted-foreground mb-4">Please join our WhatsApp group for updates.</p>
 
                                     <a
-                                        href="https://chat.whatsapp.com/FDMlBGlnzrc7qlwqSp2hDe"
+                                        href="https://chat.whatsapp.com/IAjNCx7E0j643jZz3tLxeP"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center justify-center h-10 px-6 rounded-md bg-[#25D366] text-white font-bold hover:bg-[#128C7E] transition-colors w-full"
@@ -718,7 +718,7 @@ const Apply = () => {
                         <p className="text-sm text-muted-foreground mb-4">Scan the QR code or click the button below to join.</p>
 
                         <a
-                            href="https://chat.whatsapp.com/FDMlBGlnzrc7qlwqSp2hDe"
+                            href="https://chat.whatsapp.com/IAjNCx7E0j643jZz3tLxeP"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center justify-center h-10 px-6 rounded-md bg-[#25D366] text-white font-bold hover:bg-[#128C7E] transition-colors w-full"
