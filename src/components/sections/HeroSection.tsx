@@ -13,19 +13,12 @@ const HeroSection = () => {
   const [hasApplied, setHasApplied] = useState(false);
   const [canBookSlot, setCanBookSlot] = useState(false);
   const [isSelected, setIsSelected] = useState(false);
-  const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(true);
+  const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(false);
 
   useEffect(() => {
     const checkStatus = async () => {
-      // 1. Fetch recruitment status
-      try {
-        const { data: setRes } = await supabase.from('app_settings').select('value').eq('key', 'recruitment_status').single();
-        if (setRes && setRes.value) {
-          setIsRecruitmentOpen(setRes.value.isOpen !== false);
-        }
-      } catch (e) {
-        console.error(e);
-      }
+      // 1. Fetch recruitment status (HARDCODED CLOSED)
+      setIsRecruitmentOpen(false);
 
       // 2. Fetch user application status
       if (!user) return;

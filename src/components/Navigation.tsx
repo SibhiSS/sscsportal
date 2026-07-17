@@ -32,18 +32,12 @@ const Navigation = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(true);
+  const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(false);
 
   useEffect(() => {
     const checkStatus = async () => {
-      try {
-        const { data: setRes } = await supabase.from('app_settings').select('value').eq('key', 'recruitment_status').single();
-        if (setRes && setRes.value) {
-          setIsRecruitmentOpen(setRes.value.isOpen !== false);
-        }
-      } catch (e) {
-        console.error(e);
-      }
+      // HARDCODED CLOSED
+      setIsRecruitmentOpen(false);
 
       if (!user) {
         setHasApplied(false);
