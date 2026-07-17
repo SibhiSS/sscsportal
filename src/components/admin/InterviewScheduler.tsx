@@ -24,7 +24,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 // CONFIG (Should match Admin.tsx)
 const EMAILJS_PUBLIC_KEY = "bj3DbINQas11jOWqr";
 const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
-const PORTAL_URL = 'https://sscsportal.vercel.app';
+const PORTAL_URL = window.location.origin;
 
 const InterviewScheduler = () => {
     const { user } = useAuth();
@@ -348,7 +348,7 @@ const InterviewScheduler = () => {
                                     </div>
 
                                     <div style="text-align: center; margin: 40px 0;">
-                                        <a href="https://sscsportal.vercel.app/schedule" style="display: inline-block; background-color: #7c3aed; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: 600; font-family: 'Inter', sans-serif; font-size: 14px;">Schedule Interview Slot</a>
+                                        <a href="${PORTAL_URL}/schedule" style="display: inline-block; background-color: #7c3aed; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: 600; font-family: 'Inter', sans-serif; font-size: 14px;">Schedule Interview Slot</a>
                                     </div>
 
                                     <p style="margin-top: 45px; border-top: 1px solid #1a1a1a; padding-top: 25px; font-size: 14px; color: #6b7280;">
@@ -358,7 +358,7 @@ const InterviewScheduler = () => {
                                 </div>
 
                                 <div style="background-color: #000000; padding: 30px 25px; text-align: center; border-top: 1px solid #1a1a1a;">
-                                    <img src="https://sscsportal.vercel.app/ieee-sscs-logo.png" alt="SSCS" style="height: 25px; margin-bottom: 15px;">
+                                    <img src="${PORTAL_URL}/ieee-sscs-logo.png" alt="SSCS" style="height: 25px; margin-bottom: 15px;">
                                 </div>
                             </div>
                         `

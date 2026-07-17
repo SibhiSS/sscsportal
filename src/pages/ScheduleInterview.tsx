@@ -12,7 +12,7 @@ import SlotCalendar from '@/components/ui/SlotCalendar';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 
 const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
-const PORTAL_URL = 'https://sscsportal.vercel.app';
+const PORTAL_URL = window.location.origin;
 const ADMIN_EMAILS = [
     'sibhi.s2024@vitstudent.ac.in',
     'sibhis5223@gmail.com',

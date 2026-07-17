@@ -523,7 +523,7 @@ const Apply = () => {
                                 </div>
 
                                 <div style="background-color: #000000; padding: 30px 25px; text-align: center; border-top: 1px solid #1a1a1a;">
-                                    <img src="https://sscsportal.vercel.app/ieee-sscs-logo.png" alt="SSCS" style="height: 25px; margin-bottom: 15px;">
+                                    <img src="${window.location.origin}/ieee-sscs-logo.png" alt="SSCS" style="height: 25px; margin-bottom: 15px;">
                                     <p style="color: #4b5563; font-size: 11px; margin: 0; font-family: 'Inter', sans-serif;">
                                         IEEE Solid-State Circuits Society | VIT Chennai Campus
                                     </p>
@@ -599,7 +599,7 @@ const Apply = () => {
         );
     }
 
-    if (!recruitmentStatus.isOpen) {
+    if (user && !existingApp) {
         return (
             <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground bg-[#050505]">
                 <TechGridBackground />
@@ -619,9 +619,9 @@ const Apply = () => {
                         <div className="w-24 h-24 bg-red-500/10 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-red-500/30 rotate-12">
                             <Clock className="w-12 h-12 text-red-500 -rotate-12" />
                         </div>
-                        <h2 className="text-4xl font-heading font-bold mb-6 text-white tracking-tight">Recruitment Closed</h2>
+                        <h2 className="text-4xl font-heading font-bold mb-6 text-white tracking-tight">Recruitments will open soon</h2>
                         <p className="text-muted-foreground/80 mb-10 leading-relaxed text-lg font-medium">
-                            {recruitmentStatus.message || "We are currently not accepting new applications. Please check back later for our next recruitment cycle."}
+                            We are currently not accepting new applications. Please check back later for our next recruitment cycle.
                         </p>
                         <Button asChild variant="outline" className="w-full h-14 rounded-2xl border-white/10 hover:bg-white/10 transition-all font-bold">
                             <Link to="/">Return to Home</Link>
