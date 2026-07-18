@@ -119,7 +119,7 @@ function MetricRow({ label, icon, value, onChange, disabled }: MetricRowProps) {
           <Slider
             min={0}
             max={10}
-            step={0.5}
+            step={1}
             value={[value]}
             onValueChange={([v]) => onChange(v)}
             disabled={disabled}

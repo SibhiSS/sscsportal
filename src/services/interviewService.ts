@@ -87,6 +87,12 @@ export async function submitEvaluation(payload: EvaluationPayload): Promise<{ er
         .upsert(
             {
                 ...payload,
+                // Round scores to integers — DB columns are INTEGER type
+                score_communication: Math.round(payload.score_communication),
+                score_technical:     Math.round(payload.score_technical),
+                score_enthusiasm:    Math.round(payload.score_enthusiasm),
+                score_leadership:    Math.round(payload.score_leadership),
+                score_team_fit:      Math.round(payload.score_team_fit),
                 // Legacy field compat — DB trigger will compute total_score
                 comments: payload.interviewer_remarks,
                 recommends_committee: payload.recommendation !== 'reject',
