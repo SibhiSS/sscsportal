@@ -103,10 +103,10 @@ CREATE POLICY "applications_insert"
 ON public.applications FOR INSERT
 WITH CHECK (auth.role() = 'authenticated' AND auth.email() = email);
 
--- Admin or super_admin can update
+-- Admin, super_admin, or interviewer can update
 CREATE POLICY "applications_update"
 ON public.applications FOR UPDATE
-USING (is_admin_or_super());
+USING (is_any_admin());
 
 -- Only super_admin can delete
 CREATE POLICY "applications_delete"

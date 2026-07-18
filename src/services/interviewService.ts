@@ -82,7 +82,7 @@ export interface EvaluationPayload {
 }
 
 export async function submitEvaluation(payload: EvaluationPayload): Promise<{ error: string | null }> {
-    const { error } = await supabase
+    const { data: feedbackData, error } = await supabase
         .from('interview_feedback')
         .upsert(
             {
@@ -92,9 +92,13 @@ export async function submitEvaluation(payload: EvaluationPayload): Promise<{ er
                 recommends_committee: payload.recommendation !== 'reject',
             },
             { onConflict: 'application_id,interviewer_email' }
-        );
+        )
+        .select();
 
-    if (error) return { error: error.message };
+    if (error) {
+        console.error('Feedback upsert error:', error);
+        return { error: `Feedback save failed: ${error.message}` };
+    }
 
     // Calculate new live interview average
     const allFeedbacks = await fetchFeedbacksForApplication(payload.application_id);
@@ -116,7 +120,7 @@ export async function submitEvaluation(payload: EvaluationPayload): Promise<{ er
         updateData.interviewed_at = new Date().toISOString();
     }
 
-    // Update application with new interview score
+    // Update application with new interview score (fire and forget — RLS may block for some roles but feedback is already saved)
     await supabase
         .from('applications')
         .update(updateData)

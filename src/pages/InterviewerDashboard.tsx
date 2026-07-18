@@ -136,6 +136,8 @@ const InterviewerDashboard = () => {
             setEvalApp(null);
             setExistingFeedback(null);
             fetchMySlots();
+        } else {
+            alert(`Error saving evaluation: ${error}`);
         }
         setIsSubmitting(false);
     };
