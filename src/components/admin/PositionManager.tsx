@@ -110,11 +110,16 @@ const PositionManager = ({ applications, onUpdate }: PositionManagerProps) => {
             }
 
             try {
+                const portalUrl = window.location.origin;
                 const success = await sendEmail(
                     app.email,
                     `Position Confirmation: ${app.assignedPosition} — IEEE SSCS`,
                     `<p>Dear <strong>${app.fullName}</strong>,</p>
                     <p>We are delighted to inform you that you have been officially selected for the position of <strong>${app.assignedPosition}</strong> in IEEE SSCS Student Branch Chapter!</p>
+                    <p style="margin: 20px 0;">
+                        <a href="${portalUrl}/status" style="background-color: #16a34a; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">View Your Selection Status</a>
+                    </p>
+                    <p>Direct link: <a href="${portalUrl}/status">${portalUrl}/status</a></p>
                     <p><strong>Important Note:</strong> Students selected for Board/Lead/Associate Lead positions are required to hold an active IEEE Student Membership with IEEE Solid-State Circuits Society (SSCS) membership to serve as office bearers of the IEEE SSCS Student Branch Chapter.</p>
                     <p>Our team will reach out to you shortly with further details on onboarding and team initialization.</p>
                     <p>Congratulations once again, and welcome aboard!</p>

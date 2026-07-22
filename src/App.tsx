@@ -8,6 +8,7 @@ import Team from '@/pages/Team';
 import NotFound from '@/pages/NotFound';
 import Admin from '@/pages/Admin';
 import InterviewerDashboard from '@/pages/InterviewerDashboard';
+import StatusPage from '@/pages/Status';
 import './App.css';
 
 
@@ -44,6 +45,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/apply" element={<Apply />} />
+                <Route path="/status" element={<StatusPage />} />
                 <Route path="/schedule" element={<ScheduleInterview />} />
                 <Route path="/team" element={<Team />} />
                 <Route path="/register" element={<Register />} />

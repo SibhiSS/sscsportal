@@ -252,12 +252,16 @@ const Admin = () => {
                     const positionText = app.assignedPosition 
                         ? `the position of <strong>${app.assignedPosition}</strong>`
                         : `a position in the <strong>${app.primaryDept}</strong> department`;
-                        
+                    const portalUrl = window.location.origin;
                     const ok = await sendEmail(
                         app.email,
                         'Congratulations! You\'re in - IEEE SSCS',
                         `<p>Dear <strong>${app.fullName}</strong>,</p>
                         <p>We are pleased to offer you ${positionText} at IEEE SSCS.</p>
+                        <p style="margin: 20px 0;">
+                            <a href="${portalUrl}/status" style="background-color: #16a34a; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">View Your Selection Status</a>
+                        </p>
+                        <p>Direct link: <a href="${portalUrl}/status">${portalUrl}/status</a></p>
                         <p>Our team will contact you shortly regarding onboarding.</p>
                         <p>Regards,<br>IEEE SSCS Executive Committee</p>`
                     );
