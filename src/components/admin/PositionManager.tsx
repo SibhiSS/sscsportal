@@ -114,7 +114,7 @@ const PositionManager = ({ applications, onUpdate }: PositionManagerProps) => {
                     app.email,
                     `IEEE SSCS Results — You've Been Selected!`,
                     `<p>Dear <strong>${app.fullName}</strong>,</p>
-                    <p>The results for the <strong>Lead of the Departments</strong> for IEEE SSCS for this tenure is out.</p>
+                    <p>The results for the <strong>Department Leads and Boards</strong> for IEEE SSCS for the tenure 2026-27 is out.</p>
                     <p>We are so excited to inform you that you have been selected as <strong>"${app.assignedPosition}"</strong>. We are thrilled to welcome you on board!</p>
                     <p>We expect helpful co-ordination and teamwork throughout the course of this tenure. We also expect your <strong>mandatory participation in all events</strong>.</p>
                     <p>Congratulations for being selected and wishing you all the very best for your future!</p>

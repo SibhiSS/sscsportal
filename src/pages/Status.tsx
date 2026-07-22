@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft, LogIn, Clock, XOctagon, CalendarDays,
-    Video, ChevronRight, Zap
+    Video, ChevronRight, Zap, CheckCircle2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
