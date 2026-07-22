@@ -32,7 +32,7 @@ const DEPARTMENTS = [
  */
 function getRolesForDept(dept: string): string[] {
     if (dept === 'Technical') {
-        return ['Lead', 'Associate Lead 1', 'Associate Lead 2'];
+        return ['Lead', 'Associate Lead'];
     }
     return ['Lead', 'Associate'];
 }
