@@ -110,7 +110,6 @@ const PositionManager = ({ applications, onUpdate }: PositionManagerProps) => {
             }
 
             try {
-                const portalUrl = window.location.origin;
                 const success = await sendEmail(
                     app.email,
                     `IEEE SSCS Results — You've Been Selected!`,
@@ -119,10 +118,6 @@ const PositionManager = ({ applications, onUpdate }: PositionManagerProps) => {
                     <p>We are so excited to inform you that you have been selected as <strong>${app.assignedPosition}</strong>. We are thrilled to welcome you on board!</p>
                     <p>We expect helpful co-ordination and teamwork throughout the course of this tenure. We also expect your <strong>mandatory participation in all events</strong>.</p>
                     <p>Congratulations for being selected and wishing you all the very best for your future!</p>
-                    <p style="margin: 20px 0;">
-                        <a href="${portalUrl}/status" style="background-color: #16a34a; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">View Your Selection Status</a>
-                    </p>
-                    <p>Direct link: <a href="${portalUrl}/status">${portalUrl}/status</a></p>
                     <p style="margin-top: 20px; padding: 12px 16px; background-color: #1c1c1e; border-left: 3px solid #dc143c; border-radius: 4px; font-size: 13px;">
                         <strong>Important Note:</strong> Students selected for Board/Lead/Associate Lead positions are required to hold an active IEEE Student Membership with IEEE Solid-State Circuits Society (SSCS) membership to serve as office bearers of the IEEE SSCS Student Branch Chapter.
                     </p>
