@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft, LogIn, Clock, XOctagon, CalendarDays,
-    Video, CheckCircle2, ChevronRight, Zap
+    Video, ChevronRight, Zap
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
@@ -98,7 +98,7 @@ const SelectedCard = ({ app }: { app: any }) => {
                     <circle cx="2" cy="2" r="2" fill="currentColor"/>
                 </svg>
 
-                <div className="px-8 pt-10 pb-10 text-center relative z-10">
+                <div className="px-5 sm:px-8 pt-8 sm:pt-10 pb-8 sm:pb-10 text-center relative z-10">
                     {/* Org badge */}
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 mb-8">
                         <img src="/logo.png" alt="IEEE SSCS" className="w-4 h-4 object-contain opacity-80" />
@@ -122,7 +122,7 @@ const SelectedCard = ({ app }: { app: any }) => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.25, duration: 0.4 }}
-                        className="text-3xl md:text-4xl font-heading font-bold text-white tracking-tight mb-1"
+                        className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold text-white tracking-tight mb-1"
                     >
                         {name}
                     </motion.h2>
@@ -154,14 +154,14 @@ const SelectedCard = ({ app }: { app: any }) => {
                             transition={{ delay: 0.7, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                             className="relative inline-block mb-8"
                         >
-                            <div className="relative px-8 py-4 rounded-xl"
+                            <div className="relative px-5 sm:px-8 py-3 sm:py-4 rounded-xl"
                                  style={{
                                      background: 'linear-gradient(135deg, rgba(220,20,60,0.15) 0%, rgba(220,20,60,0.05) 100%)',
                                      border: '1px solid rgba(220,20,60,0.4)',
                                      boxShadow: '0 0 30px rgba(220,20,60,0.15), inset 0 1px 0 rgba(255,255,255,0.05)'
                                  }}>
                                 <div className="text-[10px] text-primary/60 uppercase tracking-[0.3em] mb-1 font-bold">Position</div>
-                                <div className="text-2xl md:text-3xl font-heading font-bold text-white leading-tight">
+                                <div className="text-xl sm:text-2xl font-heading font-bold text-white leading-tight">
                                     {position.split('').map((c, i) => (
                                         <GlitchChar key={i} char={c} delay={0.75 + i * 0.03} />
                                     ))}
@@ -333,7 +333,7 @@ const StatusPage = () => {
                 </Link>
             </div>
 
-            <div className="container mx-auto px-4 pt-24 pb-16 relative z-10 flex flex-col items-center min-h-screen">
+            <div className="container mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-16 relative z-10 flex flex-col items-center min-h-screen">
 
                 {/* Header — hide when selected (credential card is the hero) */}
                 {!isSelected && (
@@ -348,9 +348,6 @@ const StatusPage = () => {
                         <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight mt-4 text-white">
                             Application Status
                         </h1>
-                        <p className="text-muted-foreground mt-2 text-sm">
-                            Sign in with your VIT Google account to view your result.
-                        </p>
                     </motion.div>
                 )}
 
@@ -414,10 +411,10 @@ const StatusPage = () => {
 
                     ) : (
                         /* ── All other states ── */
-                        <motion.div key="status-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="w-full max-w-2xl space-y-6">
+                        <motion.div key="status-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="w-full max-w-lg space-y-6">
 
                             {/* Main result card */}
-                            <HolographicCard className="p-8 text-center relative overflow-hidden">
+                            <HolographicCard className="p-6 sm:p-8 text-center relative overflow-hidden">
                                 <div className="relative z-10">
                                     {/* Icon */}
                                     {isRejected || isWaitlist ? (
@@ -465,7 +462,7 @@ const StatusPage = () => {
 
                                     {/* State-specific body */}
                                     {(isRejected || isWaitlist) && (
-                                        <p className="text-sm text-muted-foreground mb-5 leading-relaxed max-w-sm mx-auto">
+                                        <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
                                             Thank you for your time and effort. Due to the highly competitive applicant pool,
                                             we're unable to offer you a position this time. We encourage you to apply again in our next cycle.
                                         </p>
@@ -475,7 +472,7 @@ const StatusPage = () => {
                                             <p className="text-sm text-gray-300 mb-4">
                                                 You've made it to the interview round. Book your slot now — slots are first come, first served.
                                             </p>
-                                            <Button asChild className="w-full max-w-xs mx-auto h-11 bg-purple-600 hover:bg-purple-700 font-bold text-white animate-bounce">
+                                            <Button asChild className="w-full h-11 bg-purple-600 hover:bg-purple-700 font-bold text-white animate-bounce">
                                                 <Link to="/schedule">
                                                     Book Interview Slot
                                                     <ChevronRight className="w-4 h-4 ml-1" />
@@ -484,66 +481,21 @@ const StatusPage = () => {
                                         </>
                                     )}
                                     {status === 'interview_scheduled' && (
-                                        <div className="max-w-xs mx-auto">
-                                            <SlotDetails appId={app.id} />
-                                        </div>
+                                        <SlotDetails appId={app.id} />
                                     )}
                                     {['applied', 'under_review', 'pending', 'neutral', 'interviewed'].includes(status) && (
-                                        <p className="text-sm text-muted-foreground mb-5 leading-relaxed max-w-sm mx-auto">
+                                        <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
                                             Your application is being evaluated. We'll notify you by email once a decision is made.
                                         </p>
                                     )}
                                 </div>
                             </HolographicCard>
 
-                            {/* Progress tracker */}
-                            <div className="bg-white/[0.03] rounded-2xl border border-white/10 p-6">
-                                <div className="text-[10px] text-muted-foreground uppercase tracking-widest mb-5 font-bold">Your Progress</div>
-                                <div className="flex items-start gap-0">
-                                    {STAGES.map((stage, idx) => {
-                                        const isCompleted = idx < currentStageIdx;
-                                        const isCurrent   = idx === currentStageIdx;
-                                        const isFuture    = idx > currentStageIdx;
-                                        const isTerminalBad = (isRejected || isWaitlist) && isCurrent;
-                                        return (
-                                            <div key={stage.key} className="flex-1 flex flex-col items-center relative">
-                                                {idx < STAGES.length - 1 && (
-                                                    <div className={`absolute top-[14px] left-1/2 w-full h-[2px] ${isCompleted ? 'bg-primary/50' : 'bg-white/10'}`} />
-                                                )}
-                                                <div className={`relative z-10 w-7 h-7 rounded-full flex items-center justify-center border-2 flex-shrink-0 transition-all ${
-                                                    isTerminalBad ? 'bg-zinc-800 border-zinc-600'
-                                                    : isCompleted  ? 'bg-primary/20 border-primary/60'
-                                                    : isCurrent    ? 'bg-primary/20 border-primary shadow-[0_0_12px_rgba(220,20,60,0.4)]'
-                                                    : 'bg-white/5 border-white/10'
-                                                }`}>
-                                                    {isCompleted && !isTerminalBad ? (
-                                                        <CheckCircle2 className="w-3.5 h-3.5 text-primary/80" />
-                                                    ) : isCurrent && !isTerminalBad ? (
-                                                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                                                    ) : (
-                                                        <div className={`w-1.5 h-1.5 rounded-full ${isFuture ? 'bg-white/10' : 'bg-zinc-600'}`} />
-                                                    )}
-                                                </div>
-                                                <div className={`mt-2 text-center text-[9px] font-bold uppercase tracking-wide leading-tight ${
-                                                    isTerminalBad ? 'text-zinc-600'
-                                                    : isCompleted  ? 'text-primary/70'
-                                                    : isCurrent    ? 'text-primary'
-                                                    : 'text-muted-foreground/40'
-                                                }`}>
-                                                    {stage.label}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
                             {/* Details strip */}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 gap-3">
                                 {[
                                     { label: 'Name',        value: app.full_name },
                                     { label: 'Roll Number', value: app.roll_number },
-                                    { label: 'Department',  value: app.primary_dept },
                                 ].map(({ label, value }) => (
                                     <div key={label} className="bg-white/[0.03] rounded-xl border border-white/10 p-4">
                                         <div className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">{label}</div>
