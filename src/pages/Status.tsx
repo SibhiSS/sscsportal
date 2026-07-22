@@ -280,7 +280,7 @@ const StatusPage = () => {
                                             : status === 'interview_scheduled'
                                             ? 'Interview Confirmed'
                                             : status === 'shortlisted'
-                                            ? 'You're Shortlisted!'
+                                            ? "You're Shortlisted!"
                                             : status === 'interviewed'
                                             ? 'Interview Complete'
                                             : 'Application Under Review'}
