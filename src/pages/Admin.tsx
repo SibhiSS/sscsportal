@@ -253,7 +253,7 @@ const Admin = () => {
                         ? `the position of <strong>${app.assignedPosition}</strong>`
                         : `a position in the <strong>${app.primaryDept}</strong> department`;
                         
-                    await sendEmail(
+                    const ok = await sendEmail(
                         app.email,
                         'Congratulations! You\'re in - IEEE SSCS',
                         `<p>Dear <strong>${app.fullName}</strong>,</p>
@@ -261,8 +261,12 @@ const Admin = () => {
                         <p>Our team will contact you shortly regarding onboarding.</p>
                         <p>Regards,<br>IEEE SSCS Executive Committee</p>`
                     );
-                    emailCount++;
-                    await supabase.from('applications').update({ status: 'active_member', decided_at: new Date().toISOString() }).eq('id', app.id);
+                    if (ok) {
+                        emailCount++;
+                        await supabase.from('applications').update({ status: 'active_member', decided_at: new Date().toISOString() }).eq('id', app.id);
+                    } else {
+                        console.warn(`[Admin] Selection email failed for ${app.email} — status NOT updated.`);
+                    }
                     await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limit protection
                 } catch (err) {
                     console.error(`Failed for ${app.email}:`, err);
@@ -272,7 +276,7 @@ const Admin = () => {
             const rejectedAppsToEmail = [...rejectedPendingApps, ...waitlistedApps];
             for (const app of rejectedAppsToEmail) {
                 try {
-                    await sendEmail(
+                    const ok = await sendEmail(
                         app.email,
                         'Update on your IEEE SSCS Application',
                         `<p>Dear <strong>${app.fullName}</strong>,</p>
@@ -281,8 +285,12 @@ const Admin = () => {
                         <p>We encourage you to stay connected and apply again in the future.</p>
                         <p>Best wishes,<br>IEEE SSCS Executive Committee</p>`
                     );
-                    emailCount++;
-                    await supabase.from('applications').update({ status: 'rejected', decided_at: new Date().toISOString() }).eq('id', app.id);
+                    if (ok) {
+                        emailCount++;
+                        await supabase.from('applications').update({ status: 'rejected', decided_at: new Date().toISOString() }).eq('id', app.id);
+                    } else {
+                        console.warn(`[Admin] Rejection email failed for ${app.email} — status NOT updated.`);
+                    }
                     await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limit protection
                 } catch (err) {
                     console.error(`Failed for ${app.email}:`, err);

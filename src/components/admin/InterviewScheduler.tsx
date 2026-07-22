@@ -298,10 +298,11 @@ const InterviewScheduler = () => {
 
         setIsSending(true);
         let count = 0;
-        try {
-            for (const app of shortlistedToNotify) {
+        let failed = 0;
+        for (const app of shortlistedToNotify) {
+            try {
                 const portalUrl = window.location.origin;
-                await sendEmail(
+                const ok = await sendEmail(
                     app.email,
                     `Action Required: Book Your Interview Slot - IEEE SSCS [${app.fullName}]`,
                     `<p>Dear <strong>${app.fullName}</strong>,</p>
@@ -315,22 +316,25 @@ const InterviewScheduler = () => {
                     <p>Best regards,<br>IEEE SSCS Recruitment Team</p>`
                 );
 
-                // Update DB flag
-                await supabase.from('applications').update({ shortlist_notified: true }).eq('id', app.id);
-                count++;
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limit protection
+                if (ok) {
+                    // Update DB flag only after confirmed dispatch
+                    await supabase.from('applications').update({ shortlist_notified: true }).eq('id', app.id);
+                    count++;
+                } else {
+                    console.warn(`[Scheduler] Booking link email failed for ${app.email} — flag NOT set.`);
+                    failed++;
+                }
+            } catch (err) {
+                console.error(`[Scheduler] Unexpected error sending to ${app.email}:`, err);
+                failed++;
             }
-            alert(`Successfully sent booking links to ${count} candidates!`);
-            if (user?.email) logAction(user.email, 'SEND_BOOKING_LINKS', 'BATCH', { count, candidateIds: selectedCandidateIds });
-
-            setIsNotifyDialogOpen(false);
-            fetchCandidates(); // Refresh list
-        } catch (error) {
-            console.error(error);
-            alert("Failed to send booking emails.");
-        } finally {
-            setIsSending(false);
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limit protection
         }
+        alert(`Booking links sent: ${count} succeeded${failed > 0 ? `, ${failed} failed` : ''}.`);
+        if (user?.email) logAction(user.email, 'SEND_BOOKING_LINKS', 'BATCH', { count, candidateIds: selectedCandidateIds });
+        setIsNotifyDialogOpen(false);
+        fetchCandidates(); // Refresh list
+        setIsSending(false);
     };
 
     // --- Render Logic ---

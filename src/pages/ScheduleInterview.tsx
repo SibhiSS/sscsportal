@@ -161,7 +161,7 @@ const ScheduleInterview = () => {
                     <p>Your meeting link will be sent before the interview starts. You can track your status anytime at: <a href="${portalUrl}/apply">${portalUrl}/apply</a></p>
                     <p>Please be ready 5 minutes before your scheduled time slot.</p>
                     <p>Best regards,<br>IEEE SSCS Recruitment Team</p>`
-                );
+                ).catch(err => console.warn('[Schedule] Booking confirmation email failed:', err));
 
                 // Last-minute check for urgent alerts
                 const startTime = parseISO(pendingSlot.start_time);
@@ -183,7 +183,7 @@ const ScheduleInterview = () => {
                                 alertEmail,
                                 'URGENT: Last Minute Interview Booking - IEEE SSCS',
                                 `<p>Candidate <strong>${existingApp.full_name}</strong> just booked Panel ${pendingSlot.panel_id} at ${format(startTime, 'h:mm a')} (${Math.round(diffMins)} min away).</p><p>No meeting link has been set. Please add one immediately.</p>`
-                            );
+                            ).catch(err => console.warn('[Schedule] Urgent alert email failed:', err));
                         }
                     }
                 }

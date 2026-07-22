@@ -472,6 +472,7 @@ const Apply = () => {
             // --- SEND CONFIRMATION EMAIL ONLY FOR NEW APPLICATIONS ---
             if (!isEditing) {
                 const portalUrl = window.location.origin;
+                // Non-blocking: failures are logged but don't block the submission success flow
                 sendEmail(
                     user.email || '',
                     'Application Received - IEEE SSCS Recruitment',
@@ -483,7 +484,7 @@ const Apply = () => {
                     <p>You can check your application status anytime: <a href="${portalUrl}/apply">${portalUrl}/apply</a></p>
                     <p>Join our WhatsApp group for updates: <a href="https://chat.whatsapp.com/IAjNCx7E0j643jZz3tLxeP">Join Here</a></p>
                     <p>Regards,<br>IEEE SSCS Recruitment Team</p>`
-                );
+                ).catch(err => console.warn('[Apply] Confirmation email failed silently:', err));
             }
 
 

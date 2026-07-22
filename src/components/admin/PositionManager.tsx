@@ -1,8 +1,7 @@
 import { Application } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Crown, Users, Send, AlertTriangle, CheckCircle, Mail } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { Crown, Users, Send, XCircle, CheckCircle, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +26,17 @@ const DEPARTMENTS = [
     'Human Resources'
 ];
 
+/**
+ * Returns the roles for a given department.
+ * Technical gets 1 Lead + 2 Associate Leads; all others get 1 Lead + 1 Associate.
+ */
+function getRolesForDept(dept: string): string[] {
+    if (dept === 'Technical') {
+        return ['Lead', 'Associate Lead 1', 'Associate Lead 2'];
+    }
+    return ['Lead', 'Associate'];
+}
+
 interface PositionManagerProps {
     applications: Application[];
     onUpdate: (id: string, updates: Partial<Application>) => Promise<void>;
@@ -37,7 +47,7 @@ const PositionManager = ({ applications, onUpdate }: PositionManagerProps) => {
     const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
     const [confirmText, setConfirmText] = useState('');
     const [isSending, setIsSending] = useState(false);
-    const [sendSuccessCount, setSendSuccessCount] = useState<number | null>(null);
+    const [sendResult, setSendResult] = useState<{ sent: number; failed: number } | null>(null);
 
     // Candidates who currently have an assigned position
     const assignedCandidates = applications.filter(app => !!app.assignedPosition);
@@ -88,33 +98,55 @@ const PositionManager = ({ applications, onUpdate }: PositionManagerProps) => {
     const handleSendPositionEmails = async () => {
         if (confirmText.trim() !== 'CONFIRM' || isSending) return;
         setIsSending(true);
-        setSendSuccessCount(null);
+        setSendResult(null);
 
-        let count = 0;
-        try {
-            for (const app of assignedCandidates) {
-                if (!app.assignedPosition || !app.email) continue;
+        let sent = 0;
+        let failed = 0;
 
-                await sendEmail(
+        for (const app of assignedCandidates) {
+            if (!app.assignedPosition || !app.email) {
+                failed++;
+                continue;
+            }
+
+            try {
+                const success = await sendEmail(
                     app.email,
-                    `Selection Result: ${app.assignedPosition} - IEEE SSCS`,
+                    `Position Confirmation: ${app.assignedPosition} — IEEE SSCS`,
                     `<p>Dear <strong>${app.fullName}</strong>,</p>
-                    <p>We are pleased to inform you that you have been selected for the position of <strong>${app.assignedPosition}</strong> at IEEE SSCS!</p>
-                    <p><strong>Important Note:</strong> Students selected for Board/Lead positions are required to hold an active IEEE Student Membership with IEEE Solid-State Circuits Society (SSCS) membership to serve as office bearers of the IEEE SSCS Student Branch Chapter.</p>
-                    <p>Our team will contact you shortly regarding onboarding and team initialization.</p>
+                    <p>We are delighted to inform you that you have been officially selected for the position of <strong>${app.assignedPosition}</strong> in IEEE SSCS Student Branch Chapter!</p>
+                    <p><strong>Important Note:</strong> Students selected for Board/Lead/Associate Lead positions are required to hold an active IEEE Student Membership with IEEE Solid-State Circuits Society (SSCS) membership to serve as office bearers of the IEEE SSCS Student Branch Chapter.</p>
+                    <p>Our team will reach out to you shortly with further details on onboarding and team initialization.</p>
+                    <p>Congratulations once again, and welcome aboard!</p>
                     <p>Best regards,<br>IEEE SSCS Executive Committee</p>`
                 );
 
-                await onUpdate(app.id, { status: 'active_member' });
-                count++;
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limit protection
+                if (success) {
+                    // Only promote to active_member once email is confirmed dispatched
+                    await onUpdate(app.id, { status: 'active_member' });
+                    sent++;
+                } else {
+                    console.warn(`[PositionManager] Email returned false for ${app.email} — status NOT updated.`);
+                    failed++;
+                }
+            } catch (err) {
+                console.error(`[PositionManager] Unexpected error sending to ${app.email}:`, err);
+                failed++;
             }
-            setSendSuccessCount(count);
-        } catch (err) {
-            console.error('Failed to send position emails:', err);
-        } finally {
-            setIsSending(false);
+
+            // Rate-limit: 1 s gap between sends
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
+
+        setSendResult({ sent, failed });
+        setIsSending(false);
+    };
+
+    // Reset dialog state on open
+    const openSendDialog = () => {
+        setConfirmText('');
+        setSendResult(null);
+        setIsSendDialogOpen(true);
     };
 
     return (
@@ -131,11 +163,7 @@ const PositionManager = ({ applications, onUpdate }: PositionManagerProps) => {
                     </p>
                 </div>
                 <Button
-                    onClick={() => {
-                        setConfirmText('');
-                        setSendSuccessCount(null);
-                        setIsSendDialogOpen(true);
-                    }}
+                    onClick={openSendDialog}
                     disabled={assignedCandidates.length === 0}
                     className="h-11 px-6 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-purple-500/20"
                 >
@@ -194,11 +222,16 @@ const PositionManager = ({ applications, onUpdate }: PositionManagerProps) => {
                                 <h3 className="text-sm font-bold tracking-widest uppercase text-blue-400">{dept}</h3>
                             </div>
                             <CardContent className="p-5 space-y-4">
-                                {['Lead', 'Associate'].map(role => {
+                                {getRolesForDept(dept).map(role => {
                                     const fullPositionName = `${role} - ${dept}`;
+                                    // Visual accent: Associate Leads in teal, Lead in blue, Associate in purple
+                                    const labelColor =
+                                        role === 'Lead' ? 'text-blue-400' :
+                                        role.startsWith('Associate Lead') ? 'text-teal-400' :
+                                        'text-purple-400';
                                     return (
                                         <div key={role} className="space-y-2">
-                                            <label className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">
+                                            <label className={`text-[10px] font-bold tracking-widest uppercase ${labelColor}`}>
                                                 {role}
                                             </label>
                                             <Select 
@@ -238,12 +271,35 @@ const PositionManager = ({ applications, onUpdate }: PositionManagerProps) => {
                         </DialogDescription>
                     </DialogHeader>
 
-                    {sendSuccessCount !== null ? (
-                        <div className="py-6 text-center space-y-3">
-                            <CheckCircle className="w-12 h-12 text-green-400 mx-auto animate-bounce" />
-                            <h4 className="text-lg font-bold text-white">Emails Dispatched!</h4>
-                            <p className="text-xs text-zinc-400">Successfully sent emails to {sendSuccessCount} candidate(s).</p>
-                            <Button onClick={() => setIsSendDialogOpen(false)} className="w-full bg-white/10 text-white font-bold text-xs mt-4">
+                    {sendResult !== null ? (
+                        <div className="py-6 text-center space-y-4">
+                            {sendResult.failed === 0 ? (
+                                <CheckCircle className="w-12 h-12 text-green-400 mx-auto animate-bounce" />
+                            ) : sendResult.sent === 0 ? (
+                                <XCircle className="w-12 h-12 text-red-400 mx-auto animate-bounce" />
+                            ) : (
+                                <div className="flex justify-center gap-3">
+                                    <CheckCircle className="w-10 h-10 text-green-400" />
+                                    <XCircle className="w-10 h-10 text-red-400" />
+                                </div>
+                            )}
+                            <h4 className="text-lg font-bold text-white">
+                                {sendResult.failed === 0 ? 'All Emails Dispatched!' :
+                                 sendResult.sent === 0 ? 'All Sends Failed' :
+                                 'Partially Sent'}
+                            </h4>
+                            <div className="flex justify-center gap-6 text-sm">
+                                <span className="text-green-400 font-bold">{sendResult.sent} sent</span>
+                                {sendResult.failed > 0 && (
+                                    <span className="text-red-400 font-bold">{sendResult.failed} failed</span>
+                                )}
+                            </div>
+                            {sendResult.failed > 0 && (
+                                <p className="text-[10px] text-zinc-500">
+                                    Failed sends did not update candidate status. Retry individually if needed.
+                                </p>
+                            )}
+                            <Button onClick={() => setIsSendDialogOpen(false)} className="w-full bg-white/10 text-white font-bold text-xs mt-2">
                                 Close
                             </Button>
                         </div>

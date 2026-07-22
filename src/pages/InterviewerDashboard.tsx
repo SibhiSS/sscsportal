@@ -158,7 +158,7 @@ const InterviewerDashboard = () => {
                 <p>Your application has been moved back to the shortlisting queue. If you still wish to be considered, please log in to the portal and re-book a new slot immediately.</p>
                 <p>Slots are limited and available on a first-come, first-served basis. Failure to attend a re-booked interview may result in disqualification.</p>
                 <p>Regards,<br>IEEE SSCS Recruitment Team</p>`
-            );
+            ).catch(err => console.warn('[Dashboard] No-show email failed:', err));
             
             setSuccessMsg('Candidate marked as No Show, slot freed.');
         } else {
@@ -347,7 +347,7 @@ const InterviewerDashboard = () => {
                                                                                 const slotTime = format(parseISO(slot.start_time), 'h:mm a');
                                                                                 const slotDate = format(parseISO(slot.start_time), 'EEEE, MMMM d, yyyy');
                                                                                 const portalUrl = window.location.origin;
-                                                                                await sendEmail(
+                                                                                const ok = await sendEmail(
                                                                                     app.email,
                                                                                     'Your Interview Meeting Link - IEEE SSCS',
                                                                                     `<p>Dear <strong>${app.full_name || app.fullName}</strong>,</p>
@@ -359,7 +359,11 @@ const InterviewerDashboard = () => {
                                                                                     <p>You can also check your status at: <a href="${portalUrl}/apply">${portalUrl}/apply</a></p>
                                                                                     <p>Please join 5 minutes before your slot.<br>IEEE SSCS Recruitment Team</p>`
                                                                                 );
-                                                                                alert(`Meeting link email sent to ${app.full_name || app.fullName}!`);
+                                                                                if (ok) {
+                                                                                    alert(`Meeting link email sent to ${app.full_name || app.fullName}!`);
+                                                                                } else {
+                                                                                    alert(`Failed to send email to ${app.full_name || app.fullName}. Check console for details.`);
+                                                                                }
                                                                             }}
                                                                         >
                                                                             <Send className="w-3 h-3 mr-1" />
