@@ -32,7 +32,7 @@ const DEPARTMENTS = [
  */
 function getRolesForDept(dept: string): string[] {
     if (dept === 'Technical') {
-        return ['Lead', 'Associate Lead'];
+        return ['Lead', 'Associate Lead 1', 'Associate Lead 2'];
     }
     return ['Lead', 'Associate'];
 }
@@ -110,12 +110,13 @@ const PositionManager = ({ applications, onUpdate }: PositionManagerProps) => {
             }
 
             try {
+                const displayPosition = app.assignedPosition.replace(/ \d -/, ' -');
                 const success = await sendEmail(
                     app.email,
                     `IEEE SSCS Results — You've Been Selected!`,
                     `<p>Dear <strong>${app.fullName}</strong>,</p>
                     <p>The results for the <strong>Department Leads and Boards</strong> for IEEE SSCS for the tenure 2026-27 is out.</p>
-                    <p>We are so excited to inform you that you have been selected as <strong>"${app.assignedPosition}"</strong>. We are thrilled to welcome you on board!</p>
+                    <p>We are so excited to inform you that you have been selected as <strong>"${displayPosition}"</strong>. We are thrilled to welcome you on board!</p>
                     <p>We expect helpful co-ordination and teamwork throughout the course of this tenure. We also expect your <strong>mandatory participation in all events</strong>.</p>
                     <p>Congratulations for being selected and wishing you all the very best for your future!</p>
                     <p style="margin-top: 20px; padding: 12px 16px; background-color: #1c1c1e; border-left: 3px solid #dc143c; border-radius: 4px; font-size: 13px;">
@@ -235,7 +236,7 @@ const PositionManager = ({ applications, onUpdate }: PositionManagerProps) => {
                                     return (
                                         <div key={role} className="space-y-2">
                                             <label className={`text-[10px] font-bold tracking-widest uppercase ${labelColor}`}>
-                                                {role}
+                                                {role.replace(/ \d$/, '')}
                                             </label>
                                             <Select 
                                                 value={getCandidateForPosition(fullPositionName)} 

@@ -249,8 +249,9 @@ const Admin = () => {
 
             for (const app of selectedApps) {
                 try {
-                    const positionText = app.assignedPosition 
-                        ? `the position of <strong>${app.assignedPosition}</strong>`
+                    const displayPosition = app.assignedPosition?.replace(/ \d -/, ' -');
+                    const positionText = displayPosition 
+                        ? `the position of <strong>${displayPosition}</strong>`
                         : `a position in the <strong>${app.primaryDept}</strong> department`;
                     const portalUrl = window.location.origin;
                     const ok = await sendEmail(

@@ -61,7 +61,7 @@ const GlitchChar = ({ char, delay }: { char: string; delay: number }) => (
 
 // ─── Selected: full-bleed credential card ─────────────────────────────────────
 const SelectedCard = ({ app }: { app: any }) => {
-    const position: string = app.assigned_position || '';
+    const position: string = (app.assigned_position || '').replace(/ \d -/, ' -');
     const name: string = app.full_name || '';
 
     return (
