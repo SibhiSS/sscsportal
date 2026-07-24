@@ -781,7 +781,7 @@ const Apply = () => {
                             <span className="inline-block text-sm text-primary font-bold px-4 py-1.5 rounded-full border border-primary/20 bg-primary/10 mb-4">
                                 Step {step} of 4
                             </span>
-                            <h1 className=" text-3xl md:text-5xl font-bold mb-6 text-white tracking-tight">
+                            <h1 className=" text-3xl md:text-5xl font-heading font-bold mb-6 text-white tracking-tight">
                                 <RevealText text={
                                     step === 1 ? "Basic Details" :
                                     step === 2 ? "Department Preferences" :
@@ -897,7 +897,7 @@ const Apply = () => {
                                         </div>
                                         <div className="space-y-4">
                                             <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 text-center">
-                                                <p className="text-sm text-primary font-bold mb-2 uppercase tracking-wider">1st Preference: {formData.primaryDept}</p>
+                                                <p className="text-sm text-primary font-heading font-bold mb-2 uppercase tracking-wider">1st Preference: {formData.primaryDept}</p>
                                                 <p className="text-lg md:text-xl font-medium text-white leading-relaxed">
                                                     {DEPT_QUESTIONS[formData.primaryDept]?.prompt || "Tell us something amazing about yourself."}
                                                 </p>
@@ -914,7 +914,7 @@ const Apply = () => {
                                         {formData.secondaryDept && (
                                             <div className="space-y-4 pt-6 border-t border-white/10">
                                                 <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-6 text-center">
-                                                    <p className="text-sm text-blue-400 font-bold mb-2 uppercase tracking-wider">2nd Preference: {formData.secondaryDept}</p>
+                                                    <p className="text-sm text-blue-400 font-heading font-bold mb-2 uppercase tracking-wider">2nd Preference: {formData.secondaryDept}</p>
                                                     <p className="text-lg md:text-xl font-medium text-white leading-relaxed">
                                                         {DEPT_QUESTIONS[formData.secondaryDept]?.prompt || "Tell us something amazing about yourself."}
                                                     </p>
@@ -934,7 +934,7 @@ const Apply = () => {
                                 {step === 4 && (
                                     <div className="space-y-8 animate-in fade-in duration-500">
                                         <div className="space-y-4">
-                                            <h3 className="text-lg font-bold text-white mb-4">Availability</h3>
+                                            <h3 className="text-lg font-heading font-bold text-white mb-4">Availability</h3>
                                             <p className="text-sm text-white/70 mb-3">How many hours can you dedicate every week?</p>
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                                 {WEEKLY_HOURS.map(hrs => (
@@ -947,7 +947,7 @@ const Apply = () => {
                                         </div>
                                         
                                         <div className="space-y-4 pt-8 border-t border-white/10">
-                                            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                            <h3 className="text-lg font-heading font-bold text-white mb-4 flex items-center gap-2">
                                                 <LinkIcon className="w-5 h-5 text-primary" /> Links (Optional)
                                             </h3>
                                             <div className="grid md:grid-cols-1 gap-6">
@@ -956,7 +956,7 @@ const Apply = () => {
                                         </div>
 
                                         <div className="space-y-4 pt-8 border-t border-white/10">
-                                            <h3 className="text-lg font-bold text-white mb-4">Any Questions for Us?</h3>
+                                            <h3 className="text-lg font-heading font-bold text-white mb-4">Any Questions for Us?</h3>
                                             <FormTextarea label="If you have any doubts about the club, the role, or the recruitment process, ask away! (Optional)" name="anyQuestions" value={formData.anyQuestions} onChange={handleInputChange} placeholder="Type your question here..." style={{ minHeight: '100px' }} />
                                         </div>
                                     </div>
@@ -965,11 +965,11 @@ const Apply = () => {
                                 {/* Navigation Bar */}
                                 <div className="pt-8 flex gap-4 mt-8 border-t border-white/10">
                                     {step > 1 && (
-                                        <Button type="button" variant="outline" onClick={handlePrevStep} className="h-14 px-6 md:px-8 border-white/10 bg-transparent hover:bg-white/5 text-white font-medium text-base rounded-xl transition-all">
+                                        <Button type="button" variant="outline" onClick={handlePrevStep} className="h-14 px-6 md:px-8 border-white/10 bg-transparent hover:bg-white/5 text-white font-heading font-medium text-base rounded-xl transition-all">
                                             <ChevronLeft className="w-5 h-5 mr-2" /> Back
                                         </Button>
                                     )}
-                                    <Button type="submit" disabled={isSubmitting} className="flex-1 h-14 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-lg rounded-xl shadow-lg transition-all group">
+                                    <Button type="submit" disabled={isSubmitting} className="flex-1 h-14 bg-primary text-primary-foreground hover:bg-primary/90 font-heading font-bold text-lg rounded-xl shadow-[0_0_15px_rgba(220,20,60,0.3)] transition-all group hover:scale-[1.02]">
                                         {isSubmitting ? (
                                             <span className="flex items-center"><div className="w-5 h-5 border-2 border-background border-t-transparent rounded-full animate-spin mr-3" /> Submitting...</span>
                                         ) : step < 4 ? (
