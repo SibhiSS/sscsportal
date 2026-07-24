@@ -836,7 +836,7 @@ const Apply = () => {
                                                     <Building className="w-4 h-4 text-primary/80" /> Hostel / Day Scholar
                                                 </label>
                                                 <div className="grid grid-cols-2 gap-3">
-                                                    {['Hosteler', 'Day Scholar'].map(type => (
+                                                    {['Hosteller', 'Day Scholar'].map(type => (
                                                         <div key={type} onClick={() => handleOptionSelect('hostelDay', type)} 
                                                             className={`cursor-pointer px-4 py-3 border rounded-xl text-center text-sm font-medium transition-all duration-200 ${formData.hostelDay === type ? 'bg-primary/20 border-primary text-primary shadow-sm' : formErrors.hostelDay ? 'border-red-500 bg-red-500/5 text-red-400' : 'bg-black/40 border-white/10 hover:border-white/30 text-white/70 hover:text-white'}`}>
                                                             {type}
