@@ -17,8 +17,8 @@ const HeroSection = () => {
 
   useEffect(() => {
     const checkStatus = async () => {
-      // 1. Fetch recruitment status (HARDCODED CLOSED)
-      setIsRecruitmentOpen(false);
+      // EMERGENCY OVERRIDE: ALWAYS OPEN
+      setIsRecruitmentOpen(true);
 
       // 2. Fetch user application status
       if (!user) return;

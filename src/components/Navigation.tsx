@@ -36,8 +36,8 @@ const Navigation = () => {
 
   useEffect(() => {
     const checkStatus = async () => {
-      // HARDCODED CLOSED
-      setIsRecruitmentOpen(false);
+      // EMERGENCY OVERRIDE: ALWAYS OPEN
+      setIsRecruitmentOpen(true);
 
       if (!user) {
         setHasApplied(false);

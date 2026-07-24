@@ -188,15 +188,15 @@ const WelcomeSplash = ({ onComplete }: { onComplete: () => void }) => {
             exit={{ opacity: 0, scale: 1.05 }}
             className="flex flex-col items-center justify-center min-h-[60vh] text-center relative z-10"
         >
-            <h1 className="text-5xl md:text-7xl  font-bold mb-6 text-white tracking-tight">
+            <h1 className="text-5xl md:text-7xl font-heading font-bold mb-6 text-white tracking-tight">
                 Welcome to SSCS
             </h1>
-            <p className="text-xl text-white/70 max-w-xl mx-auto mb-10 leading-relaxed">
+            <p className="text-xl text-white/70 max-w-xl mx-auto mb-10 leading-relaxed font-heading font-light tracking-wide italic">
                 Your journey into circuits, code, and creativity starts right here. Let's get to know you better.
             </p>
             <Button 
                 onClick={onComplete}
-                className="h-14 px-10 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-lg rounded-full shadow-lg group transition-all"
+                className="h-14 px-10 bg-primary text-primary-foreground hover:bg-primary/90 font-heading font-bold text-lg rounded-full shadow-[0_0_20px_rgba(220,20,60,0.3)] group transition-all"
             >
                 Start Application <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
@@ -588,7 +588,7 @@ const Apply = () => {
                     </Link>
                     <div className="relative p-12 md:p-16 max-w-xl mx-auto border border-white/10 bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl">
                         
-                        <h2 className="text-4xl  font-bold mb-6 text-white tracking-tight">Recruitments are closed</h2>
+                        <h2 className="text-4xl font-heading font-bold mb-6 text-white tracking-tight">Recruitments are closed</h2>
                         <p className="text-muted-foreground/80 mb-10 leading-relaxed text-lg font-medium">
                             We are not accepting applications right now. Catch us next time!
                         </p>
@@ -615,7 +615,7 @@ const Apply = () => {
                         {existingApp.status === 'selected' ? (
                             <>
                                 
-                                <h2 className="text-3xl  font-bold mb-2 text-white">Congratulations!</h2>
+                                <h2 className="text-3xl font-heading font-bold mb-2 text-white">Congratulations!</h2>
                                 <div className="inline-block px-4 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 mb-6 text-sm font-medium">
                                     Application Selected
                                 </div>
@@ -629,7 +629,7 @@ const Apply = () => {
                         ) : existingApp.status === 'rejected' ? (
                             <>
                                 
-                                <h2 className="text-2xl  font-bold mb-2 text-white">Application Status</h2>
+                                <h2 className="text-2xl font-heading font-bold mb-2 text-white">Application Status</h2>
                                 <div className="inline-block px-3 py-1 rounded-full bg-red-500/10 text-red-500/80 border border-red-500/20 mb-6 text-xs uppercase tracking-wider">
                                     Not Selected
                                 </div>
@@ -640,7 +640,7 @@ const Apply = () => {
                         ) : existingApp.status === 'shortlisted' ? (
                             <div className="text-center animate-in fade-in duration-500">
                                 
-                                <h2 className="text-3xl  font-bold mb-2 text-white">Application Shortlisted!</h2>
+                                <h2 className="text-3xl font-heading font-bold mb-2 text-white">Application Shortlisted!</h2>
                                 <p className="text-gray-300 mb-8">
                                     You've moved to the next round. Please book an interview slot immediately.
                                     <br />
