@@ -252,8 +252,20 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                                             <span className="text-xs uppercase tracking-wider text-muted-foreground block mb-1">2nd Preference Answer</span>
                                             <p className="text-sm bg-white/5 p-3 rounded-md border border-white/5 whitespace-pre-wrap">{application.secondarySkills || 'N/A'}</p>
                                         </div>
+                                        <div>
+                                            <span className="text-xs uppercase tracking-wider text-muted-foreground block mb-1">Why these departments?</span>
+                                            <p className="text-sm bg-white/5 p-3 rounded-md border border-white/5 max-h-[150px] overflow-y-auto leading-relaxed whitespace-pre-wrap">{application.secondaryReason || 'N/A'}</p>
+                                        </div>
                                     </div>
                                 </div>
+                            </div>
+                        )}
+
+                        {/* Questions / Notes */}
+                        {application.notes && (
+                            <div className="md:col-span-2 border-t border-dashed border-white/10 pt-6 mt-2">
+                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Applicant Questions / Notes</h4>
+                                <p className="text-sm bg-white/5 p-4 rounded-lg border border-white/10 whitespace-pre-wrap leading-relaxed">{application.notes}</p>
                             </div>
                         )}
 

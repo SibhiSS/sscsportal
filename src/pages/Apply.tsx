@@ -500,6 +500,10 @@ const Apply = () => {
                 
                 // For backward compatibility with existing admin panel
                 skills: combinedDeptAnswer, 
+                reason: formData.whyJoinSscs,
+                secondary_skills: formData.secondaryDeptAnswer,
+                secondary_reason: formData.whyTheseDepts,
+                notes: formData.anyQuestions ? `Questions for us: ${formData.anyQuestions}` : '',
                 year: formData.yearOfStudy,
                 
                 // Derived Metadata
