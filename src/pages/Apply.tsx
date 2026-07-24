@@ -259,13 +259,11 @@ const Apply = () => {
 
     const checkRecruitmentStatus = async () => {
         try {
-            const { data } = await supabase.from('app_settings').select('value').eq('key', 'recruitment_status').single();
-            if (data?.value) {
-                setRecruitmentStatus(data.value);
-            }
+            // EMERGENCY OVERRIDE: ALWAYS OPEN
+            setRecruitmentStatus({ isOpen: true, message: '' });
         } catch (error) {
             console.error("Error checking recruitment status:", error);
-            setRecruitmentStatus({ isOpen: false, message: 'Could not connect to server' });
+            setRecruitmentStatus({ isOpen: true, message: '' });
         }
     };
 

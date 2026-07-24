@@ -23,14 +23,8 @@ const JoinSection = () => {
 
   useEffect(() => {
     const checkStatus = async () => {
-      try {
-        const { data: settings } = await supabase.from('app_settings').select('value').eq('key', 'recruitment_status').single();
-        if (settings?.value) {
-          setIsRecruitmentOpen(settings.value.isOpen);
-        }
-      } catch (e) {
-        console.error(e);
-      }
+      // EMERGENCY OVERRIDE: ALWAYS OPEN
+      setIsRecruitmentOpen(true);
 
       if (!user) return;
       const { data } = await supabase
