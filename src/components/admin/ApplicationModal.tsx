@@ -114,21 +114,9 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                 </DialogHeader>
 
                 <div className="space-y-8 mt-4">
-                    {/* Rating & Actions Bar */}
+                    {/* Actions Bar */}
                     <div className="flex flex-col sm:flex-row justify-between items-center bg-white/5 p-4 rounded-xl border border-white/10 gap-4">
                         <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-muted-foreground mr-2">Rating:</span>
-                            {[1, 2, 3, 4, 5].map((star) => (
-                                <button
-                                    key={star}
-                                    onClick={() => onUpdate(application.id, { rating: star })}
-                                    className={`transition-transform hover:scale-110 focus:outline-none`}
-                                >
-                                    <Star
-                                        className={`w-6 h-6 ${star <= (application.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-700 hover:text-yellow-400/50'}`}
-                                    />
-                                </button>
-                            ))}
                         </div>
                         {isSuperAdmin && (
                             <div className="flex gap-2 flex-wrap justify-end">

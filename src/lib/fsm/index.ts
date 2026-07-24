@@ -43,7 +43,6 @@ export const VALID_TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> =
 // Pipeline stages in order (for Kanban column ordering)
 export const PIPELINE_STAGES: ApplicationStatus[] = [
     'applied',
-    'under_review',
     'shortlisted',
     'interview_scheduled',
     'interviewed',
