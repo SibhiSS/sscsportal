@@ -33,11 +33,9 @@ const AboutSection = () => {
         <div className="grid md:grid-cols-2 gap-6 max-w-6xl mx-auto">
           {/* Vision Card */}
           <HolographicCard className="p-8 h-full">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="p-2 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                <Eye className="w-5 h-5 text-primary" />
-              </div>
-              <h3 className="font-heading text-xl font-bold text-foreground">
+            <div className="flex flex-col gap-2 mb-6">
+              <span className="text-xs font-mono text-primary uppercase tracking-[0.2em]">01.</span>
+              <h3 className="font-heading text-2xl font-bold text-foreground">
                 Our Vision
               </h3>
             </div>
@@ -50,11 +48,9 @@ const AboutSection = () => {
 
           {/* Mission Card */}
           <HolographicCard className="p-8 h-full">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="p-2 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                <Target className="w-5 h-5 text-primary" />
-              </div>
-              <h3 className="font-heading text-xl font-bold text-foreground">
+            <div className="flex flex-col gap-2 mb-6">
+              <span className="text-xs font-mono text-primary uppercase tracking-[0.2em]">02.</span>
+              <h3 className="font-heading text-2xl font-bold text-foreground">
                 Our Mission
               </h3>
             </div>

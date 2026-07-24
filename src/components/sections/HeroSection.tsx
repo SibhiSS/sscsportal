@@ -130,7 +130,7 @@ const HeroSection = () => {
               className="space-y-4 mb-12"
             >
               <h2 className="text-xl md:text-3xl font-heading text-foreground/90 font-light tracking-wide italic">
-                Innovating the World of Integrated Circuits
+                Think Silicon. Think SSCS
               </h2>
               <p className="text-sm md:text-lg text-muted-foreground/80 max-w-2xl mx-auto leading-relaxed">
                 Empowering the next generation of analog and digital circuit designers through hands-on technical excellence and industry-bridging research.

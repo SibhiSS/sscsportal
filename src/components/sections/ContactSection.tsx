@@ -35,11 +35,11 @@ const ContactSection = () => {
             viewport={{ once: true }}
           >
             <a
-              href="mailto:IEEE.SSCSc@gmail.com"
+              href="mailto:ieee.sscs.vitchennai@gmail.com"
               className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 hover:border-primary/50 hover:bg-white/[0.08] backdrop-blur-xl transition-all group"
             >
               <Mail className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-              <span className="text-sm font-medium text-foreground/80">ieee.sscsc@gmail.com</span>
+              <span className="text-sm font-medium text-foreground/80">ieee.sscs.vitchennai@gmail.com</span>
             </a>
             <div className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
               <MapPin className="w-5 h-5 text-primary" />
@@ -89,7 +89,7 @@ const ContactSection = () => {
             </div>
 
             <p className="text-xs text-muted-foreground/80 font-medium italic">
-              Innovating the World of Integrated Circuits
+              Think Silicon. Think SSCS
             </p>
 
             <div className="flex flex-col items-center md:items-end gap-1">

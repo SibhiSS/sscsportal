@@ -127,6 +127,21 @@ const StartupPreloader = ({ onComplete }: { onComplete: () => void }) => {
                     transition={{ duration: 1, ease: "easeOut", delay: 1.4 }}
                     className="absolute inset-0 -z-10 rounded-full border border-primary/50 shadow-[0_0_50px_rgba(220,20,60,0.5)]"
                 />
+
+                {/* Tagline Wipe Animation */}
+                <motion.div 
+                    className="absolute -bottom-16 left-1/2 -translate-x-1/2 whitespace-nowrap"
+                    initial={{ clipPath: "polygon(0 0, 0 0, 0 100%, 0% 100%)", opacity: 0 }}
+                    animate={{ 
+                        clipPath: isDone ? "polygon(0 0, 0 0, 0 100%, 0% 100%)" : "polygon(0 0, 100% 0, 100% 100%, 0 100%)",
+                        opacity: 1 
+                    }}
+                    transition={{ duration: 1.2, delay: 0.8, ease: "easeInOut" }}
+                >
+                    <span className="font-heading text-primary/80 tracking-[0.2em] uppercase text-xs font-bold drop-shadow-[0_0_8px_rgba(220,20,60,0.5)]">
+                        Think Silicon. Think SSCS
+                    </span>
+                </motion.div>
             </motion.div>
         </motion.div>
     );

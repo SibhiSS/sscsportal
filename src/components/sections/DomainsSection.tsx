@@ -100,20 +100,17 @@ const DomainCard = ({ domain, index }: { domain: Domain; index: number }) => {
 
       <div className="relative flex h-full flex-col">
         {/* Card Header */}
-        <div className="mb-6 flex items-start justify-between">
-          <div className={`rounded-xl bg-gradient-to-br ${domain.color} p-3 ring-1 ring-white/10 group-hover:ring-primary/50 transition-all duration-500`}>
-            <domain.icon className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
-          </div>
+        <div className="mb-6 flex items-center justify-between border-b border-white/[0.08] pb-4">
+          <h3 className="font-heading text-xl font-bold text-foreground group-hover:text-primary transition-colors">
+            {domain.title}
+          </h3>
           <span className="font-mono text-xs font-bold text-white/20 group-hover:text-primary transition-colors">
             {domain.id}
           </span>
         </div>
 
         {/* Content */}
-        <div className="flex-1">
-          <h3 className="mb-3 font-heading text-xl font-bold tracking-tight text-white group-hover:text-primary transition-colors">
-            {domain.title}
-          </h3>
+        <div className="flex-1 mt-2">
           <p className="text-sm leading-relaxed text-muted-foreground/80">
             {domain.description}
           </p>

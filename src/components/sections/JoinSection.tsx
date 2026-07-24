@@ -57,41 +57,45 @@ const JoinSection = () => {
           viewport={{ once: true }}
         >
           {/* Badge */}
-          <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-primary/10 border border-primary/20 mb-10 backdrop-blur-xl">
-            <Rocket className="w-5 h-5 text-primary" />
-            <span className="text-sm text-primary font-bold tracking-widest uppercase">Now Recruiting</span>
+          <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-10 backdrop-blur-sm">
+            <span className="text-xs font-semibold text-primary uppercase tracking-widest">Now Recruiting</span>
           </div>
 
           {/* Heading */}
-          <h2 className="font-heading text-5xl md:text-6xl font-bold mb-8 tracking-tight">
-            <span className="text-foreground inline-block mr-3"><RevealText text="Join" /></span>
-            <span className="text-primary inline-block"><RevealText text="IEEE SSCS" delay={0.1} /></span>
+          <h2 className="font-heading text-4xl md:text-5xl font-bold text-foreground mb-6">
+            Join the Next Generation of <br />
+            <span className="text-primary">Silicon Engineers</span>
           </h2>
-
-          <p className="text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
-            Ready to design, fabricate, and test? Join our community of
-            innovators and shape the future of integrated circuits.
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Get hands-on experience with industry-standard EDA tools, participate in tapeouts, 
+            and build a network with top semiconductor professionals.
           </p>
+        </motion.div>
 
-          {/* Benefits */}
-          <div className="grid sm:grid-cols-3 gap-6 mb-16">
-            {benefits.map((benefit) => (
-              <HolographicCard
+        {/* Benefits Grid */}
+        <div className="grid md:grid-cols-3 gap-6 mt-16 mb-16 relative z-10 max-w-5xl mx-auto">
+          {benefits.map((benefit, index) => (
+            <motion.div
+              key={benefit.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <HolographicCard 
                 key={benefit.title}
                 className="p-8 flex flex-col items-center group transition-all duration-500"
               >
-                <div className="p-4 rounded-2xl bg-primary/10 mb-6 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
-                  <benefit.icon className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="font-heading font-bold text-foreground text-lg mb-3">
+                <h3 className="font-heading font-bold text-foreground text-xl mb-3 pt-6">
                   {benefit.title}
                 </h3>
                 <p className="text-sm text-muted-foreground/80 font-medium">
                   {benefit.description}
                 </p>
               </HolographicCard>
-            ))}
-          </div>
+            </motion.div>
+          ))}
+        </div>
 
           {/* CTA Button */}
           <div className="flex flex-col items-center">
@@ -150,7 +154,6 @@ const JoinSection = () => {
               Applications are reviewed on a rolling basis
             </p>
           </div>
-        </motion.div>
       </div>
     </section>
   );
