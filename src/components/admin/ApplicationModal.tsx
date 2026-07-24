@@ -208,6 +208,10 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                                 <span>{application.programName || application.department || 'Unknown'}</span>
                                 <span className="text-muted-foreground">Year:</span>
                                 <span>{application.batch || application.admissionYear || application.year || 'Unknown'}</span>
+                                <span className="text-muted-foreground">Residence:</span>
+                                <span>{application.hostelDay || 'Unknown'}</span>
+                                <span className="text-muted-foreground">Availability:</span>
+                                <span>{application.weeklyHours ? `${application.weeklyHours} hours/week` : 'Unknown'}</span>
                             </div>
                         </div>
 
@@ -270,7 +274,7 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                         )}
 
                         {/* Social Links */}
-                        {(application.githubUrl || application.linkedinUrl) && (
+                        {(application.githubUrl || application.linkedinUrl || application.portfolioUrl) && (
                             <div className="md:col-span-2 border-t border-dashed border-white/10 pt-6 mt-2">
                                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Links</h4>
                                 <div className="flex flex-wrap gap-2">
@@ -294,6 +298,16 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                                         >
                                             <Linkedin className="w-3 h-3 mr-1.5" /> LinkedIn
                                             <ExternalLink className="w-3 h-3 ml-1.5 opacity-50" />
+                                        </Button>
+                                    )}
+                                    {application.portfolioUrl && (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="border-white/10 text-muted-foreground hover:text-white text-xs"
+                                            onClick={() => window.open(application.portfolioUrl, '_blank')}
+                                        >
+                                            <ExternalLink className="w-3 h-3 mr-1.5" /> Portfolio
                                         </Button>
                                     )}
                                 </div>

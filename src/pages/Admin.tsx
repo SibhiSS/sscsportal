@@ -144,7 +144,11 @@ const Admin = () => {
                     // Social
                     githubUrl: parsed.githubUrl || doc.github_url || '',
                     linkedinUrl: parsed.linkedinUrl || doc.linkedin_url || '',
+                    portfolioUrl: doc.portfolio_website || '',
                     parsedSkills: doc.parsed_skills?.length ? doc.parsed_skills : parsed.skills,
+                    // Additional
+                    weeklyHours: doc.weekly_hours || '',
+                    hostelDay: doc.hostel_day || '',
                     // Scoring
                     taskScore: doc.task_score || 0,
                     interviewScore: doc.interview_score || 0,

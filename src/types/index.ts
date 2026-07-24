@@ -26,6 +26,10 @@ export interface Application {
     secondarySkills: string;
     secondaryReason: string;
 
+    // Additional Details
+    weeklyHours?: string;
+    hostelDay?: string;
+
     submittedAt: any;
     status: ApplicationStatus;
     rating: number; // 0-5 star rating (resume proxy)
