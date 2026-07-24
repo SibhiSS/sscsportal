@@ -484,14 +484,9 @@ const Admin = () => {
                                     <Video className="w-3.5 h-3.5 mr-1.5" />EVALUATE
                                 </TabsTrigger>
                                 {isSuperAdmin && (
-                                    <>
-                                        <TabsTrigger value="positions" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
-                                            <Trophy className="w-3.5 h-3.5 mr-1.5" />POSITIONS
-                                        </TabsTrigger>
-                                        <TabsTrigger value="import" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
-                                            <UploadCloud className="w-3.5 h-3.5 mr-1.5" />IMPORT
-                                        </TabsTrigger>
-                                    </>
+                                    <TabsTrigger value="import" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                        <UploadCloud className="w-3.5 h-3.5 mr-1.5" />IMPORT
+                                    </TabsTrigger>
                                 )}
                                 {isAdmin && (
                                     <>
@@ -705,12 +700,7 @@ const Admin = () => {
                             <InterviewScheduler />
                         </TabsContent>
 
-                        {/* ── POSITIONS TAB ─────────────────────────────────── */}
-                        {isSuperAdmin && (
-                            <TabsContent value="positions" className="outline-none">
-                                <PositionManager applications={applications} onUpdate={updateApplication} />
-                            </TabsContent>
-                        )}
+
 
                         {/* ── ACTIVITY LOG TAB ──────────────────────────────── */}
                         {isAdmin && (

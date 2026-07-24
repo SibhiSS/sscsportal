@@ -62,14 +62,64 @@ const AdminSettings = () => {
         }
     };
 
+    const handleClearAllApplications = async () => {
+        if (!confirm("WARNING: Are you sure you want to delete ALL application data for a new recruitment drive? This action CANNOT be undone.")) {
+            return;
+        }
+        const confirmText = prompt("Type DELETE ALL to confirm:");
+        if (confirmText !== "DELETE ALL") {
+            toast.error("Confirmation failed. Applications were NOT deleted.");
+            return;
+        }
+
+        try {
+            const { error } = await supabase.from('applications').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            if (error) throw error;
+
+            toast.success("All applications have been successfully cleared!");
+            logAction(currentUser?.email || 'unknown', 'PURGE_ALL_APPLICATIONS', undefined, {});
+            setTimeout(() => window.location.reload(), 1500);
+        } catch (err: any) {
+            console.error("Error purging applications:", err);
+            toast.error("Failed to delete applications: " + err.message);
+        }
+    };
+
+    const handleAnonymizeRejected = async () => {
+        if (!confirm("Are you sure you want to anonymize all rejected applicants?")) return;
+        try {
+            const { error } = await supabase
+                .from('applications')
+                .update({ full_name: 'Anonymized Candidate', phone: '0000000000', email: 'anonymized@sscs.org' })
+                .eq('status', 'rejected');
+
+            if (error) throw error;
+            toast.success("Rejected applicants anonymized successfully!");
+            logAction(currentUser?.email || 'unknown', 'ANONYMIZE_REJECTED_APPLICANTS', undefined, {});
+        } catch (err: any) {
+            toast.error("Failed to anonymize: " + err.message);
+        }
+    };
+
+    const handleClearAuditLogs = async () => {
+        if (!confirm("Are you sure you want to clear audit logs?")) return;
+        try {
+            const { error } = await supabase.from('audit_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            if (error) throw error;
+            toast.success("Audit logs cleared successfully!");
+            logAction(currentUser?.email || 'unknown', 'CLEAR_AUDIT_LOGS', undefined, {});
+        } catch (err: any) {
+            toast.error("Failed to clear audit logs: " + err.message);
+        }
+    };
+
     const toggleRecruitment = async (checked: boolean) => {
         const newSettings = { ...settings, isOpen: checked };
         setSettings(newSettings);
 
         const { error } = await supabase.from('app_settings').upsert({
             key: 'recruitment_status',
-            value: newSettings,
-            updated_at: new Date().toISOString()
+            value: newSettings
         });
 
         if (error) {
@@ -96,8 +146,7 @@ const AdminSettings = () => {
 
         const { error } = await supabase.from('app_settings').upsert({
             key: 'recruitment_status',
-            value: newSettings,
-            updated_at: new Date().toISOString()
+            value: newSettings
         });
 
         if (error) {
@@ -115,8 +164,7 @@ const AdminSettings = () => {
         try {
             const { error } = await supabase.from('app_settings').upsert({
                 key: 'recruitment_status',
-                value: settings,
-                updated_at: new Date().toISOString()
+                value: settings
             });
 
             if (error) throw error;
@@ -385,21 +433,30 @@ const AdminSettings = () => {
                             <CardDescription>Manage sensitive data policies. Actions here are irreversible.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            <div className="p-4 border border-destructive/40 rounded bg-destructive/10 flex justify-between items-center">
+                                <div>
+                                    <h4 className="font-medium text-destructive">Purge All Applications (Start Fresh Recruitment)</h4>
+                                    <p className="text-sm text-muted-foreground">Delete all previous candidate application records to reset the portal for new recruitments.</p>
+                                </div>
+                                <Button variant="destructive" onClick={handleClearAllApplications}>
+                                    Purge Data
+                                </Button>
+                            </div>
                             <div className="p-4 border border-destructive/20 rounded bg-background flex justify-between items-center">
                                 <div>
                                     <h4 className="font-medium">Anonymize Rejected Applicants</h4>
-                                    <p className="text-sm text-muted-foreground">Remove PII (Name, Email, Phone) for rejected applicants older than 30 days.</p>
+                                    <p className="text-sm text-muted-foreground">Remove PII (Name, Email, Phone) for rejected applicants.</p>
                                 </div>
-                                <Button variant="destructive" onClick={() => alert('This feature is currently locked for safety.')}>
+                                <Button variant="destructive" onClick={handleAnonymizeRejected}>
                                     Execute
                                 </Button>
                             </div>
                             <div className="p-4 border border-destructive/20 rounded bg-background flex justify-between items-center">
                                 <div>
                                     <h4 className="font-medium">Clear Audit Logs</h4>
-                                    <p className="text-sm text-muted-foreground">Archive and delete audit logs older than 90 days.</p>
+                                    <p className="text-sm text-muted-foreground">Delete system audit logs.</p>
                                 </div>
-                                <Button variant="destructive" onClick={() => alert('This feature is currently locked for safety.')}>
+                                <Button variant="destructive" onClick={handleClearAuditLogs}>
                                     Execute
                                 </Button>
                             </div>
