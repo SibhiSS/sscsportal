@@ -290,24 +290,41 @@ const SlotDetails = ({ appId }: { appId: string }) => {
 const StatusPage = () => {
     const { user, signInWithGoogle, loading: authLoading } = useAuth();
     const [app, setApp] = useState<any>(null);
+    const [phase, setPhase] = useState<string>('APPLICATIONS_OPEN');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (!user) { setLoading(false); return; }
         (async () => {
             setLoading(true);
-            const { data } = await supabase
-                .from('applications')
-                .select('*')
-                .or(`user_id.eq.${user.uid},email.eq.${user.email}`)
-                .order('created_at', { ascending: false })
-                .limit(1);
-            setApp(data?.[0] ?? null);
+            const [{ data: settingsData }, { data: appData }] = await Promise.all([
+                supabase.from('app_settings').select('value').eq('key', 'recruitment_status').single(),
+                supabase
+                    .from('applications')
+                    .select('*')
+                    .or(`user_id.eq.${user.uid},email.eq.${user.email}`)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+            ]);
+            
+            if (settingsData) setPhase(settingsData.value.currentPhase || 'APPLICATIONS_OPEN');
+            setApp(appData?.[0] ?? null);
             setLoading(false);
         })();
     }, [user]);
 
-    const status: string = app?.status ?? '';
+    const rawStatus: string = app?.status ?? '';
+    
+    // Mask final decisions until results are officially published
+    let status = rawStatus;
+    if (phase !== 'RESULTS_PUBLISHED') {
+        if (['selected', 'waitlisted', 'active_member'].includes(rawStatus)) {
+            status = 'interviewed';
+        } else if (rawStatus === 'rejected') {
+            status = app?.interview_score != null ? 'interviewed' : 'under_review';
+        }
+    }
+
     const isSelected  = ['selected', 'active_member'].includes(status);
     const isRejected  = status === 'rejected';
     const isWaitlist  = status === 'waitlisted';

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Rocket, Zap, Users, Award, ArrowRight, Eye } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import HolographicCard from '@/components/ui/HolographicCard';
 import { Button } from '@/components/ui/button';
 import RevealText from '@/components/ui/RevealText';
@@ -9,9 +9,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 
 const benefits = [
-  { icon: Zap, title: 'Hands-on Projects', description: 'Work on real SSCS projects' },
-  { icon: Users, title: 'Expert Network', description: 'Connect with industry experts' },
-  { icon: Award, title: 'Competitions', description: 'Compete in hackathons' },
+  { title: 'Hands-on Projects', description: 'Work on real SSCS projects' },
+  { title: 'Expert Network', description: 'Connect with industry experts' },
+  { title: 'Competitions', description: 'Compete in hackathons' },
 ];
 
 const JoinSection = () => {

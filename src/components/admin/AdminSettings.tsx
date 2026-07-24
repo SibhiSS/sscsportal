@@ -117,10 +117,9 @@ const AdminSettings = () => {
         const newSettings = { ...settings, isOpen: checked };
         setSettings(newSettings);
 
-        const { error } = await supabase.from('app_settings').upsert({
-            key: 'recruitment_status',
-            value: newSettings
-        });
+        const { error } = await supabase.from('app_settings')
+            .update({ value: newSettings })
+            .eq('key', 'recruitment_status');
 
         if (error) {
             console.error("Failed to save recruitment status:", error);
@@ -144,10 +143,9 @@ const AdminSettings = () => {
 
         setSettings(newSettings);
 
-        const { error } = await supabase.from('app_settings').upsert({
-            key: 'recruitment_status',
-            value: newSettings
-        });
+        const { error } = await supabase.from('app_settings')
+            .update({ value: newSettings })
+            .eq('key', 'recruitment_status');
 
         if (error) {
             console.error("Failed to save phase change:", error);
@@ -162,10 +160,9 @@ const AdminSettings = () => {
     const saveRecruitmentSettings = async () => {
         setSavingSettings(true);
         try {
-            const { error } = await supabase.from('app_settings').upsert({
-                key: 'recruitment_status',
-                value: settings
-            });
+            const { error } = await supabase.from('app_settings')
+                .update({ value: settings })
+                .eq('key', 'recruitment_status');
 
             if (error) throw error;
             toast.success("All recruitment settings saved successfully!");

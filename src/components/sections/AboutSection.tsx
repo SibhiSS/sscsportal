@@ -1,6 +1,6 @@
 
 import { motion } from 'framer-motion';
-import { Eye, Target } from 'lucide-react';
+
 import HolographicCard from '@/components/ui/HolographicCard';
 import RevealText from '@/components/ui/RevealText';
 

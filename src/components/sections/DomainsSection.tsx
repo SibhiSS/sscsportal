@@ -1,14 +1,5 @@
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import {
-  Wifi,
-  Cpu,
-  Shield,
-  Activity,
-  Box,
-  Microchip,
-  LucideIcon,
-  ArrowUpRight
-} from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import RevealText from '@/components/ui/RevealText';
 import { MouseEvent } from 'react';
 
@@ -16,7 +7,6 @@ interface Domain {
   id: string;
   title: string;
   description: string;
-  icon: LucideIcon;
   color: string;
 }
 
@@ -25,42 +15,36 @@ const domains: Domain[] = [
     id: '01',
     title: 'Technical',
     description: 'Specializing in Projects, Research, and Web Development to push the boundaries of SSCS innovation.',
-    icon: Cpu,
     color: 'from-blue-500/20 to-cyan-500/20'
   },
   {
     id: '02',
     title: 'Management',
     description: 'Handling Finance, Internal Coordination, and Documentation to ensure seamless club operations.',
-    icon: Box,
     color: 'from-emerald-500/20 to-teal-500/20'
   },
   {
     id: '03',
     title: 'Creative',
     description: 'Driving Design, Social Media, and Content creation to build a powerful brand presence.',
-    icon: Activity,
     color: 'from-purple-500/20 to-pink-500/20'
   },
   {
     id: '04',
     title: 'Outreach & Partnerships',
     description: 'Managing Industry Relations, Speaker Acquisition, and Sponsorships to expand our ecosystem.',
-    icon: Wifi,
     color: 'from-amber-500/20 to-orange-500/20'
   },
   {
     id: '05',
     title: 'Human Resources',
     description: 'Focused on Recruitment, Member Engagement, and Conflict Resolution for a thriving community.',
-    icon: Shield,
     color: 'from-red-500/20 to-rose-500/20'
   },
   {
     id: '06',
     title: 'Event Operations',
     description: 'Planning and executing world-class events through on-ground operations and strategic execution.',
-    icon: Microchip,
     color: 'from-indigo-500/20 to-blue-500/20'
   },
 ];
