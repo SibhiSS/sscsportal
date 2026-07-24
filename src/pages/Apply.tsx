@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Send, User, Code, FileText, Phone, ArrowRight, ChevronLeft, LogIn, Trophy, Clock, XOctagon, Calendar as CalendarIcon, Video } from 'lucide-react';
+import { ArrowLeft, Send, CheckCircle2, GraduationCap, Building, Link as LinkIcon, User, Code, Phone, ArrowRight, ChevronLeft, LogIn, Trophy, Clock, XOctagon, Calendar as CalendarIcon, Video, Sparkles, Target, Zap, Briefcase } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
-import { format, parseISO, isSameDay } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { Link } from 'react-router-dom';
-import TechGridBackground from '@/components/ui/TechGridBackground';
+import CircuitBoardBackground from '@/components/ui/CircuitBoardBackground';
 import HolographicCard from '@/components/ui/HolographicCard';
 import RevealText from '@/components/ui/RevealText';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { sendEmail } from '@/lib/email';
 import { validateRegistrationNumber, RegNoDetails } from '@/utils/validation';
+import confetti from 'canvas-confetti';
 import {
     Select,
     SelectContent,
@@ -20,6 +21,54 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
+const DEPT_QUESTIONS: Record<string, { prompt: string, judges: string }> = {
+    'Technical': {
+        prompt: "Tell us about the coolest technical thing you've built, learnt, or explored. Explain it as if we're complete beginners. If you haven't worked on anything yet, describe a technical idea or project you'd love to build and why.",
+        judges: "Communication, curiosity, technical thinking, passion."
+    },
+    'Creative': {
+        prompt: "Show us your best creative work (poster, artwork, video, writing, photography, etc.) and tell us the story behind it. If you don't have one, vividly describe the most creative dream, idea, or imaginary world you've ever had.",
+        judges: "Creativity, storytelling, imagination."
+    },
+    'Human Resources': {
+        prompt: "Tell us about a time you helped someone, resolved a conflict, or made someone feel included. If you haven't experienced something like this, describe exactly how you would handle such a situation.",
+        judges: "Empathy, maturity, communication."
+    },
+    'Outreach & Partnerships': {
+        prompt: "Convince us to try, join, or believe in something you genuinely like. It could be a club, hobby, app, movie, place, or even your favourite food. You have one chance to persuade us.",
+        judges: "Persuasion, confidence, communication, originality."
+    },
+    'Management': {
+        prompt: "Describe the biggest responsibility you've ever taken. If you haven't had one yet, explain how you would plan and manage your dream college event from start to finish.",
+        judges: "Ownership, planning, organization."
+    },
+    'Event Operations': {
+        prompt: "Imagine an event starts in 10 minutes. The projector isn't working, two volunteers are missing, and the speaker is late. Walk us through exactly what you would do.",
+        judges: "Presence of mind, prioritization, crisis management."
+    }
+};
+
+const DEPARTMENTS = [
+    { name: 'Technical', desc: 'Build, code, and innovate.' },
+    { name: 'Management', desc: 'Lead, plan, and execute.' },
+    { name: 'Event Operations', desc: 'Organize, manage, and deliver.' },
+    { name: 'Creative', desc: 'Design, write, and imagine.' },
+    { name: 'Outreach & Partnerships', desc: 'Connect, pitch, and network.' },
+    { name: 'Human Resources', desc: 'Empower, resolve, and support.' }
+];
+
+const DEPT_DESCRIPTIONS: Record<string, string> = {
+    'Technical': 'Build, code, and innovate.',
+    'Creative': 'Design, write, and imagine.',
+    'Management': 'Lead, plan, and execute.',
+    'Outreach & Partnerships': 'Connect, pitch, and network.',
+    'Human Resources': 'Empower, resolve, and support.',
+    'Event Operations': 'Organize, manage, and deliver.'
+};
+
+const WEEKLY_HOURS = ['2–3', '4–6', '6–8', '8+'];
+const YEARS_OF_STUDY = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
+
 // ── Interview Scheduled Status Component ──────────────────────────────────────
 const InterviewScheduledStatus = ({ app }: { app: any }) => {
     const [slotInfo, setSlotInfo] = useState<{ start_time: string; panel_id: number } | null>(null);
@@ -27,7 +76,6 @@ const InterviewScheduledStatus = ({ app }: { app: any }) => {
 
     useEffect(() => {
         const fetchSlotInfo = async () => {
-            // Get the booked slot for this application
             const { data: slot } = await supabase
                 .from('interview_slots')
                 .select('start_time, panel_id')
@@ -35,7 +83,6 @@ const InterviewScheduledStatus = ({ app }: { app: any }) => {
                 .single();
             if (slot) {
                 setSlotInfo(slot);
-                // Get the meeting link from panel_assignments
                 const dateStr = format(parseISO(slot.start_time), 'yyyy-MM-dd');
                 const { data: assignment } = await supabase
                     .from('panel_assignments')
@@ -55,15 +102,11 @@ const InterviewScheduledStatus = ({ app }: { app: any }) => {
 
     return (
         <>
-            <div className="w-20 h-20 bg-purple-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-purple-500/30">
-                <Video className="w-10 h-10 text-purple-400" />
-            </div>
-            <h2 className="text-3xl font-heading font-bold mb-2 text-white">Interview Scheduled</h2>
+            
+            <h2 className="text-3xl  font-bold mb-2 text-white">Interview Scheduled</h2>
             <div className="inline-block px-4 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 mb-6 text-sm font-medium">
                 ✓ Confirmed
             </div>
-
-            {/* Slot info */}
             <div className="p-5 bg-white/5 rounded-xl border border-white/10 text-left mb-5 max-w-sm mx-auto space-y-3">
                 {slotInfo && (
                     <>
@@ -84,8 +127,6 @@ const InterviewScheduledStatus = ({ app }: { app: any }) => {
                     <div className="font-medium text-primary">{app.primary_dept}</div>
                 </div>
             </div>
-
-            {/* Meeting link */}
             {meetingLink ? (
                 <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl mb-6 max-w-sm mx-auto">
                     <div className="text-[10px] text-green-400 uppercase tracking-widest mb-2 font-bold">Meeting Link Ready</div>
@@ -108,60 +149,109 @@ const InterviewScheduledStatus = ({ app }: { app: any }) => {
     );
 };
 
+const DUMMY_USER = { uid: 'dev-test-123', email: 'dev@vitstudent.ac.in', displayName: '24BCE9999 Developer Test' };
+
+// Normal, clean form inputs
+const FormInput = ({ label, icon: Icon, error, ...props }: any) => (
+    <div className="space-y-2">
+        <label className="text-sm font-medium text-white/90 flex items-center gap-2">
+            {Icon && <Icon className="w-4 h-4 text-primary/80" />}
+            {label}
+        </label>
+        <input 
+            {...props} 
+            className={`w-full bg-black/40 border rounded-xl px-4 py-3 text-white text-base focus:ring-2 outline-none transition-all placeholder:text-white/20 disabled:opacity-50 disabled:cursor-not-allowed ${error ? 'border-red-500 focus:ring-red-500/50' : 'border-white/10 focus:ring-primary/50 focus:border-primary/50'}`} 
+        />
+        {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
+    </div>
+);
+
+const FormTextarea = ({ label, error, ...props }: any) => (
+    <div className="space-y-2">
+        <label className="text-sm font-medium text-white/90 block">
+            {label}
+        </label>
+        <textarea 
+            {...props} 
+            className={`w-full min-h-[120px] bg-black/40 border rounded-xl px-4 py-3 text-white text-base focus:ring-2 outline-none transition-all placeholder:text-white/20 resize-y ${error ? 'border-red-500 focus:ring-red-500/50' : 'border-white/10 focus:ring-primary/50 focus:border-primary/50'}`} 
+        />
+        {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
+    </div>
+);
+
+// ── Welcome Splash Component ──────────────────────────────────────
+const WelcomeSplash = ({ onComplete }: { onComplete: () => void }) => {
+    return (
+        <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            className="flex flex-col items-center justify-center min-h-[60vh] text-center relative z-10"
+        >
+            <h1 className="text-5xl md:text-7xl  font-bold mb-6 text-white tracking-tight">
+                Welcome to SSCS
+            </h1>
+            <p className="text-xl text-white/70 max-w-xl mx-auto mb-10 leading-relaxed">
+                Your journey into circuits, code, and creativity starts right here. Let's get to know you better.
+            </p>
+            <Button 
+                onClick={onComplete}
+                className="h-14 px-10 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-lg rounded-full shadow-lg group transition-all"
+            >
+                Start Application <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
+        </motion.div>
+    );
+};
+
+
+// ── Application Form Component ──────────────────────────────────────
 const Apply = () => {
-    const { user, signInWithGoogle, loading: authLoading } = useAuth();
+    let { user, signInWithGoogle, loading: authLoading } = useAuth();
+    let [checkingStatus, setCheckingStatus] = useState(true);
+    const [recruitmentStatus, setRecruitmentStatus] = useState<{ isOpen: boolean, message: string }>({ isOpen: true, message: '' });
+
+    // Application Flow State
     const [step, setStep] = useState(1);
-    const [formData, setFormData] = useState({
-        fullName: user?.displayName || '',
-        rollNumber: '',
-        phone: '',
-        linkedinUrl: '',
-        githubUrl: '',
-        primaryDept: '',
-        domains: [] as string[],
-        skills: '',
-        reason: '',
-        secondaryDept: '',
-        secondaryDomains: [] as string[],
-        secondarySkills: '',
-        secondaryReason: ''
-    });
+    const [showWelcome, setShowWelcome] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [existingApp, setExistingApp] = useState<any>(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
 
-    useEffect(() => {
-        if (user?.uid) {
-            const savedData = localStorage.getItem(`sscsFormData_${user.uid}`);
-            if (savedData) {
-                try {
-                    const parsed = JSON.parse(savedData);
-                    if (parsed.formData) {
-                        setFormData(prev => ({ ...prev, ...parsed.formData }));
-                    }
-                } catch (e) {
-                    console.error("Failed to parse cached form data");
-                }
-            }
-        }
-    }, [user]);
-
-    // Debounced localStorage write — avoids serializing on every keystroke
-    useEffect(() => {
-        if (!user?.uid) return;
-        const timer = setTimeout(() => {
-            localStorage.setItem(`sscsFormData_${user.uid}`, JSON.stringify({ formData }));
-        }, 400);
-        return () => clearTimeout(timer);
-    }, [formData, user?.uid]);
+    // --- TEMPORARY DEV BYPASS SO YOU CAN SEE THE FORM ---
+    if (!user && import.meta.env.DEV) {
+        user = DUMMY_USER as any;
+        authLoading = false;
+        checkingStatus = false;
+    }
 
     // Validation State
     const [regValidation, setRegValidation] = useState<RegNoDetails | null>(null);
     const [regError, setRegError] = useState<string | null>(null);
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isSubmitted, setIsSubmitted] = useState(false);
-    const [existingApp, setExistingApp] = useState<any>(null);
-    const [isEditing, setIsEditing] = useState(false);
-    const [checkingStatus, setCheckingStatus] = useState(true);
-    const [recruitmentStatus, setRecruitmentStatus] = useState<{ isOpen: boolean, message: string }>({ isOpen: true, message: '' });
+    // Form Data State
+    const [formData, setFormData] = useState({
+        fullName: '',
+        rollNumber: '',
+        phone: '',
+        yearOfStudy: '',
+        hostelDay: '',
+        
+        primaryDept: '',
+        secondaryDept: '',
+        whyJoinSscs: '',
+        whyTheseDepts: '',
+        
+        deptAnswer: '',
+        secondaryDeptAnswer: '',
+        
+        weeklyHours: '',
+        linkedinUrl: '',
+        googleDriveUrl: '',
+        anyQuestions: ''
+    });
 
     useEffect(() => {
         checkRecruitmentStatus();
@@ -170,11 +260,11 @@ const Apply = () => {
     const checkRecruitmentStatus = async () => {
         try {
             const { data } = await supabase.from('app_settings').select('value').eq('key', 'recruitment_status').single();
-            if (data) {
-                setRecruitmentStatus(data.value);
-            }
+            // Force open for testing so it doesn't disappear
+            setRecruitmentStatus({ isOpen: true, message: '' });
         } catch (error) {
             console.error("Error checking recruitment status:", error);
+            setRecruitmentStatus({ isOpen: true, message: '' });
         }
     };
 
@@ -183,7 +273,6 @@ const Apply = () => {
             setCheckingStatus(true);
             checkApplicationStatus();
 
-            // Auto-parse Name and Registration Number from VIT Google Login
             const rawName = user.displayName || '';
             const regMatch = rawName.match(/(\d{2}[A-Z]{3}\d{4})/i);
             
@@ -193,22 +282,52 @@ const Apply = () => {
                 
                 setFormData(prev => ({
                     ...prev,
-                    fullName: cleanName,
-                    rollNumber: regNo
+                    fullName: prev.fullName || cleanName, // Only set if not already loaded from cache
+                    rollNumber: prev.rollNumber || regNo
                 }));
 
-                // Trigger validation for the parsed registration number
                 const validation = validateRegistrationNumber(regNo);
                 setRegValidation(validation);
                 setRegError(validation.isValid ? null : (validation.error || 'Invalid Registration Number'));
             } else {
-                setFormData(prev => ({ ...prev, fullName: rawName }));
+                setFormData(prev => ({ ...prev, fullName: prev.fullName || rawName }));
             }
         } else {
             setCheckingStatus(false);
             setExistingApp(null);
         }
     }, [user]);
+
+    // Load from local storage
+    useEffect(() => {
+        if (user?.uid) {
+            const savedData = localStorage.getItem(`sscsFormData_v2_${user.uid}`);
+            if (savedData) {
+                try {
+                    const parsed = JSON.parse(savedData);
+                    if (parsed.formData) {
+                        setFormData(prev => ({ ...prev, ...parsed.formData }));
+                        if (parsed.formData.rollNumber) {
+                            const validation = validateRegistrationNumber(parsed.formData.rollNumber);
+                            setRegValidation(validation);
+                            setRegError(validation.isValid ? null : validation.error);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to parse cached form data");
+                }
+            }
+        }
+    }, [user]);
+
+    // Save to local storage
+    useEffect(() => {
+        if (!user?.uid) return;
+        const timer = setTimeout(() => {
+            localStorage.setItem(`sscsFormData_v2_${user.uid}`, JSON.stringify({ formData }));
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [formData, user?.uid]);
 
     const checkApplicationStatus = async () => {
         if (!user) return;
@@ -218,36 +337,35 @@ const Apply = () => {
                 .select('*')
                 .or(`user_id.eq.${user.uid},email.eq.${user.email}`);
 
-            if (error) {
-                console.error("Error fetching application:", error);
-                throw error;
-            }
+            if (error) throw error;
 
             if (data && data.length > 0) {
                 const app = data[0];
                 setExistingApp(app);
                 
-                // Populate formData for potential editing
                 setFormData({
                     fullName: app.full_name || '',
                     rollNumber: app.roll_number || '',
                     phone: app.phone || '',
+                    yearOfStudy: app.year || '',
+                    hostelDay: app.hostel_day || '',
+                    primaryDept: app.primary_dept || '',
+                    secondaryDept: app.secondary_dept || '',
+                    whyJoinSscs: app.why_join_sscs || '',
+                    whyTheseDepts: app.why_these_depts || '',
+                    deptAnswer: app.dept_answer || '',
+                    weeklyHours: app.weekly_hours || '',
                     linkedinUrl: app.linkedin_url || '',
                     githubUrl: app.github_url || '',
-                    primaryDept: app.primary_dept || '',
-                    domains: app.domains || [],
-                    skills: app.skills || '',
-                    reason: app.reason || '',
-                    secondaryDept: app.secondary_dept || '',
-                    secondaryDomains: app.secondary_domains || [],
-                    secondarySkills: app.secondary_skills || '',
-                    secondaryReason: app.secondary_reason || ''
+                    portfolioWebsite: app.portfolio_website || '',
+                    googleDriveUrl: '' 
                 });
                 
                 if (app.roll_number) {
                     const validation = validateRegistrationNumber(app.roll_number);
                     setRegValidation(validation);
                 }
+                setShowWelcome(false); // Skip welcome if already applied
             } else {
                 setExistingApp(null);
             }
@@ -256,69 +374,6 @@ const Apply = () => {
         } finally {
             setCheckingStatus(false);
         }
-    };
-
-    const domainOptions: Record<string, string[]> = {
-        'Technical': [
-            'Projects',
-            'Research',
-            'Web Development'
-        ],
-        'Management': [
-            'Finance',
-            'Internal Coordination',
-            'Documentation'
-        ],
-        'Creative': [
-            'Design',
-            'Content — reels & posts',
-            'Social Media'
-        ],
-        'Outreach & Partnerships': [
-            'Industry Relations',
-            'Speaker Acquisition',
-            'Sponsorships'
-        ],
-        'Human Resources': [
-            'Recruitment',
-            'Member Engagement',
-            'Conflict Resolution'
-        ],
-        'Event Operations': [
-            'Event Planning',
-            'Event Execution',
-            'On-ground Operations'
-        ]
-    };
-
-    const skillLabels: Record<string, string> = {
-        'Technical': 'Technical Skills',
-        'Creative': 'Creative Tools & Portfolio',
-        'Management': 'Management Experience',
-        'Human Resources': 'HR & Communication Skills',
-        'Event Operations': 'Execution & Logistics Skills',
-        'Outreach & Partnerships': 'Negotiation & Communication',
-        'default': 'Relevant Skills'
-    };
-
-    const skillPlaceholders: Record<string, string> = {
-        'Technical': 'e.g. Python, C++, PCB Design, React, ML...',
-        'Creative': 'e.g. Photoshop, Premiere Pro, Copywriting...',
-        'Management': 'e.g. Finance, Documentation, Team Leadership...',
-        'Human Resources': 'e.g. Recruitment, Conflict Management, People Skills...',
-        'Event Operations': 'e.g. Event Logistics, Planning, Execution...',
-        'Outreach & Partnerships': 'e.g. Negotiation, PR, Industry Outreach...',
-        'default': 'List your relevant skills here...'
-    };
-
-    const reasonPlaceholders: Record<string, string> = {
-        'Technical': 'Tell us about your projects or what you want to research...',
-        'Creative': 'Share your design style or portfolio links...',
-        'Management': 'Describe your interest in finance or documentation...',
-        'Human Resources': 'How would you help manage member engagement?',
-        'Event Operations': 'What makes you good at on-ground execution?',
-        'Outreach & Partnerships': 'How would you connect us with industry partners?',
-        'default': 'Tell us about your motivation...'
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -331,100 +386,98 @@ const Apply = () => {
         }
 
         if (name === 'primaryDept') {
-            setFormData(prev => ({ ...prev, primaryDept: value, domains: [] }));
-        } else if (name === 'secondaryDept') {
-            setFormData(prev => ({ ...prev, secondaryDept: value, secondaryDomains: [] }));
+            setFormData(prev => ({ ...prev, primaryDept: value, deptAnswer: '' }));
         } else if (name === 'rollNumber') {
             const normalized = value.toUpperCase();
             setFormData(prev => ({ ...prev, rollNumber: normalized }));
 
-            // Validate Logic
             const validation = validateRegistrationNumber(normalized);
             setRegValidation(validation);
-
-            if (!validation.isValid) {
-                setRegError(validation.error || 'Invalid Registration Number');
-            } else {
-                setRegError(null);
-            }
+            setRegError(validation.isValid ? null : (validation.error || 'Invalid Registration Number'));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
     };
 
-    const handleDomainToggle = (domain: string, isSecondary = false) => {
-        setFormData(prev => {
-            return isSecondary
-                ? { ...prev, secondaryDomains: [domain] }
-                : { ...prev, domains: [domain] };
-        });
+    const handleOptionSelect = (key: string, value: string) => {
+        setFormData(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleDeptClick = (dept: string) => {
+        if (formData.primaryDept === dept) {
+            setFormData(prev => ({ ...prev, primaryDept: prev.secondaryDept, secondaryDept: '' }));
+        } else if (formData.secondaryDept === dept) {
+            setFormData(prev => ({ ...prev, secondaryDept: '' }));
+        } else if (!formData.primaryDept) {
+            setFormData(prev => ({ ...prev, primaryDept: dept, deptAnswer: '' }));
+        } else if (!formData.secondaryDept) {
+            setFormData(prev => ({ ...prev, secondaryDept: dept }));
+        } else {
+            setFormData(prev => ({ ...prev, secondaryDept: dept }));
+        }
     };
 
     const handleNextStep = (e: React.FormEvent) => {
         e.preventDefault();
+        let newErrors: Record<string, string> = {};
+        
+        if (step === 1) {
+            if (!formData.fullName) newErrors.fullName = 'Full Name is required';
+            if (!formData.rollNumber) newErrors.rollNumber = 'Registration Number is required';
+            if (!formData.phone) newErrors.phone = 'Phone Number is required';
+            if (!formData.yearOfStudy) newErrors.yearOfStudy = 'Year of Study is required';
+            if (!formData.hostelDay) newErrors.hostelDay = 'Hostel/Day Scholar is required';
+        } else if (step === 2) {
+            if (!formData.primaryDept || !formData.secondaryDept) {
+                newErrors.dept = 'Please select both 1st and 2nd Preference';
+            }
+            if (!formData.whyJoinSscs) newErrors.whyJoinSscs = 'This field is required';
+            if (!formData.whyTheseDepts) newErrors.whyTheseDepts = 'This field is required';
+        } else if (step === 3) {
+            if (!formData.deptAnswer) newErrors.deptAnswer = 'This field is required';
+            if (!formData.secondaryDeptAnswer) newErrors.secondaryDeptAnswer = 'This field is required';
+        }
 
-        if (!formData.fullName.trim()) {
-            alert("Please enter your Full Name.");
+        if (Object.keys(newErrors).length > 0) {
+            setFormErrors(newErrors);
             return;
         }
 
-        if (regError || !regValidation?.isValid) {
-            alert("Please enter a valid Registration Number.");
-            return;
-        }
-
-        if (!formData.phone || formData.phone.length !== 10) {
-            alert("Please enter a valid 10-digit phone number.");
-            return;
-        }
-
-        if (!formData.primaryDept) {
-            alert("Please select a Primary Department.");
-            return;
-        }
-
-        if (!formData.domains || formData.domains.length === 0) {
-            alert("Please select at least one role for your Primary Department.");
-            return;
-        }
-
-        if (!formData.skills.trim()) {
-            alert("Please fill in your relevant skills.");
-            return;
-        }
-
-        if (!formData.reason.trim()) {
-            alert("Please tell us why you want to join this department.");
-            return;
-        }
-
-        setStep(2);
+        setFormErrors({});
+        if (step < 4) setStep(prev => prev + 1);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handlePrevStep = () => {
-        setStep(1);
+        setStep(prev => prev - 1);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (!formData.weeklyHours) {
+            setFormErrors({ weeklyHours: 'Please select your weekly availability' });
+            return;
+        }
+        setFormErrors({});
+        
         if (!user) return;
 
-        // Final safety check to prevent double submission if not editing
         if (existingApp && !isEditing) {
             alert("You have already submitted an application!");
             return;
         }
-
-        if (formData.phone.length !== 10) {
-            alert("Phone number must be exactly 10 digits.");
+        if (!formData.weeklyHours) {
+            alert("Please select how many hours you can dedicate.");
             return;
         }
 
         setIsSubmitting(true);
 
         try {
+            const combinedDeptAnswer = formData.deptAnswer + (formData.googleDriveUrl ? `\n\nGoogle Drive Link: ${formData.googleDriveUrl}` : '');
+
             const applicationData = {
                 user_id: user.uid,
                 email: user.email,
@@ -433,17 +486,23 @@ const Apply = () => {
                 phone: formData.phone,
                 linkedin_url: formData.linkedinUrl,
                 github_url: formData.githubUrl,
-
+                
                 primary_dept: formData.primaryDept,
-                domains: formData.domains,
-                skills: formData.skills,
-                reason: formData.reason,
                 secondary_dept: formData.secondaryDept,
-                secondary_domains: formData.secondaryDomains,
-                secondary_skills: formData.secondarySkills,
-                secondary_reason: formData.secondaryReason,
                 status: existingApp ? existingApp.status : 'applied',
-
+                
+                // New Fields
+                hostel_day: formData.hostelDay,
+                weekly_hours: formData.weeklyHours,
+                portfolio_website: formData.portfolioWebsite,
+                why_join_sscs: formData.whyJoinSscs,
+                why_these_depts: formData.whyTheseDepts,
+                dept_answer: combinedDeptAnswer,
+                
+                // For backward compatibility with existing admin panel
+                skills: combinedDeptAnswer, 
+                year: formData.yearOfStudy,
+                
                 // Derived Metadata
                 admission_year: regValidation?.admissionYear,
                 program_code: regValidation?.programCode,
@@ -462,82 +521,54 @@ const Apply = () => {
             }
 
             if (error) throw error;
-
-            console.log("Application saved to Supabase successfully");
             
             if (user?.uid) {
-                localStorage.removeItem(`sscsFormData_${user.uid}`);
+                localStorage.removeItem(`sscsFormData_v2_${user.uid}`);
             }
 
-            // --- SEND CONFIRMATION EMAIL ONLY FOR NEW APPLICATIONS ---
+            // Throw confetti on success!
+            confetti({
+                particleCount: 150,
+                spread: 100,
+                origin: { y: 0.6 },
+                colors: ['#8B5CF6', '#D946EF', '#3B82F6', '#10B981']
+            });
+
             if (!isEditing) {
                 const portalUrl = window.location.origin;
-                // Non-blocking: failures are logged but don't block the submission success flow
                 sendEmail(
                     user.email || '',
                     'Application Received - IEEE SSCS Recruitment',
                     `<p>Dear <strong>${formData.fullName}</strong>,</p>
-                    <p>Thank you for applying to IEEE SSCS. Your application has been received and is under review.</p>
+                    <p>Thank you for applying to IEEE SSCS! Your application has been successfully received.</p>
                     <p><strong>Registration:</strong> ${formData.rollNumber}<br>
-                    <strong>Department:</strong> ${formData.primaryDept}<br>
+                    <strong>Primary Department:</strong> ${formData.primaryDept}<br>
                     <strong>Status:</strong> Under Review</p>
                     <p>You can check your application status anytime: <a href="${portalUrl}/apply">${portalUrl}/apply</a></p>
-                    <p>Join our WhatsApp group for updates: <a href="https://chat.whatsapp.com/IAjNCx7E0j643jZz3tLxeP">Join Here</a></p>
-                    <p>Regards,<br>IEEE SSCS Recruitment Team</p>`
+                    <p>Join our WhatsApp group for updates: <a href="https://chat.whatsapp.com/Em8uoQtYNPcFTsg3w0dVdo?s=qt&p=a&ilr=1">Join Here</a></p>
+                    <p>Best of luck!<br>IEEE SSCS Recruitment Team</p>`
                 ).catch(err => console.warn('[Apply] Confirmation email failed silently:', err));
             }
 
-
             setIsSubmitting(false);
             setExistingApp({
-                ...formData,
-                full_name: formData.fullName,
-                primary_dept: formData.primaryDept,
-                status: 'pending'
+                ...applicationData,
+                id: existingApp?.id || 'new'
             });
             setIsEditing(false);
             setStep(1);
             setIsSubmitted(true);
+            setShowWelcome(false);
         } catch (error: any) {
             console.error('Error submitting application:', error);
-            if (error?.code === '23505' || error?.message?.includes('duplicate key')) {
-                console.log("Duplicate application detected. Fetching existing record...");
-                const { data } = await supabase
-                    .from('applications')
-                    .select('*')
-                    .eq('user_id', user.uid);
-
-                if (data && data.length > 0) {
-                    setExistingApp(data[0]);
-                } else {
-                    setExistingApp({
-                        ...formData,
-                        full_name: formData.fullName,
-                        primary_dept: formData.primaryDept,
-                        status: 'pending'
-                    });
-                }
-                setIsSubmitting(false);
-                return;
+            if (error?.code === '23505') {
+                alert("It looks like you've already submitted an application.");
+            } else {
+                alert("Something went wrong saving your application. Please check console or try again.");
             }
-            alert("Warning: Application could not be saved to the database. Please check console/admin settings.");
             setIsSubmitting(false);
         }
     };
-
-    const currentDomains = formData.primaryDept ? domainOptions[formData.primaryDept] || [] : [];
-    const currentSkillLabel = formData.primaryDept ? (skillLabels[formData.primaryDept] || skillLabels['default']) : skillLabels['default'];
-    const currentSkillPlaceholder = formData.primaryDept ? (skillPlaceholders[formData.primaryDept] || skillPlaceholders['default']) : skillPlaceholders['default'];
-    const currentReasonPlaceholder = formData.primaryDept ? (reasonPlaceholders[formData.primaryDept] || reasonPlaceholders['default']) : reasonPlaceholders['default'];
-
-    const secondaryDomainsList = formData.secondaryDept 
-        ? (domainOptions[formData.secondaryDept] || []).filter(d => 
-            !(formData.primaryDept === formData.secondaryDept && (formData.domains || []).includes(d))
-          ) 
-        : [];
-    const secondarySkillLabel = formData.secondaryDept ? (skillLabels[formData.secondaryDept] || skillLabels['default']) : skillLabels['default'];
-    const secondarySkillPlaceholder = formData.secondaryDept ? (skillPlaceholders[formData.secondaryDept] || skillPlaceholders['default']) : skillPlaceholders['default'];
-    const secondaryReasonPlaceholder = formData.secondaryDept ? (reasonPlaceholders[formData.secondaryDept] || reasonPlaceholders['default']) : reasonPlaceholders['default'];
 
     if (authLoading || checkingStatus) {
         return (
@@ -550,31 +581,22 @@ const Apply = () => {
     if (!existingApp && !recruitmentStatus.isOpen) {
         return (
             <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground bg-[#050505]">
-                <TechGridBackground />
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-none -z-10" />
-                
-                <div className="absolute inset-0 overflow-hidden pointer-events-none -z-20">
-                    <div className="absolute top-[20%] left-[20%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px]" />
-                </div>
-
-                <div className="container mx-auto px-4 py-8 relative z-10">
-                    <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-all mb-8 absolute top-8 left-8 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl group">
+                <CircuitBoardBackground />
+                <div className="container mx-auto px-4 py-8 relative z-10 text-center">
+                    <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-all mb-8 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl group">
                         <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
                         Back to Home
                     </Link>
-
-                    <HolographicCard className="p-16 max-w-xl w-full text-center mx-auto mt-12 relative overflow-hidden">
-                        <div className="w-24 h-24 bg-red-500/10 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-red-500/30 rotate-12">
-                            <Clock className="w-12 h-12 text-red-500 -rotate-12" />
-                        </div>
-                        <h2 className="text-4xl font-heading font-bold mb-6 text-white tracking-tight">Recruitments will open soon</h2>
+                    <div className="relative p-12 md:p-16 max-w-xl mx-auto border border-white/10 bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl">
+                        
+                        <h2 className="text-4xl  font-bold mb-6 text-white tracking-tight">Recruitments are closed</h2>
                         <p className="text-muted-foreground/80 mb-10 leading-relaxed text-lg font-medium">
-                            We are currently not accepting new applications. Please check back later for our next recruitment cycle.
+                            We are not accepting applications right now. Catch us next time!
                         </p>
-                        <Button asChild variant="outline" className="w-full h-14 rounded-2xl border-white/10 hover:bg-white/10 transition-all font-bold">
+                        <Button asChild variant="outline" className="w-full h-14 rounded-2xl border-white/10 hover:bg-white/10 font-bold">
                             <Link to="/">Return to Home</Link>
                         </Button>
-                    </HolographicCard>
+                    </div>
                 </div>
             </div>
         );
@@ -583,27 +605,18 @@ const Apply = () => {
     if (existingApp && !isEditing) {
         return (
             <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground bg-[#050505]">
-                <TechGridBackground />
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] pointer-events-none -z-10" />
-                
-                <div className="absolute inset-0 overflow-hidden pointer-events-none -z-20">
-                    <div className="absolute top-[10%] left-[20%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[120px]" />
-                    <div className="absolute bottom-[10%] right-[20%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[100px]" />
-                </div>
-
+                <CircuitBoardBackground />
                 <div className="container mx-auto px-4 py-8 relative z-10">
                     <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-all mb-8 absolute top-8 left-8 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl group">
                         <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
                         Back to Home
                     </Link>
 
-                    <HolographicCard className="p-12 max-w-3xl w-full text-center mx-auto mt-12 relative overflow-hidden">
+                    <div className="relative p-10 md:p-12 max-w-3xl w-full text-center mx-auto mt-12 border border-white/10 bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl">
                         {existingApp.status === 'selected' ? (
                             <>
-                                <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/50 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
-                                    <Trophy className="w-12 h-12 text-green-500" />
-                                </div>
-                                <h2 className="text-3xl font-heading font-bold mb-2 text-white">Congratulations!</h2>
+                                
+                                <h2 className="text-3xl  font-bold mb-2 text-white">Congratulations!</h2>
                                 <div className="inline-block px-4 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 mb-6 text-sm font-medium">
                                     Application Selected
                                 </div>
@@ -616,32 +629,24 @@ const Apply = () => {
                             </>
                         ) : existingApp.status === 'rejected' ? (
                             <>
-                                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                                    <XOctagon className="w-10 h-10 text-red-500/70" />
-                                </div>
-                                <h2 className="text-2xl font-heading font-bold mb-2 text-white">Application Status</h2>
+                                
+                                <h2 className="text-2xl  font-bold mb-2 text-white">Application Status</h2>
                                 <div className="inline-block px-3 py-1 rounded-full bg-red-500/10 text-red-500/80 border border-red-500/20 mb-6 text-xs uppercase tracking-wider">
                                     Not Selected
                                 </div>
                                 <p className="text-muted-foreground mb-6 text-sm">
                                     Thank you for your interest in IEEE SSCS. Due to the high volume of applications, we are unfortunately unable to offer you a position at this time.
                                 </p>
-                                <p className="text-muted-foreground mb-8 text-sm">
-                                    We encourage you to keep building and apply again in our next recruitment cycle.
-                                </p>
                             </>
                         ) : existingApp.status === 'shortlisted' ? (
                             <div className="text-center animate-in fade-in duration-500">
-                                <div className="w-20 h-20 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-purple-500/40 animate-pulse">
-                                    <CalendarIcon className="w-10 h-10 text-purple-400" />
-                                </div>
-                                <h2 className="text-3xl font-heading font-bold mb-2 text-white">Application Shortlisted!</h2>
+                                
+                                <h2 className="text-3xl  font-bold mb-2 text-white">Application Shortlisted!</h2>
                                 <p className="text-gray-300 mb-8">
                                     You've moved to the next round. Please book an interview slot immediately.
                                     <br />
                                     <span className="text-sm text-yellow-500/80">Slots are First Come First Serve.</span>
                                 </p>
-
                                 <Button asChild className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold h-12 text-lg shadow-lg animate-bounce">
                                     <Link to="/schedule">Book Interview Slot</Link>
                                 </Button>
@@ -650,10 +655,8 @@ const Apply = () => {
                             <InterviewScheduledStatus app={existingApp} />
                         ) : (
                             <>
-                                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-                                    <Clock className="w-10 h-10 text-primary" />
-                                </div>
-                                <h2 className="text-3xl font-heading font-bold mb-2 text-white">Under Review</h2>
+                                
+                                <h2 className="text-3xl  font-bold mb-2 text-white">Under Review</h2>
                                 <div className="inline-block px-4 py-1 rounded-full bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 mb-6 text-sm font-medium">
                                     Status: Pending
                                 </div>
@@ -662,34 +665,31 @@ const Apply = () => {
                                     Hold tight! We will update you soon.
                                 </p>
 
-
-                                <div className="bg-white/5 p-6 rounded-xl border border-white/10 mb-8 flex flex-col items-center">
-                                    <img
-                                        src="/whatsapp-qr.jpg"
-                                        alt="WhatsApp Group QR Code"
-                                        className="w-48 h-48 rounded-lg mb-4 border border-white/10"
-                                    />
-                                    <p className="text-sm text-muted-foreground mb-4">Please join our WhatsApp group for updates.</p>
-
+                                <div className="bg-white/5 p-6 rounded-xl border border-white/10 mb-8 flex flex-col items-center gap-3">
+                                    <p className="text-sm text-muted-foreground mb-2">Connect with us for updates:</p>
                                     <a
-                                        href="https://chat.whatsapp.com/IAjNCx7E0j643jZz3tLxeP"
+                                        href="https://chat.whatsapp.com/Em8uoQtYNPcFTsg3w0dVdo?s=qt&p=a&ilr=1"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center justify-center h-10 px-6 rounded-md bg-[#25D366] text-white font-bold hover:bg-[#128C7E] transition-colors w-full"
+                                        className="inline-flex items-center justify-center h-12 px-6 rounded-lg bg-[#25D366] text-white font-bold hover:bg-[#128C7E] transition-colors w-full"
                                     >
-                                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M17.472 14.382c-.297-.149-1.758-0.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                                        </svg>
                                         Join WhatsApp Group
+                                    </a>
+                                    <a
+                                        href="https://www.instagram.com/ieee_sscs_vitcc"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center justify-center h-12 px-6 rounded-lg bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white font-bold hover:opacity-90 transition-opacity w-full"
+                                    >
+                                        Follow on Instagram
                                     </a>
                                 </div>
                             </>
                         )}
-
-                        <Button asChild variant="outline" className="w-full border-white/10 hover:bg-white/5">
+                        <Button asChild variant="outline" className="w-full border-white/10 hover:bg-white/5 mt-4">
                             <Link to="/">Return to Home</Link>
                         </Button>
-                    </HolographicCard>
+                    </div>
                 </div>
             </div>
         );
@@ -697,425 +697,294 @@ const Apply = () => {
 
     if (isSubmitted) {
         return (
-            <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground">
-                <TechGridBackground />
-                <div className="absolute inset-0 bg-background/80 pointer-events-none -z-10" />
-
-                <HolographicCard className="p-10 max-w-lg w-full text-center">
-                    <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Send className="w-8 h-8 text-green-500" />
-                    </div>
-                    <h2 className="text-3xl font-heading font-bold mb-2">Application Received</h2>
-                    <p className="text-muted-foreground mb-6">
-                        Thank you for applying to IEEE SSCS. Please join our WhatsApp group for further updates.
+            <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground bg-[#050505]">
+                <CircuitBoardBackground />
+                <div className="relative p-10 max-w-lg w-full text-center z-10 border border-white/10 bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl">
+                    
+                    <h2 className="text-4xl  font-bold mb-3 text-white">Application Submitted Successfully!</h2>
+                    <p className="text-muted-foreground mb-8 text-lg">
+                        We've received your application. Keep an eye on your email and our WhatsApp group!
                     </p>
-
-                    <div className="bg-white/5 p-6 rounded-xl border border-white/10 mb-8 flex flex-col items-center">
-                        <img
-                            src="/whatsapp-qr.png"
-                            alt="WhatsApp Group QR Code"
-                            className="w-48 h-48 rounded-lg mb-4 border border-white/10"
-                        />
-                        <p className="text-sm text-muted-foreground mb-4">Scan the QR code or click the button below to join.</p>
-
-                        <a
-                            href="https://chat.whatsapp.com/IAjNCx7E0j643jZz3tLxeP"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center h-10 px-6 rounded-md bg-[#25D366] text-white font-bold hover:bg-[#128C7E] transition-colors w-full"
-                        >
-                            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M17.472 14.382c-.297-.149-1.758-0.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                            </svg>
-                            Join WhatsApp Group
-                        </a>
-                    </div>
-
+                    <div className="bg-white/5 p-6 rounded-xl border border-white/10 mb-8 flex flex-col items-center gap-3">
+                                    <p className="text-sm text-muted-foreground mb-2">Connect with us for updates:</p>
+                                    <a
+                                        href="https://chat.whatsapp.com/Em8uoQtYNPcFTsg3w0dVdo?s=qt&p=a&ilr=1"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center justify-center h-12 px-6 rounded-lg bg-[#25D366] text-white font-bold hover:bg-[#128C7E] transition-colors w-full"
+                                    >
+                                        Join WhatsApp Group
+                                    </a>
+                                    <a
+                                        href="https://www.instagram.com/ieee_sscs_vitcc"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center justify-center h-12 px-6 rounded-lg bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white font-bold hover:opacity-90 transition-opacity w-full"
+                                    >
+                                        Follow on Instagram
+                                    </a>
+                                </div>
                     <Button
                         onClick={() => window.location.reload()}
-                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 font-bold mb-3"
+                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 font-bold mb-3 rounded-lg"
                     >
                         <Clock className="w-4 h-4 mr-2" />
-                        Check Application Status
+                        Check Status
                     </Button>
-
-                    <Button asChild variant="outline" className="border-white/10 hover:bg-white/5 w-full">
-                        <Link to="/">Return to Home</Link>
-                    </Button>
-                </HolographicCard>
+                </div>
             </div>
         );
     }
 
-    return (
-        <div className="min-h-screen relative text-foreground bg-[#050505] overflow-hidden">
-            <TechGridBackground />
-
-            <div className="container mx-auto px-6 py-12 relative z-10">
-                <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-all mb-8 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl group">
-                    <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
-                    Back to Home
-                </Link>
-
-                {authLoading ? (
-                    <div className="flex justify-center items-center h-64">
-                        <LogoSpinner size="md" />
-                    </div>
-                ) : !user ? (
+    if (!user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center relative text-foreground bg-[#050505] overflow-hidden">
+                <CircuitBoardBackground />
+                <div className="container mx-auto px-6 py-12 relative z-10">
+                    <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-all mb-8 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl group">
+                        <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
+                        Back to Home
+                    </Link>
                     <div className="max-w-lg mx-auto mt-20">
-                        <HolographicCard className="p-10 text-center">
-                            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 text-primary">
-                                <User className="w-10 h-10" />
-                            </div>
-                            <h2 className="text-2xl font-heading font-bold mb-4">Authentication Required</h2>
+                        <div className="relative p-10 text-center border border-white/10 bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl">
+                            
+                            <h2 className="text-2xl  font-bold mb-4 text-white">Authentication Required</h2>
                             <p className="text-muted-foreground mb-8">
                                 To apply for IEEE SSCS, you must sign in with your VIT Student email address (@vitstudent.ac.in).
                             </p>
                             <Button
                                 onClick={() => signInWithGoogle()}
-                                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 font-bold"
+                                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 font-bold rounded-lg"
                             >
                                 <LogIn className="w-4 h-4 mr-2" />
                                 Sign In with Google
                             </Button>
-                        </HolographicCard>
+                        </div>
                     </div>
-                ) : (
+                </div>
+            </div>
+        );
+    }
 
-                    <motion.div
-                        key={step}
-                        initial={{ opacity: 0, x: step === 1 ? -20 : 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5 }}
-                        className="max-w-4xl mx-auto"
-                    >
-                        <div className="text-center mb-12">
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="mb-4"
-                            >
-                                <span className="text-xs text-primary tracking-[0.4em] uppercase font-bold px-4 py-1 rounded-full border border-primary/20 bg-primary/5">
-                                    Join the Team
-                                </span>
-                            </motion.div>
-                            <h1 className="font-heading text-5xl md:text-6xl font-bold tracking-tight mb-4">
-                                <RevealText text={step === 1 ? "Membership" : "Backup Choice"} />
+    return (
+        <div className="min-h-screen relative text-foreground bg-[#050505] overflow-hidden selection:bg-primary/30">
+            <CircuitBoardBackground />
+            
+            {showWelcome ? (
+                <div className="container mx-auto px-6 py-12 relative z-10 flex items-center justify-center min-h-screen">
+                    <WelcomeSplash onComplete={() => setShowWelcome(false)} />
+                </div>
+            ) : (
+                <div className="container mx-auto px-4 md:px-6 py-12 relative z-10">
+                    <motion.div key={step} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="max-w-4xl mx-auto">
+                        
+                        <div className="text-center mb-10">
+                            <span className="inline-block text-sm text-primary font-bold px-4 py-1.5 rounded-full border border-primary/20 bg-primary/10 mb-4">
+                                Step {step} of 4
+                            </span>
+                            <h1 className=" text-3xl md:text-5xl font-bold mb-6 text-white tracking-tight">
+                                <RevealText text={
+                                    step === 1 ? "Basic Details" :
+                                    step === 2 ? "Department Preferences" :
+                                    step === 3 ? "Short Questions" :
+                                    "Final Details"
+                                } />
                             </h1>
-                            <p className="text-muted-foreground text-lg max-w-2xl mx-auto font-medium">
-                                {step === 1
-                                    ? "Step 1: Personal Details & Primary Choice"
-                                    : "Step 2: Second Preference (Optional)"}
-                            </p>
-                            {/* Step Indicator */}
-                            <div className="flex justify-center gap-2 mt-4">
-                                <div className={`h-2 rounded-full transition-all duration-300 ${step === 1 ? 'w-8 bg-primary' : 'w-2 bg-primary/30'}`} />
-                                <div className={`h-2 rounded-full transition-all duration-300 ${step === 2 ? 'w-8 bg-primary' : 'w-2 bg-primary/30'}`} />
+                            
+                            {/* Simple Step Indicator */}
+                            <div className="flex items-center justify-center gap-2 mt-8 max-w-sm mx-auto">
+                                {[1, 2, 3, 4].map((i) => (
+                                    <div key={i} className="flex items-center flex-1">
+                                        <div className={`w-full h-2 rounded-full transition-all duration-500 ${step >= i ? 'bg-primary' : 'bg-white/10'}`} />
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
-                        <HolographicCard className="p-8 md:p-10">
-                            <form onSubmit={step === 1 ? handleNextStep : handleSubmit} noValidate className="space-y-8">
+                        {/* Main Form Container - Clean and Modern */}
+                        <div className="relative p-6 md:p-10 border border-white/10 bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl">
+                            <form onSubmit={step === 4 ? handleSubmit : handleNextStep} noValidate className="space-y-8">
+                                
                                 {step === 1 && (
-                                    <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
-                                        <div className="space-y-6">
-                                            <h3 className="text-xl font-heading font-semibold flex items-center gap-2 text-primary/80">
-                                                <User className="w-5 h-5" /> Personal Details
-                                            </h3>
-                                            <div className="grid md:grid-cols-2 gap-6">
-                                                <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                                                    <input
-                                                        type="text"
-                                                        name="fullName"
-                                                        value={formData.fullName}
-                                                        onChange={handleInputChange}
-                                                        className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
-                                                        placeholder=""
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-muted-foreground">Registration Number</label>
-                                                    <input
-                                                        type="text"
-                                                        name="rollNumber"
-                                                        value={formData.rollNumber}
-                                                        onChange={handleInputChange}
-                                                        className={`w-full bg-background/50 border rounded-lg px-4 py-3 outline-none transition-all focus:ring-1 focus:border-primary/50 focus:ring-primary/50 ${regError ? 'border-red-500' :
-                                                            regValidation?.isValid ? 'border-green-500/50' :
-                                                                'border-white/10'
-                                                            }`}
-                                                        placeholder="e.g. 24BPS1104"
-                                                    />
-                                                    {regError && (
-                                                        <div className="text-xs text-red-500 mt-1 flex items-center animate-in slide-in-from-top-1">
-                                                            <XOctagon className="w-3 h-3 mr-1" /> {regError}
-                                                        </div>
-                                                    )}
-                                                    {regValidation?.isValid && (
-                                                        <div className="text-xs text-green-500 mt-1 flex flex-col gap-1 animate-in slide-in-from-top-1">
-                                                            <div className="pl-0 text-green-400/70">
-                                                                {regValidation.programName} • {regValidation.batch}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-muted-foreground">Phone Number</label>
-                                                    <div className="relative">
-                                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
-                                                        <input
-                                                            type="tel"
-                                                            name="phone"
-                                                            value={formData.phone}
-                                                            onChange={handleInputChange}
-                                                            className="w-full bg-background/50 border border-white/10 rounded-lg pl-10 pr-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
-                                                            placeholder="98765 43210"
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-muted-foreground">LinkedIn URL</label>
-                                                    <input
-                                                        type="url"
-                                                        name="linkedinUrl"
-                                                        value={formData.linkedinUrl}
-                                                        onChange={handleInputChange}
-                                                        className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
-                                                        placeholder="https://linkedin.com/in/username"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-muted-foreground">GitHub URL <span className="text-white/30 text-xs">(Optional)</span></label>
-                                                    <input
-                                                        type="url"
-                                                        name="githubUrl"
-                                                        value={formData.githubUrl}
-                                                        onChange={handleInputChange}
-                                                        className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
-                                                        placeholder="https://github.com/username"
-                                                    />
-                                                </div>
-                                            </div>
+                                    <div className="space-y-8 animate-in fade-in duration-500">
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <FormInput label="Full Name" error={formErrors.fullName} icon={User} type="text" name="fullName" value={formData.fullName} onChange={handleInputChange} placeholder="e.g. Tony Stark" />
+                                            <FormInput label="Registration Number" error={formErrors.rollNumber} type="text" name="rollNumber" value={formData.rollNumber} onChange={handleInputChange} placeholder="e.g. 24BCE1234" />
+                                            <FormInput label="Email" type="email" value="test@vitstudent.ac.in" disabled />
+                                            <FormInput label="Phone Number" error={formErrors.phone} icon={Phone} type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="WhatsApp number" />
                                         </div>
 
-                                        <div className="space-y-6 pt-6 border-t border-white/10">
-                                            <h3 className="text-xl font-heading font-semibold flex items-center gap-2 text-primary">
-                                                <Code className="w-5 h-5" /> Primary Choice (Dept 1)
-                                            </h3>
-
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-muted-foreground">Department of Interest</label>
-                                                <Select
-                                                    value={formData.primaryDept}
-                                                    onValueChange={(value) => setFormData(prev => ({ ...prev, primaryDept: value, domains: [] }))}
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select Primary Department" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="Technical">Technical</SelectItem>
-                                                        <SelectItem value="Management">Management</SelectItem>
-                                                        <SelectItem value="Creative">Creative</SelectItem>
-                                                        <SelectItem value="Outreach & Partnerships">Outreach & Partnerships</SelectItem>
-                                                        <SelectItem value="Human Resources">Human Resources</SelectItem>
-                                                        <SelectItem value="Event Operations">Event Operations</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-
+                                        <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-white/10">
                                             <div className="space-y-3">
-                                                <label className="text-sm font-medium text-muted-foreground">
-                                                    {formData.primaryDept ? `Specific Roles for ${formData.primaryDept}` : 'Select a Department above to see roles'}
+                                                <label className="text-sm font-medium text-white/90 flex items-center gap-2">
+                                                    <GraduationCap className="w-4 h-4 text-primary/80" /> Year of Study
                                                 </label>
-
-                                                {currentDomains.length > 0 ? (
-                                                    <div className="grid sm:grid-cols-2 gap-3">
-                                                        {currentDomains.map(domain => (
-                                                            <div
-                                                                key={domain}
-                                                                onClick={() => handleDomainToggle(domain)}
-                                                                className={`cursor-pointer px-4 py-3 rounded-lg border transition-all duration-200 flex items-center gap-3
-                                    ${(formData.domains || []).includes(domain)
-                                                                        ? 'bg-primary/20 border-primary text-primary'
-                                                                        : 'bg-background/30 border-white/5 hover:border-white/20 text-muted-foreground'
-                                                                    }`}
-                                                            >
-                                                                <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0
-                                    ${(formData.domains || []).includes(domain) ? 'border-primary bg-primary' : 'border-current'}
-            `}>
-                                                                    {(formData.domains || []).includes(domain) && <div className="w-2 h-2 bg-background rounded-sm" />}
-                                                                </div>
-                                                                <span className="text-sm font-medium">{domain}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <div className="p-4 rounded-lg bg-white/5 border border-white/10 text-center text-muted-foreground text-sm italic">
-                                                        Please select a Department of Interest first.
-                                                    </div>
-                                                )}
-
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {YEARS_OF_STUDY.map(year => (
+                                                        <div key={year} onClick={() => handleOptionSelect('yearOfStudy', year)} 
+                                                            className={`cursor-pointer px-4 py-3 border rounded-xl text-center text-sm font-medium transition-all duration-200 ${formData.yearOfStudy === year ? 'bg-primary/20 border-primary text-primary shadow-sm' : formErrors.yearOfStudy ? 'border-red-500 bg-red-500/5 text-red-400' : 'bg-black/40 border-white/10 hover:border-white/30 text-white/70 hover:text-white'}`}>
+                                                            {year}
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
-
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-muted-foreground">{currentSkillLabel}</label>
-                                                <input
-                                                    type="text"
-                                                    name="skills"
-                                                    value={formData.skills}
-                                                    onChange={handleInputChange}
-                                                    className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
-                                                    placeholder={currentSkillPlaceholder}
-                                                />
+                                            <div className="space-y-3">
+                                                <label className="text-sm font-medium text-white/90 flex items-center gap-2">
+                                                    <Building className="w-4 h-4 text-primary/80" /> Hostel / Day Scholar
+                                                </label>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {['Hostel', 'Day Scholar'].map(type => (
+                                                        <div key={type} onClick={() => handleOptionSelect('hostelDay', type)} 
+                                                            className={`cursor-pointer px-4 py-3 border rounded-xl text-center text-sm font-medium transition-all duration-200 ${formData.hostelDay === type ? 'bg-primary/20 border-primary text-primary shadow-sm' : formErrors.hostelDay ? 'border-red-500 bg-red-500/5 text-red-400' : 'bg-black/40 border-white/10 hover:border-white/30 text-white/70 hover:text-white'}`}>
+                                                            {type}
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
-
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-muted-foreground">Why do you want to join this department?</label>
-                                                <textarea
-                                                    name="reason"
-                                                    value={formData.reason}
-                                                    onChange={handleInputChange}
-                                                    rows={4}
-                                                    className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all resize-none"
-                                                    placeholder={currentReasonPlaceholder}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="pt-4 flex justify-end">
-                                            <Button
-                                                type="submit"
-                                                className="h-12 px-8 bg-primary text-primary-foreground hover:bg-primary/90 font-heading text-lg group"
-                                            >
-                                                Next Step
-                                                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                                            </Button>
                                         </div>
                                     </div>
                                 )}
 
                                 {step === 2 && (
-                                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-
-
-                                        <div className="space-y-6">
-                                            <h3 className="text-xl font-heading font-semibold flex items-center gap-2 text-primary">
-                                                <Code className="w-5 h-5" /> Secondary Choice (Dept 2)
-                                            </h3>
-
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-muted-foreground">Department of Interest</label>
-                                                <Select
-                                                    value={formData.secondaryDept}
-                                                    onValueChange={(value) => setFormData(prev => ({ ...prev, secondaryDept: value, secondaryDomains: [] }))}
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select Secondary Department" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="Technical">Technical</SelectItem>
-                                                        <SelectItem value="Management">Management</SelectItem>
-                                                        <SelectItem value="Creative">Creative</SelectItem>
-                                                        <SelectItem value="Outreach & Partnerships">Outreach & Partnerships</SelectItem>
-                                                        <SelectItem value="Human Resources">Human Resources</SelectItem>
-                                                        <SelectItem value="Event Operations">Event Operations</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-
-                                            </div>
-
-                                            <div className="space-y-3">
-                                                <label className="text-sm font-medium text-muted-foreground">
-                                                    {formData.secondaryDept ? `Specific Roles for ${formData.secondaryDept}` : 'Select a Department above to see roles'}
-                                                </label>
-
-                                                {secondaryDomainsList.length > 0 ? (
-                                                    <div className="grid sm:grid-cols-2 gap-3">
-                                                        {secondaryDomainsList.map(domain => (
-                                                            <div
-                                                                key={domain}
-                                                                onClick={() => handleDomainToggle(domain, true)}
-                                                                className={`cursor-pointer px-4 py-3 rounded-lg border transition-all duration-200 flex items-center gap-3
-                                    ${(formData.secondaryDomains || []).includes(domain)
-                                                                        ? 'bg-primary/20 border-primary text-primary'
-                                                                        : 'bg-background/30 border-white/5 hover:border-white/20 text-muted-foreground'
-                                                                    }`}
-                                                            >
-                                                                <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0
-                                    ${(formData.secondaryDomains || []).includes(domain) ? 'border-primary bg-primary' : 'border-current'}
-            `}>
-                                                                    {(formData.secondaryDomains || []).includes(domain) && <div className="w-2 h-2 bg-background rounded-sm" />}
-                                                                </div>
-                                                                <span className="text-sm font-medium">{domain}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <div className="p-4 rounded-lg bg-white/5 border border-white/10 text-center text-muted-foreground text-sm italic">
-                                                        Please select a Secondary Department of Interest first.
-                                                    </div>
-                                                )}
-
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-muted-foreground">{secondarySkillLabel}</label>
-                                                <input
-                                                    type="text"
-                                                    name="secondarySkills"
-                                                    value={formData.secondarySkills}
-                                                    onChange={handleInputChange}
-                                                    className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all"
-                                                    placeholder={secondarySkillPlaceholder}
-                                                />
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-muted-foreground">Why this secondary choice?</label>
-                                                <textarea
-                                                    name="secondaryReason"
-                                                    value={formData.secondaryReason}
-                                                    onChange={handleInputChange}
-                                                    rows={4}
-                                                    className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition-all resize-none"
-                                                    placeholder={secondaryReasonPlaceholder}
-                                                />
-                                            </div>
+                                    <div className="space-y-8 animate-in fade-in duration-500">
+                                        <div className="mb-6 text-center">
+                                            <p className="text-sm text-white/70">
+                                                Select your <span className="text-primary font-bold">1st Preference</span> and <span className="text-blue-400 font-bold">2nd Preference</span>.
+                                            </p>
                                         </div>
+                                        {formErrors.dept && <p className="text-center text-red-400 text-sm mb-4 bg-red-500/10 py-2 rounded-lg border border-red-500/20">{formErrors.dept}</p>}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+                                            {DEPARTMENTS.map(dept => {
+                                                const isPrimary = formData.primaryDept === dept.name;
+                                                const hasDeptError = !!formErrors.dept;
+                                                const isSecondary = formData.secondaryDept === dept.name;
+                                                
+                                                let cardClass = "relative p-5 rounded-2xl cursor-pointer transition-all duration-200 border flex flex-col ";
+                                                if (isPrimary) {
+                                                    cardClass += "border-primary bg-primary/10 shadow-[0_0_20px_rgba(var(--primary),0.15)]";
+                                                } else if (isSecondary) {
+                                                    cardClass += "border-blue-500 bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.15)]";
+                                                } else {
+                                                    cardClass += hasDeptError ? "border-red-500 bg-red-500/5 hover:bg-red-500/10" : "border-white/10 bg-black/40 hover:bg-white/5 hover:border-white/30";
+                                                }
 
-                                        <div className="pt-4 flex gap-4">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={handlePrevStep}
-                                                className="h-12 px-6 border-white/10 hover:bg-white/5"
-                                            >
-                                                <ChevronLeft className="w-4 h-4 mr-2" />
-                                                Back
-                                            </Button>
-                                            <Button
-                                                type="submit"
-                                                disabled={isSubmitting}
-                                                className="flex-1 h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-heading text-lg"
-                                            >
-                                                {isSubmitting ? (
-                                                    <span className="flex items-center">
-                                                        <div className="w-5 h-5 border-2 border-background border-t-transparent rounded-full animate-spin mr-2" />
-                                                        Submitting...
-                                                    </span>
-                                                ) : (
-                                                    'Submit Application'
-                                                )}
-                                            </Button>
+                                                return (
+                                                    <div key={dept.name} className={cardClass} onClick={() => handleDeptClick(dept.name)}>
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <h4 className={`text-base font-bold transition-colors ${isPrimary ? 'text-primary' : isSecondary ? 'text-blue-400' : 'text-white'}`}>
+                                                                {dept.name}
+                                                            </h4>
+                                                            {isPrimary && <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-bold">1</span>}
+                                                            {isSecondary && <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold">2</span>}
+                                                        </div>
+                                                        <p className="text-sm text-white/60 leading-relaxed">{dept.desc}</p>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-white/10">
+                                            <FormTextarea error={formErrors.whyJoinSscs} label="Why do you want to join IEEE SSCS?" name="whyJoinSscs" value={formData.whyJoinSscs} onChange={handleInputChange} placeholder="Explain your motivation for joining SSCS..." />
+                                            <FormTextarea error={formErrors.whyTheseDepts} label="Why did you choose these departments?" name="whyTheseDepts" value={formData.whyTheseDepts} onChange={handleInputChange} placeholder="What draws you to this specific role?" />
                                         </div>
                                     </div>
                                 )}
+
+                                {step === 3 && (
+                                    <div className="space-y-8 animate-in fade-in duration-500">
+                                        <div className="mb-2 text-center border-b border-white/5 pb-4 inline-block mx-auto w-full">
+                                            <p className="text-xs text-white/50 italic">
+                                                Please write your own answers. Do not copy/paste AI-generated text. We value authenticity over perfection!
+                                            </p>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 text-center">
+                                                <p className="text-sm text-primary font-bold mb-2 uppercase tracking-wider">1st Preference: {formData.primaryDept}</p>
+                                                <p className="text-lg md:text-xl font-medium text-white leading-relaxed">
+                                                    {DEPT_QUESTIONS[formData.primaryDept]?.prompt || "Tell us something amazing about yourself."}
+                                                </p>
+                                            </div>
+                                            <FormTextarea error={formErrors.deptAnswer} label="Your Answer" name="deptAnswer" value={formData.deptAnswer} onChange={handleInputChange} placeholder="Type your answer here..." style={{ minHeight: '150px' }} />
+                                            {formData.primaryDept === 'Creative' && (
+                                                <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                                                    <FormInput label="Portfolio / Drive Link (Optional)" type="url" name="googleDriveUrl" value={formData.googleDriveUrl} onChange={handleInputChange} placeholder="https://drive.google.com/..." />
+                                                    <p className="text-xs text-white/50 mt-2 italic">Please upload your work to Google Drive, ensure link access is set to 'Anyone with the link', and paste it here.</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {formData.secondaryDept && (
+                                            <div className="space-y-4 pt-6 border-t border-white/10">
+                                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-6 text-center">
+                                                    <p className="text-sm text-blue-400 font-bold mb-2 uppercase tracking-wider">2nd Preference: {formData.secondaryDept}</p>
+                                                    <p className="text-lg md:text-xl font-medium text-white leading-relaxed">
+                                                        {DEPT_QUESTIONS[formData.secondaryDept]?.prompt || "Tell us something amazing about yourself."}
+                                                    </p>
+                                                </div>
+                                                <FormTextarea error={formErrors.secondaryDeptAnswer} label="Your Answer" name="secondaryDeptAnswer" value={formData.secondaryDeptAnswer} onChange={handleInputChange} placeholder="Type your answer here..." style={{ minHeight: '150px' }} />
+                                                {formData.secondaryDept === 'Creative' && (
+                                                    <div className="mt-4 p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl">
+                                                        <FormInput label="Portfolio / Drive Link (Optional)" type="url" name="googleDriveUrl" value={formData.googleDriveUrl} onChange={handleInputChange} placeholder="https://drive.google.com/..." />
+                                                        <p className="text-xs text-white/50 mt-2 italic">Please upload your work to Google Drive, ensure link access is set to 'Anyone with the link', and paste it here.</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {step === 4 && (
+                                    <div className="space-y-8 animate-in fade-in duration-500">
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-bold text-white mb-4">Availability</h3>
+                                            <p className="text-sm text-white/70 mb-3">How many hours can you dedicate every week?</p>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                {WEEKLY_HOURS.map(hrs => (
+                                                    <div key={hrs} onClick={() => handleOptionSelect('weeklyHours', hrs)} 
+                                                        className={`cursor-pointer px-4 py-4 border rounded-xl text-center font-bold text-base transition-all duration-200 ${formData.weeklyHours === hrs ? 'bg-primary/20 border-primary text-primary shadow-sm' : 'bg-black/40 border-white/10 hover:border-white/30 text-white/70 hover:text-white'}`}>
+                                                        {hrs}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="space-y-4 pt-8 border-t border-white/10">
+                                            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                                <LinkIcon className="w-5 h-5 text-primary" /> Links (Optional)
+                                            </h3>
+                                            <div className="grid md:grid-cols-1 gap-6">
+                                                <FormInput label="LinkedIn Profile" type="url" name="linkedinUrl" value={formData.linkedinUrl} onChange={handleInputChange} placeholder="https://" />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4 pt-8 border-t border-white/10">
+                                            <h3 className="text-lg font-bold text-white mb-4">Any Questions for Us?</h3>
+                                            <FormTextarea label="If you have any doubts about the club, the role, or the recruitment process, ask away! (Optional)" name="anyQuestions" value={formData.anyQuestions} onChange={handleInputChange} placeholder="Type your question here..." style={{ minHeight: '100px' }} />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Navigation Bar */}
+                                <div className="pt-8 flex gap-4 mt-8 border-t border-white/10">
+                                    {step > 1 && (
+                                        <Button type="button" variant="outline" onClick={handlePrevStep} className="h-14 px-6 md:px-8 border-white/10 bg-transparent hover:bg-white/5 text-white font-medium text-base rounded-xl transition-all">
+                                            <ChevronLeft className="w-5 h-5 mr-2" /> Back
+                                        </Button>
+                                    )}
+                                    <Button type="submit" disabled={isSubmitting} className="flex-1 h-14 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-lg rounded-xl shadow-lg transition-all group">
+                                        {isSubmitting ? (
+                                            <span className="flex items-center"><div className="w-5 h-5 border-2 border-background border-t-transparent rounded-full animate-spin mr-3" /> Submitting...</span>
+                                        ) : step < 4 ? (
+                                            <span className="flex items-center">Next Step <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" /></span>
+                                        ) : (
+                                            <span className="flex items-center">Submit Application</span>
+                                        )}
+                                    </Button>
+                                </div>
                             </form>
-                        </HolographicCard>
+                        </div>
                     </motion.div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 };

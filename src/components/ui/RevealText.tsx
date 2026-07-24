@@ -15,6 +15,7 @@ const RevealText: React.FC<RevealTextProps> = ({ text, className = "", delay = 0
                 whileInView={{ y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay }}
+                className="pb-2"
             >
                 {text}
             </motion.div>
