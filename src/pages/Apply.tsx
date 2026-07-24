@@ -260,11 +260,12 @@ const Apply = () => {
     const checkRecruitmentStatus = async () => {
         try {
             const { data } = await supabase.from('app_settings').select('value').eq('key', 'recruitment_status').single();
-            // Force open for testing so it doesn't disappear
-            setRecruitmentStatus({ isOpen: true, message: '' });
+            if (data?.value) {
+                setRecruitmentStatus(data.value);
+            }
         } catch (error) {
             console.error("Error checking recruitment status:", error);
-            setRecruitmentStatus({ isOpen: true, message: '' });
+            setRecruitmentStatus({ isOpen: false, message: 'Could not connect to server' });
         }
     };
 

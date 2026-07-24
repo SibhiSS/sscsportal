@@ -23,8 +23,14 @@ const JoinSection = () => {
 
   useEffect(() => {
     const checkStatus = async () => {
-      // HARDCODED CLOSED
-      setIsRecruitmentOpen(false);
+      try {
+        const { data: settings } = await supabase.from('app_settings').select('value').eq('key', 'recruitment_status').single();
+        if (settings?.value) {
+          setIsRecruitmentOpen(settings.value.isOpen);
+        }
+      } catch (e) {
+        console.error(e);
+      }
 
       if (!user) return;
       const { data } = await supabase
