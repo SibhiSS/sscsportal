@@ -235,12 +235,12 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                                 </div>
                                 <div className="space-y-3">
                                     <div>
-                                        <span className="text-xs uppercase tracking-wider text-muted-foreground block mb-1">Skills</span>
-                                        <p className="text-sm bg-white/5 p-3 rounded-md border border-white/5 leading-relaxed">{application.skills}</p>
+                                        <span className="text-xs uppercase tracking-wider text-muted-foreground block mb-1">1st Preference Answer</span>
+                                        <p className="text-sm bg-white/5 p-3 rounded-md border border-white/5 leading-relaxed whitespace-pre-wrap">{application.skills || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <span className="text-xs uppercase tracking-wider text-muted-foreground block mb-1">Reason</span>
-                                        <p className="text-sm bg-white/5 p-3 rounded-md border border-white/5 max-h-[150px] overflow-y-auto leading-relaxed whitespace-pre-wrap">{application.reason}</p>
+                                        <span className="text-xs uppercase tracking-wider text-muted-foreground block mb-1">Why Join SSCS?</span>
+                                        <p className="text-sm bg-white/5 p-3 rounded-md border border-white/5 max-h-[150px] overflow-y-auto leading-relaxed whitespace-pre-wrap">{application.reason || 'N/A'}</p>
                                     </div>
                                 </div>
                             </div>
@@ -261,12 +261,8 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                                     </div>
                                     <div className="space-y-3">
                                         <div>
-                                            <span className="text-xs uppercase tracking-wider text-muted-foreground block mb-1">Skills</span>
-                                            <p className="text-sm bg-white/5 p-3 rounded-md border border-white/5">{application.secondarySkills || 'N/A'}</p>
-                                        </div>
-                                        <div>
-                                            <span className="text-xs uppercase tracking-wider text-muted-foreground block mb-1">Reason</span>
-                                            <p className="text-sm bg-white/5 p-3 rounded-md border border-white/5">{application.secondaryReason || 'N/A'}</p>
+                                            <span className="text-xs uppercase tracking-wider text-muted-foreground block mb-1">2nd Preference Answer</span>
+                                            <p className="text-sm bg-white/5 p-3 rounded-md border border-white/5 whitespace-pre-wrap">{application.secondarySkills || 'N/A'}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -320,43 +316,6 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                                 <MultiInterviewerPanel applicationId={application.id} />
                             </div>
                         )}
-
-                        <div className="md:col-span-2 space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-semibold text-primary border-b border-primary/20 pb-2 flex-grow">Interview Notes</h3>
-                                <Button
-                                    size="sm"
-                                    onClick={handleSave}
-                                    disabled={isSaving || localNotes === (application.notes || '')}
-                                    className={`ml-4 transition-all ${isSaving ? 'bg-zinc-800' : localNotes !== (application.notes || '') ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_15px_rgba(255,225,0,0.3)]' : 'bg-zinc-800 text-zinc-500'}`}
-                                >
-                                    {isSaving ? (
-                                        <LogoSpinner size="sm" className="mr-2" />
-                                    ) : (
-                                        <Save className="w-4 h-4 mr-2" />
-                                    )}
-                                    {isSaving ? 'Saving...' : 'Save Notes'}
-                                </Button>
-                            </div>
-                            <div className="relative">
-                                <textarea
-                                    className="w-full min-h-[120px] bg-black/40 border border-white/10 rounded-lg p-4 text-sm focus:outline-none focus:border-primary/50 text-foreground transition-all placeholder:text-muted-foreground/30 resize-y font-sans leading-relaxed"
-                                    placeholder="Type interview observations, key strengths, or concerns here..."
-                                    value={localNotes}
-                                    onChange={(e) => setLocalNotes(e.target.value)}
-                                />
-                                <div className="flex justify-between items-center mt-2 px-1">
-                                    <p className="text-[10px] text-muted-foreground italic">
-                                        Last saved: {application.submittedAt ? new Date().toLocaleTimeString() : 'Not yet'}
-                                    </p>
-                                    {localNotes !== (application.notes || '') && (
-                                        <p className="text-[10px] text-primary/70 font-medium animate-pulse">
-                                            Unsaved changes
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
 
                         {/* Delete Action */}
                         <div className="md:col-span-2 pt-4 border-t border-white/10 flex justify-end">

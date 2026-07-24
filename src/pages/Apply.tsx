@@ -809,7 +809,7 @@ const Apply = () => {
                                         <div className="grid md:grid-cols-2 gap-6">
                                             <FormInput label="Full Name" error={formErrors.fullName} icon={User} type="text" name="fullName" value={formData.fullName} onChange={handleInputChange} placeholder="e.g. Tony Stark" />
                                             <FormInput label="Registration Number" error={formErrors.rollNumber} type="text" name="rollNumber" value={formData.rollNumber} onChange={handleInputChange} placeholder="e.g. 24BCE1234" />
-                                            <FormInput label="Email" type="email" value="test@vitstudent.ac.in" disabled />
+                                            <FormInput label="Email" type="email" value={user?.email || ''} disabled />
                                             <FormInput label="Phone Number" error={formErrors.phone} icon={Phone} type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="WhatsApp number" />
                                         </div>
 

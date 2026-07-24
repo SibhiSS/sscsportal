@@ -557,6 +557,9 @@ const Admin = () => {
                                                         <TableHead onClick={() => requestSort('primaryDept')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
                                                             <div className="flex items-center gap-2">Choice 1 <ArrowUpDown className="w-3 h-3" /></div>
                                                         </TableHead>
+                                                        <TableHead onClick={() => requestSort('secondaryDept')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
+                                                            <div className="flex items-center gap-2">Choice 2 <ArrowUpDown className="w-3 h-3" /></div>
+                                                        </TableHead>
                                                         <TableHead onClick={() => requestSort('finalScore')} className="cursor-pointer hover:text-primary transition-colors text-[10px] font-bold tracking-[0.2em] uppercase py-5">
                                                             <div className="flex items-center gap-2">Score <ArrowUpDown className="w-3 h-3" /></div>
                                                         </TableHead>
@@ -569,14 +572,14 @@ const Admin = () => {
                                                 <TableBody>
                                                     {isLoading ? (
                                                         <TableRow>
-                                                            <TableCell colSpan={6} className="h-64 text-center">
+                                                            <TableCell colSpan={7} className="h-64 text-center">
                                                                 <LogoSpinner size="md" className="mx-auto" />
                                                                 <p className="text-xs tracking-widest text-muted-foreground mt-4 uppercase animate-pulse">Syncing Database...</p>
                                                             </TableCell>
                                                         </TableRow>
                                                     ) : sortedApps.length === 0 ? (
                                                         <TableRow>
-                                                            <TableCell colSpan={6} className="h-64 text-center">
+                                                            <TableCell colSpan={7} className="h-64 text-center">
                                                                 <div className="max-w-xs mx-auto space-y-3">
                                                                     <p className="text-sm font-medium text-white">No matches found</p>
                                                                     <p className="text-xs text-muted-foreground">Try adjusting your filters.</p>
@@ -611,6 +614,20 @@ const Admin = () => {
                                                                     <div className="text-[10px] text-muted-foreground mt-2 font-medium truncate max-w-[150px] opacity-60">
                                                                         {app.domains.join(' · ')}
                                                                     </div>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {app.secondaryDept ? (
+                                                                        <>
+                                                                            <Badge variant="outline" className="bg-blue-500/10 border-blue-500/20 text-blue-400 text-[10px] font-bold tracking-wider rounded-md">
+                                                                                {app.secondaryDept}
+                                                                            </Badge>
+                                                                            <div className="text-[10px] text-muted-foreground mt-2 font-medium truncate max-w-[150px] opacity-60">
+                                                                                {app.secondaryDomains?.join(' · ') || ''}
+                                                                            </div>
+                                                                        </>
+                                                                    ) : (
+                                                                        <span className="text-[10px] text-muted-foreground/50 italic">None</span>
+                                                                    )}
                                                                 </TableCell>
                                                                 <TableCell>
                                                                     {app.finalScore && app.finalScore > 0 ? (
