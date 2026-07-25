@@ -160,7 +160,7 @@ const ScheduleInterview = () => {
                     </div>
                     <p>Your meeting link will be sent before the interview starts. You can track your status anytime at: <a href="${portalUrl}/apply">${portalUrl}/apply</a></p>
                     <p>Please be ready 5 minutes before your scheduled time slot.</p>
-                    <p>Best regards,<br>IEEE SSCS Recruitment Team</p>`
+                    <p>Best regards,<br>IEEE SSCS HR Team</p>`
                 ).catch(err => console.warn('[Schedule] Booking confirmation email failed:', err));
 
                 // Last-minute check for urgent alerts

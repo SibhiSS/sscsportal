@@ -234,7 +234,7 @@ const InterviewScheduler = () => {
                                 <strong>Department:</strong> ${app.primary_dept}</p>
                                 <p><strong>Join your interview:</strong> <a href="${link}">${link}</a></p>
                                 <p>You can also check your status at: <a href="${portalUrl}/apply">${portalUrl}/apply</a></p>
-                                <p>Please join 5 minutes before your slot.<br>IEEE SSCS Recruitment Team</p>`
+                                <p>Please join 5 minutes before your slot.<br>IEEE SSCS HR Team</p>`
                             );
                         } catch (e) {
                             console.warn(`Failed to send link email to ${app.email}:`, e);
@@ -313,7 +313,7 @@ const InterviewScheduler = () => {
                     </p>
                     <p>Direct Link: <a href="${portalUrl}/schedule">${portalUrl}/schedule</a></p>
                     <p><em>Note: Slots are allocated on a first-come, first-served basis.</em></p>
-                    <p>Best regards,<br>IEEE SSCS Recruitment Team</p>`
+                    <p>Best regards,<br>IEEE SSCS HR Team</p>`
                 );
 
                 if (ok) {

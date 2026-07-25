@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
-import { Mail, MapPin, Linkedin, Instagram } from 'lucide-react';
+import { Mail, MapPin, Linkedin, Instagram, MessageCircle } from 'lucide-react';
 import RevealText from '@/components/ui/RevealText';
 
 const socialLinks = [
   { icon: Linkedin, href: 'https://in.linkedin.com/company/ieee-sscs-vitc', label: 'LinkedIn' },
   { icon: Instagram, href: 'https://www.instagram.com/ieee_sscs_vitcc/', label: 'Instagram' },
+  { icon: MessageCircle, href: 'https://chat.whatsapp.com/Em8uoQtYNPcFTsg3w0dVdo?s=qt&p=a&ilr=1', label: 'WhatsApp' },
 ];
 
 const ContactSection = () => {
@@ -71,12 +72,12 @@ const ContactSection = () => {
 
         {/* Slimmed Footer */}
         <motion.footer
-          className="relative pt-8 mt-8 border-t border-white/5"
+          className="relative pt-4 mt-4 border-t border-white/5"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
         >
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 py-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-4">
             <div className="flex items-center gap-3 group">
               <div className="relative">
                 <img src="/logo.png" alt="IEEE SSCS" className="w-8 h-8 object-contain relative z-10 transition-transform group-hover:rotate-12" />
@@ -94,7 +95,7 @@ const ContactSection = () => {
 
             <div className="flex flex-col items-center md:items-end gap-1">
               <p className="text-[9px] text-muted-foreground/60 tracking-widest uppercase font-mono">
-                Design • Fabricate • Test
+                Design • Build • Iterate
               </p>
               <p className="text-[10px] text-muted-foreground/80 font-medium">
                 © 2026 IEEE SSCS Portal

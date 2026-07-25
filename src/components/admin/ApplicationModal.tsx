@@ -130,16 +130,7 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                                     <XCircle className="w-4 h-4 mr-2" />
                                     {application.status === 'rejected_pending' ? 'Marked to Reject' : 'Reject'}
                                 </Button>
-                                <Button
-                                    size="sm"
-                                    variant={application.status === 'under_review' ? 'secondary' : 'outline'}
-                                    onClick={() => onUpdate(application.id, { status: 'under_review' })}
-                                    disabled={!canTransition(application.status, 'under_review') || !canPerformAction(currentPhase, 'canReview')}
-                                    className={application.status === 'under_review' ? 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30' : 'border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10 hover:border-yellow-500'}
-                                >
-                                    <MinusCircle className="w-4 h-4 mr-2" />
-                                    Reviewing
-                                </Button>
+
                                 <Button
                                     size="sm"
                                     variant={application.status === 'shortlisted' ? 'default' : 'outline'}

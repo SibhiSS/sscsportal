@@ -543,13 +543,13 @@ const Apply = () => {
                     user.email || '',
                     'Application Received - IEEE SSCS Recruitment',
                     `<p>Dear <strong>${formData.fullName}</strong>,</p>
-                    <p>Thank you for applying to IEEE SSCS! Your application has been successfully received.</p>
+                    <p>Thank you for applying to IEEE Solid-State Circuits Society (SSCS)! Your application has been successfully received.</p>
                     <p><strong>Registration:</strong> ${formData.rollNumber}<br>
                     <strong>Primary Department:</strong> ${formData.primaryDept}<br>
                     <strong>Status:</strong> Under Review</p>
                     <p>You can check your application status anytime: <a href="${portalUrl}/apply">${portalUrl}/apply</a></p>
                     <p>Join our WhatsApp group for updates: <a href="https://chat.whatsapp.com/Em8uoQtYNPcFTsg3w0dVdo?s=qt&p=a&ilr=1">Join Here</a></p>
-                    <p>Best of luck!<br>IEEE SSCS Recruitment Team</p>`
+                    <p>Best of luck!<br>IEEE SSCS HR Team</p>`
                 ).catch(err => console.warn('[Apply] Confirmation email failed silently:', err));
             }
 

@@ -6,6 +6,28 @@ import HolographicCard from '@/components/ui/HolographicCard';
 import RevealText from '@/components/ui/RevealText';
 import TechGridBackground from '@/components/ui/TechGridBackground';
 
+const ProfileImage = ({ src, alt }: { src: string, alt: string }) => {
+    const [error, setError] = useState(false);
+    
+    if (error || !src) {
+        return (
+            <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                <User className="w-10 h-10 text-primary drop-shadow-[0_0_12px_rgba(220,20,60,0.8)]" />
+            </div>
+        );
+    }
+    
+    return (
+        <img 
+            src={src} 
+            alt={alt}
+            className="w-full h-full object-cover block"
+            loading="lazy"
+            onError={() => setError(true)}
+        />
+    );
+};
+
 const coordinators = [
   {
     name: 'Sangeetha R G',
@@ -21,7 +43,7 @@ const coordinators = [
   }
 ];
 
-const coreTeam = [
+const coreTeam2025 = [
   {
     name: 'E Abijay',
     role: 'Chairperson',
@@ -54,7 +76,46 @@ const coreTeam = [
   }
 ];
 
-const leads = [
+const coreTeam2026: { name: string; role: string; image: string; quote: string; }[] = [
+  {
+    name: 'Sibhi',
+    role: 'Chairperson',
+    image: '/sibhi.png',
+    quote: 'Click Me!!!'
+  },
+  {
+    name: 'Goutham P',
+    role: 'Vice Chairperson',
+    image: '/goutham.png',
+    quote: 'SKY IS THE LIMIT'
+  },
+  {
+    name: 'Ilangkumaran',
+    role: 'General Secretary',
+    image: '/ilangkumaran.png',
+    quote: "Big ideas don't need noise, they need action."
+  },
+  {
+    name: 'Neyalakshmi',
+    role: 'Treasurer',
+    image: '/neya.png',
+    quote: 'PEACE!'
+  },
+  {
+    name: 'Sarweshwari',
+    role: 'Chairperson (Women in SSCS)',
+    image: '/sarweshwari.png',
+    quote: 'Empowering women in circuits.'
+  },
+  {
+    name: 'Shree Devi',
+    role: 'Vice-Chairperson (Women in SSCS)',
+    image: '/shreedevi.png',
+    quote: 'Breaking barriers.'
+  }
+];
+
+const leads2025 = [
   {
     name: 'Shivaranjani',
     role: 'Technical Lead',
@@ -105,11 +166,31 @@ const leads = [
   }
 ];
 
+const leads2026 = [
+  { name: 'S Jai Akaash', role: 'Technical Lead', image: '/jai.png', quote: '' },
+  { name: 'Pranav J', role: 'Associate Technical Lead', image: '/pranav.png', quote: '' },
+  { name: 'Hitesh V S', role: 'Associate Technical Lead', image: '/hitesh.png', quote: '' },
+  { name: 'M Varshinee', role: 'Management Lead', image: '/varshinee.png', quote: '' },
+  { name: 'Adriza Banerji', role: 'Associate Management Lead', image: '/adriza.png', quote: '' },
+  { name: 'C S Tejasvini', role: 'Event Operations Lead', image: '/tejasvini.png', quote: '' },
+  { name: 'Aariya Manikandan', role: 'Associate Event Operations Lead', image: '/aariya.png', quote: '' },
+  { name: 'Rohith M', role: 'Creative Lead', image: '/rohith.png', quote: '' },
+  { name: 'Tharun S', role: 'Associate Creative Lead', image: '/tharun.png', quote: '' },
+  { name: 'Anjana Varma', role: 'Outreach & Partnerships Lead', image: '/anjana.png', quote: '' },
+  { name: 'Karthikeyan D', role: 'Associate Outreach & Partnerships Lead', image: '/karthikeyan.png', quote: '' },
+  { name: 'P Midhun', role: 'Human Resource Lead', image: '/midhun.png', quote: 'COOL TONE WARM CORE' },
+  { name: 'K Srishtithaa', role: 'Associate Human Resource Lead', image: '/srishtithaa.png', quote: '' }
+];
+
 const Team = () => {
     const [clicks, setClicks] = useState(0);
     const [isSibhiMode, setIsSibhiMode] = useState(false);
     const [isHoveringSibhi, setIsHoveringSibhi] = useState(false);
     const [showHeart, setShowHeart] = useState(false);
+    const [coreTeamYear, setCoreTeamYear] = useState('2026-27');
+    
+    const activeCoreTeam = coreTeamYear === '2025-26' ? coreTeam2025 : coreTeam2026;
+    const activeLeads = coreTeamYear === '2025-26' ? leads2025 : leads2026;
 
     useEffect(() => {
         if (clicks === 3) {
@@ -200,12 +281,7 @@ const Team = () => {
                                 <HolographicCard className="p-8 text-center h-full">
                                     <div className="flex flex-col items-center">
                                         <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 text-primary relative overflow-hidden border border-primary/20 mx-auto">
-                                            <img 
-                                                src={coord.image} 
-                                                alt={coord.name}
-                                                className="w-full h-full object-cover block"
-                                                loading="lazy"
-                                            />
+                                            <ProfileImage src={coord.image} alt={coord.name} />
                                         </div>
 
                                         <div className="mb-4">
@@ -238,13 +314,32 @@ const Team = () => {
                                 Leadership
                             </span>
                         </motion.div>
-                        <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight">
+                        <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight mb-8">
                             <RevealText text="Core Team" />
                         </h1>
+                        <div className="flex justify-center gap-4">
+                            <button 
+                                onClick={() => setCoreTeamYear('2025-26')}
+                                className={`px-6 py-2 rounded-full text-sm font-bold tracking-widest uppercase transition-all ${coreTeamYear === '2025-26' ? 'bg-primary text-white' : 'bg-white/5 border border-white/10 text-muted-foreground hover:text-white hover:border-white/30'}`}
+                            >
+                                AY 2025-26
+                            </button>
+                            <button 
+                                onClick={() => setCoreTeamYear('2026-27')}
+                                className={`px-6 py-2 rounded-full text-sm font-bold tracking-widest uppercase transition-all ${coreTeamYear === '2026-27' ? 'bg-primary text-white' : 'bg-white/5 border border-white/10 text-muted-foreground hover:text-white hover:border-white/30'}`}
+                            >
+                                AY 2026-27
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex flex-wrap justify-center gap-6 mb-24">
-                        {coreTeam.map((member, index) => (
+                        {activeCoreTeam.length === 0 ? (
+                            <div className="w-full text-center py-12 text-muted-foreground italic">
+                                Members to be announced soon...
+                            </div>
+                        ) : (
+                            activeCoreTeam.map((member, index) => (
                             <motion.div
                                 key={member.name}
                                 initial={{ opacity: 0, y: 20 }}
@@ -255,12 +350,7 @@ const Team = () => {
                             >
                                 <HolographicCard className="p-6 text-center h-full flex flex-col items-center">
                                     <div className="w-24 h-24 rounded-2xl bg-white/5 grid place-items-center mb-6 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors mx-auto">
-                                        <img 
-                                            src={member.image} 
-                                            alt={member.name}
-                                            className="w-full h-full object-cover block"
-                                            loading="lazy"
-                                        />
+                                        <ProfileImage src={member.image} alt={member.name} />
                                     </div>
 
                                     <div className="mb-4 flex-1">
@@ -276,7 +366,7 @@ const Team = () => {
                                     </div>
                                 </HolographicCard>
                             </motion.div>
-                        ))}
+                        )))}
                     </div>
 
                     {/* Leads Section */}
@@ -297,7 +387,7 @@ const Team = () => {
                     </div>
 
                     <div className="flex flex-wrap justify-center gap-6 mb-24">
-                        {leads.map((member, index) => {
+                        {activeLeads.map((member, index) => {
                             const isSibhi = member.name === 'Sibhi S';
                             return (
                                 <motion.div
@@ -317,12 +407,7 @@ const Team = () => {
                                         <div 
                                             className="w-20 h-20 rounded-2xl bg-white/5 grid place-items-center mb-6 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors mx-auto"
                                         >
-                                            <img 
-                                                src={member.image} 
-                                                alt={member.name}
-                                                className="w-full h-full object-cover block"
-                                                loading="lazy"
-                                            />
+                                            <ProfileImage src={member.image} alt={member.name} />
                                             
                                             {/* Idea 3: Pulsing Circuit Heart */}
                                             {isSibhi && (

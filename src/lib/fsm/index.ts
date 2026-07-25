@@ -4,7 +4,7 @@ import { ApplicationStatus, RecruitmentPhase } from '@/types';
 // Valid transitions for Applicant Status — Full 8-stage ATS pipeline
 export const VALID_TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
     // ── Stage 1: Applied (entry point) ──────────────────────────────────
-    'applied':             ['under_review', 'rejected'],
+    'applied':             ['under_review', 'rejected', 'shortlisted', 'rejected_pending'],
     // Legacy alias
     'pending':             ['applied', 'under_review', 'shortlisted', 'rejected', 'rejected_pending', 'neutral'],
 

@@ -15,7 +15,7 @@ const CONFIG = {
     SUPABASE_URL: "https://your-project-id.supabase.co",
     SUPABASE_KEY: "your-service-role-key", // Use service_role key for full read access
     ADMIN_ALERT_EMAIL: "sibhi.s2024@vitstudent.ac.in",
-    SENDER_NAME: "IEEE SSCS Recruitment Team"
+    SENDER_NAME: "IEEE SSCS HR Team"
 };
 
 /**

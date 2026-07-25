@@ -99,7 +99,7 @@ const HeroSection = () => {
             >
               <div className="h-[1px] w-10 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
               <span className="text-[11px] md:text-sm text-primary/90 tracking-[0.35em] uppercase font-bold px-4 py-1 rounded-full border border-primary/10 bg-primary/5 backdrop-blur-sm">
-                Design • Fabricate • Test
+                Design • Build • Iterate
               </span>
               <div className="h-[1px] w-10 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
             </motion.div>

@@ -25,27 +25,27 @@ const domains: Domain[] = [
   },
   {
     id: '03',
+    title: 'Event Operations',
+    description: 'Planning and executing world-class events through on-ground operations and strategic execution.',
+    color: 'from-indigo-500/20 to-blue-500/20'
+  },
+  {
+    id: '04',
     title: 'Creative',
     description: 'Driving Design, Social Media, and Content creation to build a powerful brand presence.',
     color: 'from-purple-500/20 to-pink-500/20'
   },
   {
-    id: '04',
+    id: '05',
     title: 'Outreach & Partnerships',
     description: 'Managing Industry Relations, Speaker Acquisition, and Sponsorships to expand our ecosystem.',
     color: 'from-amber-500/20 to-orange-500/20'
   },
   {
-    id: '05',
+    id: '06',
     title: 'Human Resources',
     description: 'Focused on Recruitment, Member Engagement, and Conflict Resolution for a thriving community.',
     color: 'from-red-500/20 to-rose-500/20'
-  },
-  {
-    id: '06',
-    title: 'Event Operations',
-    description: 'Planning and executing world-class events through on-ground operations and strategic execution.',
-    color: 'from-indigo-500/20 to-blue-500/20'
   },
 ];
 
@@ -100,13 +100,7 @@ const DomainCard = ({ domain, index }: { domain: Domain; index: number }) => {
           </p>
         </div>
 
-        {/* Footer */}
-        <div className="mt-8 flex items-center gap-2 overflow-hidden text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 opacity-0 transition-all duration-300 group-hover:opacity-100">
-          <span className="translate-x-[-20px] transition-transform duration-300 group-hover:translate-x-0">
-            View Research
-          </span>
-          <ArrowUpRight className="h-3 w-3 translate-y-[10px] transition-transform duration-300 group-hover:translate-y-0" />
-        </div>
+
       </div>
 
       {/* Decorative Corner */}

@@ -157,7 +157,7 @@ const InterviewerDashboard = () => {
                 <p>You were marked as a "No Show" for your scheduled interview slot.</p>
                 <p>Your application has been moved back to the shortlisting queue. If you still wish to be considered, please log in to the portal and re-book a new slot immediately.</p>
                 <p>Slots are limited and available on a first-come, first-served basis. Failure to attend a re-booked interview may result in disqualification.</p>
-                <p>Regards,<br>IEEE SSCS Recruitment Team</p>`
+                <p>Regards,<br>IEEE SSCS HR Team</p>`
             ).catch(err => console.warn('[Dashboard] No-show email failed:', err));
             
             setSuccessMsg('Candidate marked as No Show, slot freed.');
@@ -357,7 +357,7 @@ const InterviewerDashboard = () => {
                                                                                     <strong>Department:</strong> ${app.primary_dept}</p>
                                                                                     <p><strong>Join your interview:</strong> <a href="${link}">${link}</a></p>
                                                                                     <p>You can also check your status at: <a href="${portalUrl}/apply">${portalUrl}/apply</a></p>
-                                                                                    <p>Please join 5 minutes before your slot.<br>IEEE SSCS Recruitment Team</p>`
+                                                                                    <p>Please join 5 minutes before your slot.<br>IEEE SSCS HR Team</p>`
                                                                                 );
                                                                                 if (ok) {
                                                                                     alert(`Meeting link email sent to ${app.full_name || app.fullName}!`);

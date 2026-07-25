@@ -116,7 +116,7 @@ export default function CandidateTimeline({ application }: CandidateTimelineProp
       stage: 'under_review',
       icon: '👁️',
       label: 'Under Review',
-      description: 'Application is being reviewed by the recruitment team.',
+      description: 'Application is being reviewed by the HR team.',
       timestamp: null,
     },
     {
