@@ -8,11 +8,11 @@ import confetti from 'canvas-confetti';
 
 const DEPT_QUESTIONS: Record<string, { prompt: string, judges: string }> = {
     'Technical': {
-        prompt: "Tell us about the coolest technical thing you've built, learnt, or explored. Explain it as if we're complete beginners. If you haven't worked on anything yet, describe a technical idea or project you'd love to build and why.",
+        prompt: "Which of these three areas, Hands-on Hardware Projects, IEEE Research or Web Development do you feel most confident in right now, and which one are you most eager to learn this year? Tell me about a small project or script you've built in any of these areas.If you haven't explored much yet, tell us about a problem you'd love to solve or an idea you find exciting..",
         judges: "Communication, curiosity, technical thinking, passion."
     },
     'Creative': {
-        prompt: "Show us your best creative work (poster, artwork, video, writing, photography, etc.) and tell us the story behind it. If you don't have one, vividly describe the most creative dream, idea, or imaginary world you've ever had.",
+        prompt: "1. Imagine you're designing an eye-catching poster for an IEEE SSCS event. Describe your creative approach, including the theme, colours, layout, visuals, and how you'd make it stand out while keeping it professional. 2.Show us your best creative work (poster, artwork, video, writing, photography, etc.)",
         judges: "Creativity, storytelling, imagination."
     },
     'Human Resources': {
@@ -24,7 +24,7 @@ const DEPT_QUESTIONS: Record<string, { prompt: string, judges: string }> = {
         judges: "Persuasion, confidence, communication, originality."
     },
     'Management': {
-        prompt: "Describe the biggest responsibility you've ever taken. If you haven't had one yet, explain how you would plan and manage your dream college event from start to finish.",
+        prompt: "Imagine the club is host to a major tech event tomorrow. The Event operation team suddenly comes to you asking for an extra  budget for last-minute event improvement, but your approved finance budget is completely maxed out. How do you handle their request without stalling the event or breaking budget compliance?",
         judges: "Ownership, planning, organization."
     },
     'Event Operations': {
