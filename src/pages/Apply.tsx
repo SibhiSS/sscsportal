@@ -102,7 +102,7 @@ const InterviewScheduledStatus = ({ app }: { app: any }) => {
 
     return (
         <>
-            
+
             <h2 className="text-3xl  font-bold mb-2 text-white">Interview Scheduled</h2>
             <div className="inline-block px-4 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 mb-6 text-sm font-medium">
                 ✓ Confirmed
@@ -158,9 +158,9 @@ const FormInput = ({ label, icon: Icon, error, ...props }: any) => (
             {Icon && <Icon className="w-4 h-4 text-primary/80" />}
             {label}
         </label>
-        <input 
-            {...props} 
-            className={`w-full bg-black/40 border rounded-xl px-4 py-3 text-white text-base focus:ring-2 outline-none transition-all placeholder:text-white/20 disabled:opacity-50 disabled:cursor-not-allowed ${error ? 'border-red-500 focus:ring-red-500/50' : 'border-white/10 focus:ring-primary/50 focus:border-primary/50'}`} 
+        <input
+            {...props}
+            className={`w-full bg-black/40 border rounded-xl px-4 py-3 text-white text-base focus:ring-2 outline-none transition-all placeholder:text-white/20 disabled:opacity-50 disabled:cursor-not-allowed ${error ? 'border-red-500 focus:ring-red-500/50' : 'border-white/10 focus:ring-primary/50 focus:border-primary/50'}`}
         />
         {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
     </div>
@@ -171,9 +171,9 @@ const FormTextarea = ({ label, error, ...props }: any) => (
         <label className="text-sm font-medium text-white/90 block">
             {label}
         </label>
-        <textarea 
-            {...props} 
-            className={`w-full min-h-[120px] bg-black/40 border rounded-xl px-4 py-3 text-white text-base focus:ring-2 outline-none transition-all placeholder:text-white/20 resize-y ${error ? 'border-red-500 focus:ring-red-500/50' : 'border-white/10 focus:ring-primary/50 focus:border-primary/50'}`} 
+        <textarea
+            {...props}
+            className={`w-full min-h-[120px] bg-black/40 border rounded-xl px-4 py-3 text-white text-base focus:ring-2 outline-none transition-all placeholder:text-white/20 resize-y ${error ? 'border-red-500 focus:ring-red-500/50' : 'border-white/10 focus:ring-primary/50 focus:border-primary/50'}`}
         />
         {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
     </div>
@@ -182,7 +182,7 @@ const FormTextarea = ({ label, error, ...props }: any) => (
 // ── Welcome Splash Component ──────────────────────────────────────
 const WelcomeSplash = ({ onComplete }: { onComplete: () => void }) => {
     return (
-        <motion.div 
+        <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.05 }}
@@ -194,7 +194,7 @@ const WelcomeSplash = ({ onComplete }: { onComplete: () => void }) => {
             <p className="text-xl text-white/70 max-w-xl mx-auto mb-10 leading-relaxed font-heading font-light tracking-wide italic">
                 Your journey into circuits, code, and creativity starts right here. Let's get to know you better.
             </p>
-            <Button 
+            <Button
                 onClick={onComplete}
                 className="h-14 px-10 bg-primary text-primary-foreground hover:bg-primary/90 font-heading font-bold text-lg rounded-full shadow-[0_0_20px_rgba(220,20,60,0.3)] group transition-all"
             >
@@ -238,15 +238,15 @@ const Apply = () => {
         phone: '',
         yearOfStudy: '',
         hostelDay: '',
-        
+
         primaryDept: '',
         secondaryDept: '',
         whyJoinSscs: '',
         whyTheseDepts: '',
-        
+
         deptAnswer: '',
         secondaryDeptAnswer: '',
-        
+
         weeklyHours: '',
         linkedinUrl: '',
         googleDriveUrl: '',
@@ -285,11 +285,11 @@ const Apply = () => {
 
             const rawName = user.displayName || '';
             const regMatch = rawName.match(/(\d{2}[A-Z]{3}\d{4})/i);
-            
+
             if (regMatch) {
                 const regNo = regMatch[1].toUpperCase();
                 const cleanName = rawName.replace(regMatch[0], '').trim();
-                
+
                 setFormData(prev => ({
                     ...prev,
                     fullName: prev.fullName || cleanName, // Only set if not already loaded from cache
@@ -352,7 +352,7 @@ const Apply = () => {
             if (data && data.length > 0) {
                 const app = data[0];
                 setExistingApp(app);
-                
+
                 setFormData({
                     fullName: app.full_name || '',
                     rollNumber: app.roll_number || '',
@@ -368,9 +368,9 @@ const Apply = () => {
                     linkedinUrl: app.linkedin_url || '',
                     githubUrl: app.github_url || '',
                     portfolioWebsite: app.portfolio_website || '',
-                    googleDriveUrl: '' 
+                    googleDriveUrl: ''
                 });
-                
+
                 if (app.roll_number) {
                     const validation = validateRegistrationNumber(app.roll_number);
                     setRegValidation(validation);
@@ -430,7 +430,7 @@ const Apply = () => {
     const handleNextStep = (e: React.FormEvent) => {
         e.preventDefault();
         let newErrors: Record<string, string> = {};
-        
+
         if (step === 1) {
             if (!formData.fullName) newErrors.fullName = 'Full Name is required';
             if (!formData.rollNumber) newErrors.rollNumber = 'Registration Number is required';
@@ -465,7 +465,7 @@ const Apply = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Anti-bot Honeypot check: If invisible field is populated, silently drop request
         if (formData.hp_website) {
             console.warn('[Security] Bot detected via honeypot field submission.');
@@ -478,7 +478,7 @@ const Apply = () => {
             return;
         }
         setFormErrors({});
-        
+
         if (!user) return;
 
         if (existingApp && !isEditing) {
@@ -503,11 +503,11 @@ const Apply = () => {
                 phone: formData.phone,
                 linkedin_url: formData.linkedinUrl,
                 github_url: formData.githubUrl,
-                
+
                 primary_dept: formData.primaryDept,
                 secondary_dept: formData.secondaryDept,
                 status: existingApp ? existingApp.status : 'applied',
-                
+
                 // New Fields
                 hostel_day: formData.hostelDay,
                 weekly_hours: formData.weeklyHours,
@@ -515,15 +515,15 @@ const Apply = () => {
                 why_join_sscs: formData.whyJoinSscs,
                 why_these_depts: formData.whyTheseDepts,
                 dept_answer: combinedDeptAnswer,
-                
+
                 // For backward compatibility with existing admin panel
-                skills: combinedDeptAnswer, 
+                skills: combinedDeptAnswer,
                 reason: formData.whyJoinSscs,
                 secondary_skills: formData.secondaryDeptAnswer,
                 secondary_reason: formData.whyTheseDepts,
                 notes: formData.anyQuestions ? `Questions for us: ${formData.anyQuestions}` : '',
                 year: formData.yearOfStudy,
-                
+
                 // Derived Metadata
                 admission_year: regValidation?.admissionYear,
                 program_code: regValidation?.programCode,
@@ -542,7 +542,7 @@ const Apply = () => {
             }
 
             if (error) throw error;
-            
+
             if (user?.uid) {
                 localStorage.removeItem(`sscsFormData_v2_${user.uid}`);
             }
@@ -609,7 +609,7 @@ const Apply = () => {
                         Back to Home
                     </Link>
                     <div className="relative p-12 md:p-16 max-w-xl mx-auto border border-white/10 bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl">
-                        
+
                         <h2 className="text-4xl font-heading font-bold mb-6 text-white tracking-tight">Recruitments are closed</h2>
                         <p className="text-muted-foreground/80 mb-10 leading-relaxed text-lg font-medium">
                             We are not accepting applications right now. Catch us next time!
@@ -636,7 +636,7 @@ const Apply = () => {
                     <div className="relative p-10 md:p-12 max-w-3xl w-full text-center mx-auto mt-12 border border-white/10 bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl">
                         {existingApp.status === 'selected' ? (
                             <>
-                                
+
                                 <h2 className="text-3xl font-heading font-bold mb-2 text-white">Congratulations!</h2>
                                 <div className="inline-block px-4 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 mb-6 text-sm font-medium">
                                     Application Selected
@@ -650,7 +650,7 @@ const Apply = () => {
                             </>
                         ) : existingApp.status === 'rejected' ? (
                             <>
-                                
+
                                 <h2 className="text-2xl font-heading font-bold mb-2 text-white">Application Status</h2>
                                 <div className="inline-block px-3 py-1 rounded-full bg-red-500/10 text-red-500/80 border border-red-500/20 mb-6 text-xs uppercase tracking-wider">
                                     Not Selected
@@ -661,7 +661,7 @@ const Apply = () => {
                             </>
                         ) : existingApp.status === 'shortlisted' ? (
                             <div className="text-center animate-in fade-in duration-500">
-                                
+
                                 <h2 className="text-3xl font-heading font-bold mb-2 text-white">Application Shortlisted!</h2>
                                 <p className="text-gray-300 mb-8">
                                     You've moved to the next round. Please book an interview slot immediately.
@@ -676,7 +676,7 @@ const Apply = () => {
                             <InterviewScheduledStatus app={existingApp} />
                         ) : (
                             <>
-                                
+
                                 <h2 className="text-3xl  font-bold mb-2 text-white">Under Review</h2>
                                 <div className="inline-block px-4 py-1 rounded-full bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 mb-6 text-sm font-medium">
                                     Status: Pending
@@ -721,30 +721,38 @@ const Apply = () => {
             <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground bg-[#050505]">
                 <CircuitBoardBackground />
                 <div className="relative p-10 max-w-lg w-full text-center z-10 border border-white/10 bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl">
-                    
+
                     <h2 className="text-4xl  font-bold mb-3 text-white">Application Submitted Successfully!</h2>
                     <p className="text-muted-foreground mb-8 text-lg">
                         We've received your application. Keep an eye on your email and our WhatsApp group!
                     </p>
                     <div className="bg-white/5 p-6 rounded-xl border border-white/10 mb-8 flex flex-col items-center gap-3">
-                                    <p className="text-sm text-muted-foreground mb-2">Connect with us for updates:</p>
-                                    <a
-                                        href="https://chat.whatsapp.com/Em8uoQtYNPcFTsg3w0dVdo?s=qt&p=a&ilr=1"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center justify-center h-12 px-6 rounded-lg bg-[#25D366] text-white font-bold hover:bg-[#128C7E] transition-colors w-full"
-                                    >
-                                        Join WhatsApp Group
-                                    </a>
-                                    <a
-                                        href="https://www.instagram.com/ieee_sscs_vitcc"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center justify-center h-12 px-6 rounded-lg bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white font-bold hover:opacity-90 transition-opacity w-full"
-                                    >
-                                        Follow on Instagram
-                                    </a>
-                                </div>
+                        <p className="text-sm text-muted-foreground mb-2">Connect with us for updates:</p>
+                        <a
+                            href="https://chat.whatsapp.com/Em8uoQtYNPcFTsg3w0dVdo?s=qt&p=a&ilr=1"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center h-12 px-6 rounded-lg bg-[#25D366] text-white font-bold hover:bg-[#128C7E] transition-colors w-full"
+                        >
+                            Join our WhatsApp Group
+                        </a>
+                        <a
+                            href="https://www.instagram.com/ieee_sscs_vitcc"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center h-12 px-6 rounded-lg bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white font-bold hover:opacity-90 transition-opacity w-full"
+                        >
+                            Follow us on Instagram
+                        </a>
+                        <a
+                            href="https://www.linkedin.com/company/ieee-sscs-vitcc"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center h-12 px-6 rounded-lg bg-[#0A66C2] text-white font-bold hover:bg-[#004182] transition-colors w-full"
+                        >
+                            Follow us on LinkedIn
+                        </a>
+                    </div>
                     <Button
                         onClick={() => window.location.reload()}
                         className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 font-bold mb-3 rounded-lg"
@@ -768,7 +776,7 @@ const Apply = () => {
                     </Link>
                     <div className="max-w-lg mx-auto mt-20">
                         <div className="relative p-10 text-center border border-white/10 bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl">
-                            
+
                             <h2 className="text-2xl  font-bold mb-4 text-white">Authentication Required</h2>
                             <p className="text-muted-foreground mb-8">
                                 To apply for IEEE SSCS, you must sign in with your VIT Student email address (@vitstudent.ac.in).
@@ -790,7 +798,7 @@ const Apply = () => {
     return (
         <div className="min-h-screen relative text-foreground bg-[#050505] overflow-hidden selection:bg-primary/30">
             <CircuitBoardBackground />
-            
+
             {showWelcome ? (
                 <div className="container mx-auto px-6 py-12 relative z-10 flex items-center justify-center min-h-screen">
                     <WelcomeSplash onComplete={() => setShowWelcome(false)} />
@@ -798,7 +806,7 @@ const Apply = () => {
             ) : (
                 <div className="container mx-auto px-4 md:px-6 py-12 relative z-10">
                     <motion.div key={step} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="max-w-4xl mx-auto">
-                        
+
                         <div className="text-center mb-10">
                             <span className="inline-block text-sm text-primary font-bold px-4 py-1.5 rounded-full border border-primary/20 bg-primary/10 mb-4">
                                 Step {step} of 4
@@ -806,12 +814,12 @@ const Apply = () => {
                             <h1 className=" text-3xl md:text-5xl font-heading font-bold mb-6 text-white tracking-tight">
                                 <RevealText text={
                                     step === 1 ? "Basic Details" :
-                                    step === 2 ? "Department Preferences" :
-                                    step === 3 ? "Short Questions" :
-                                    "Final Details"
+                                        step === 2 ? "Department Preferences" :
+                                            step === 3 ? "Short Questions" :
+                                                "Final Details"
                                 } />
                             </h1>
-                            
+
                             {/* Simple Step Indicator */}
                             <div className="flex items-center justify-center gap-2 mt-8 max-w-sm mx-auto">
                                 {[1, 2, 3, 4].map((i) => (
@@ -825,7 +833,7 @@ const Apply = () => {
                         {/* Main Form Container - Clean and Modern */}
                         <div className="relative p-6 md:p-10 border border-white/10 bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl">
                             <form onSubmit={step === 4 ? handleSubmit : handleNextStep} noValidate className="space-y-8">
-                                
+
                                 {step === 1 && (
                                     <div className="space-y-8 animate-in fade-in duration-500">
                                         <div className="grid md:grid-cols-2 gap-6">
@@ -842,7 +850,7 @@ const Apply = () => {
                                                 </label>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     {YEARS_OF_STUDY.map(year => (
-                                                        <div key={year} onClick={() => handleOptionSelect('yearOfStudy', year)} 
+                                                        <div key={year} onClick={() => handleOptionSelect('yearOfStudy', year)}
                                                             className={`cursor-pointer px-4 py-3 border rounded-xl text-center text-sm font-medium transition-all duration-200 ${formData.yearOfStudy === year ? 'bg-primary/20 border-primary text-primary shadow-sm' : formErrors.yearOfStudy ? 'border-red-500 bg-red-500/5 text-red-400' : 'bg-black/40 border-white/10 hover:border-white/30 text-white/70 hover:text-white'}`}>
                                                             {year}
                                                         </div>
@@ -855,7 +863,7 @@ const Apply = () => {
                                                 </label>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     {['Hosteller', 'Day Scholar'].map(type => (
-                                                        <div key={type} onClick={() => handleOptionSelect('hostelDay', type)} 
+                                                        <div key={type} onClick={() => handleOptionSelect('hostelDay', type)}
                                                             className={`cursor-pointer px-4 py-3 border rounded-xl text-center text-sm font-medium transition-all duration-200 ${formData.hostelDay === type ? 'bg-primary/20 border-primary text-primary shadow-sm' : formErrors.hostelDay ? 'border-red-500 bg-red-500/5 text-red-400' : 'bg-black/40 border-white/10 hover:border-white/30 text-white/70 hover:text-white'}`}>
                                                             {type}
                                                         </div>
@@ -879,7 +887,7 @@ const Apply = () => {
                                                 const isPrimary = formData.primaryDept === dept.name;
                                                 const hasDeptError = !!formErrors.dept;
                                                 const isSecondary = formData.secondaryDept === dept.name;
-                                                
+
                                                 let cardClass = "relative p-5 rounded-2xl cursor-pointer transition-all duration-200 border flex flex-col ";
                                                 if (isPrimary) {
                                                     cardClass += "border-primary bg-primary/10 shadow-[0_0_20px_rgba(var(--primary),0.15)]";
@@ -960,14 +968,14 @@ const Apply = () => {
                                             <p className="text-sm text-white/70 mb-3">How many hours can you dedicate every week?</p>
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                                 {WEEKLY_HOURS.map(hrs => (
-                                                    <div key={hrs} onClick={() => handleOptionSelect('weeklyHours', hrs)} 
+                                                    <div key={hrs} onClick={() => handleOptionSelect('weeklyHours', hrs)}
                                                         className={`cursor-pointer px-4 py-4 border rounded-xl text-center font-bold text-base transition-all duration-200 ${formData.weeklyHours === hrs ? 'bg-primary/20 border-primary text-primary shadow-sm' : 'bg-black/40 border-white/10 hover:border-white/30 text-white/70 hover:text-white'}`}>
                                                         {hrs}
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
-                                        
+
                                         <div className="space-y-4 pt-8 border-t border-white/10">
                                             <h3 className="text-lg font-heading font-bold text-white mb-4 flex items-center gap-2">
                                                 <LinkIcon className="w-5 h-5 text-primary" /> Links (Optional)
