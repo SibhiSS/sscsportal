@@ -73,10 +73,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           // Use DB role if present, fallback to super_admin for exception email
           const role = adminData?.role || (isHardcodedAdmin ? 'super_admin' : 'viewer');
-
-          setUser({
+          const nextUser = {
             ...mapSupabaseUser(session.user),
             role
+          };
+
+          setUser(prev => {
+            if (prev?.email === nextUser.email && prev?.role === nextUser.role) {
+              return prev;
+            }
+            return nextUser;
           });
         }
       } else {

@@ -20,6 +20,10 @@ const InterviewerDashboard = () => {
     const { user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const [mySlots, setMySlots] = useState<any[]>([]);
+    const [allSlots, setAllSlots] = useState<any[]>([]);
+    const [myAssignments, setMyAssignments] = useState<any[]>([]);
+    const [availablePanels, setAvailablePanels] = useState<number[]>([]);
+    const [selectedPanelId, setSelectedPanelId] = useState<number | 'all' | 'assigned'>('assigned');
     const [isLoading, setIsLoading] = useState(true);
     const [evalApp, setEvalApp] = useState<Application | null>(null);
     const [existingFeedback, setExistingFeedback] = useState<InterviewFeedback | null>(null);
@@ -30,12 +34,13 @@ const InterviewerDashboard = () => {
 
     const ALLOWED_ROLES = ['super_admin', 'admin', 'interviewer'];
     const hasAccess = user?.role && ALLOWED_ROLES.includes(user.role);
+    const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
     useEffect(() => {
-        if (!authLoading && user && hasAccess) {
+        if (!authLoading && user?.email && hasAccess) {
             fetchMySlots();
         }
-    }, [user, authLoading, hasAccess]);
+    }, [user?.email, authLoading, hasAccess]);
 
     const fetchMySlots = async () => {
         setIsLoading(true);
@@ -44,14 +49,12 @@ const InterviewerDashboard = () => {
             .select('panel_id, date, meeting_link')
             .eq('interviewer_email', user?.email);
 
-        if (!assignments || assignments.length === 0) {
-            setIsLoading(false);
-            return;
-        }
+        const assignList = assignments || [];
+        setMyAssignments(assignList);
 
         // Build meeting link map
         const linkMap: Record<number, string> = {};
-        assignments.forEach(a => { if (a.meeting_link) linkMap[a.panel_id] = a.meeting_link; });
+        assignList.forEach(a => { if (a.meeting_link) linkMap[a.panel_id] = a.meeting_link; });
         setMeetingLinks(linkMap);
 
         const { data: slots } = await supabase
@@ -59,31 +62,58 @@ const InterviewerDashboard = () => {
             .select('*, applications(*)')
             .order('start_time', { ascending: true });
 
-        if (slots) {
-            const filtered = slots.filter(slot => {
-                const slotDate = format(parseISO(slot.start_time), 'yyyy-MM-dd');
-                return assignments.some(a => a.panel_id === slot.panel_id && a.date === slotDate);
-            });
-            setMySlots(filtered);
+        const slotList = slots || [];
+        setAllSlots(slotList);
 
-            // Compute stats
-            const booked = filtered.filter(s => s.is_booked && s.applications);
-            // Fetch feedbacks for all booked slots
-            const feedbackChecks = await Promise.all(
-                booked.map(s => fetchFeedbacksForApplication(s.applications?.id || ''))
-            );
+        // Extract distinct panels
+        const panels = Array.from(new Set(slotList.map(s => Number(s.panel_id)).filter(Boolean))).sort((a, b) => a - b);
+        setAvailablePanels(panels);
+
+        setIsLoading(false);
+    };
+
+    useEffect(() => {
+        if (!allSlots.length) {
+            setMySlots([]);
+            setStats({ total: 0, evaluated: 0, pending: 0 });
+            return;
+        }
+
+        let filtered = allSlots;
+        if (!isAdmin || selectedPanelId === 'assigned') {
+            filtered = allSlots.filter(slot => {
+                const slotDate = format(parseISO(slot.start_time), 'yyyy-MM-dd');
+                return myAssignments.some(a => a.panel_id === slot.panel_id && a.date === slotDate);
+            });
+        } else if (selectedPanelId === 'all') {
+            filtered = allSlots;
+        } else if (typeof selectedPanelId === 'number') {
+            filtered = allSlots.filter(slot => Number(slot.panel_id) === selectedPanelId);
+        }
+
+        setMySlots(filtered);
+
+        // Compute stats for displayed slots
+        const booked = filtered.filter(s => s.is_booked && s.applications);
+        Promise.all(
+            booked.map(s => fetchFeedbacksForApplication(s.applications?.id || ''))
+        ).then(feedbackChecks => {
             const evaluated = feedbackChecks.filter(fb =>
                 fb.some(f => f.interviewer_email === user?.email)
             ).length;
-
             setStats({ total: booked.length, evaluated, pending: booked.length - evaluated });
-        }
-        setIsLoading(false);
-    };
+        });
+    }, [allSlots, myAssignments, selectedPanelId, isAdmin, user?.email]);
 
     const handleOpenEval = async (slot: any) => {
         const app = slot.applications;
         if (!app) return;
+
+        setIsLoading(true);
+        // Load existing feedback BEFORE mounting modal to ensure instant slider accuracy
+        const feedbacks = await fetchFeedbacksForApplication(app.id);
+        const mine = feedbacks.find(f => f.interviewer_email === user?.email) ?? null;
+        setExistingFeedback(mine);
 
         const mappedApp: Application = {
             ...app,
@@ -106,11 +136,7 @@ const InterviewerDashboard = () => {
             parsedSkills: app.parsed_skills || [],
         };
         setEvalApp(mappedApp);
-
-        // Load existing feedback
-        const feedbacks = await fetchFeedbacksForApplication(app.id);
-        const mine = feedbacks.find(f => f.interviewer_email === user?.email) ?? null;
-        setExistingFeedback(mine);
+        setIsLoading(false);
     };
 
     const handleSubmitEval = async (payload: {
@@ -248,6 +274,52 @@ const InterviewerDashboard = () => {
                             </motion.div>
                         )}
                     </AnimatePresence>
+
+                    {/* Admin Panel Switcher Header */}
+                    {isAdmin && (
+                        <div className="bg-gradient-to-r from-purple-900/30 to-black/60 border border-purple-500/30 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 backdrop-blur-xl shadow-[0_0_25px_rgba(168,85,247,0.15)]">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-300 shadow-inner">
+                                    <ShieldAlert className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
+                                        Admin Panel Switcher <Badge variant="outline" className="text-[10px] bg-purple-500/20 text-purple-300 border-purple-500/30 px-2 py-0.5">Admin / SuperAdmin Mode</Badge>
+                                    </h3>
+                                    <p className="text-xs text-muted-foreground mt-0.5">Switch between interview panels to oversee or evaluate candidates across any committee.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap w-full md:w-auto bg-black/40 p-1.5 rounded-xl border border-white/10">
+                                <Button
+                                    size="sm"
+                                    variant={selectedPanelId === 'assigned' ? 'default' : 'ghost'}
+                                    onClick={() => setSelectedPanelId('assigned')}
+                                    className={selectedPanelId === 'assigned' ? 'bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'text-white/70 hover:text-white text-xs'}
+                                >
+                                    My Assigned
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant={selectedPanelId === 'all' ? 'default' : 'ghost'}
+                                    onClick={() => setSelectedPanelId('all')}
+                                    className={selectedPanelId === 'all' ? 'bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'text-white/70 hover:text-white text-xs'}
+                                >
+                                    All Panels
+                                </Button>
+                                {availablePanels.map(pid => (
+                                    <Button
+                                        key={pid}
+                                        size="sm"
+                                        variant={selectedPanelId === pid ? 'default' : 'ghost'}
+                                        onClick={() => setSelectedPanelId(pid)}
+                                        className={selectedPanelId === pid ? 'bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'text-white/70 hover:text-white text-xs'}
+                                    >
+                                        Panel {pid}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Slots by Date */}
                     {uniqueDates.length === 0 ? (

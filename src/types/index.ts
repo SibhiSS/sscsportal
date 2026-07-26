@@ -139,6 +139,7 @@ export interface InterviewFeedback {
     // Evaluation
     recommendation: 'strong_select' | 'select' | 'maybe' | 'reject';
     interviewer_remarks: string;
+    recommended_dept?: string;
     comments: string;            // legacy alias
     recommends_committee: boolean; // legacy alias
     created_at: string;

@@ -14,7 +14,23 @@ export async function fetchFeedbacksForApplication(applicationId: string): Promi
         console.error('Error fetching feedbacks:', error);
         return [];
     }
-    return (data || []) as InterviewFeedback[];
+    return (data || []).map((f: any) => {
+        let remarks = f.interviewer_remarks || f.comments || '';
+        let dept = f.recommended_dept || f.recommends_for || '';
+        // If fallback format [Dept: ...] was used in comments, parse it out cleanly!
+        if (!dept && typeof remarks === 'string' && remarks.startsWith('[Dept: ')) {
+            const match = remarks.match(/^\[Dept:\s*([^\]]+)\]\s*(.*)$/s);
+            if (match) {
+                dept = match[1].trim();
+                remarks = match[2].trim();
+            }
+        }
+        return {
+            ...f,
+            interviewer_remarks: remarks,
+            recommended_dept: dept,
+        };
+    }) as InterviewFeedback[];
 }
 
 // ── Compute aggregate scores + conflict detection ─────────────────────────────
@@ -79,27 +95,44 @@ export interface EvaluationPayload {
     score_team_fit: number;
     recommendation: EvaluationRecommendation;
     interviewer_remarks: string;
+    recommended_dept?: string;
 }
 
 export async function submitEvaluation(payload: EvaluationPayload): Promise<{ error: string | null }> {
-    const { data: feedbackData, error } = await supabase
+    const baseRow: any = {
+        ...payload,
+        // Round scores to integers — DB columns are INTEGER type
+        score_communication: Math.round(payload.score_communication),
+        score_technical:     Math.round(payload.score_technical),
+        score_enthusiasm:    Math.round(payload.score_enthusiasm),
+        score_leadership:    Math.round(payload.score_leadership),
+        score_team_fit:      Math.round(payload.score_team_fit),
+        // Legacy field compat & explicit column assignment
+        comments: payload.interviewer_remarks,
+        interviewer_remarks: payload.interviewer_remarks,
+        recommended_dept: payload.recommended_dept || '',
+        recommends_committee: payload.recommendation !== 'reject',
+    };
+
+    let { data: feedbackData, error } = await supabase
         .from('interview_feedback')
-        .upsert(
-            {
-                ...payload,
-                // Round scores to integers — DB columns are INTEGER type
-                score_communication: Math.round(payload.score_communication),
-                score_technical:     Math.round(payload.score_technical),
-                score_enthusiasm:    Math.round(payload.score_enthusiasm),
-                score_leadership:    Math.round(payload.score_leadership),
-                score_team_fit:      Math.round(payload.score_team_fit),
-                // Legacy field compat — DB trigger will compute total_score
-                comments: payload.interviewer_remarks,
-                recommends_committee: payload.recommendation !== 'reject',
-            },
-            { onConflict: 'application_id,interviewer_email' }
-        )
+        .upsert(baseRow, { onConflict: 'application_id,interviewer_email' })
         .select();
+
+    // If upsert fails due to missing recommended_dept or interviewer_remarks columns before SQL migration is run, retry without them
+    if (error && (error.message?.includes('recommended_dept') || error.message?.includes('interviewer_remarks') || error.message?.includes('schema cache'))) {
+        console.warn('Column missing in interview_feedback table, retrying with legacy schema fallback...', error.message);
+        delete baseRow.recommended_dept;
+        delete baseRow.interviewer_remarks;
+        // Embed remarks and dept in comments as fallback if columns don't exist yet
+        baseRow.comments = `${payload.recommended_dept ? `[Dept: ${payload.recommended_dept}] ` : ''}${payload.interviewer_remarks || ''}`;
+        const fallbackRes = await supabase
+            .from('interview_feedback')
+            .upsert(baseRow, { onConflict: 'application_id,interviewer_email' })
+            .select();
+        error = fallbackRes.error;
+        feedbackData = fallbackRes.data;
+    }
 
     if (error) {
         console.error('Feedback upsert error:', error);

@@ -259,6 +259,9 @@ export default function MultiInterviewerPanel({ applicationId }: MultiInterviewe
               <th className="px-4 py-2.5 text-[10px] uppercase tracking-widest text-muted-foreground font-medium whitespace-nowrap">
                 Verdict
               </th>
+              <th className="px-3 py-2.5 text-[10px] uppercase tracking-widest text-muted-foreground font-medium text-center whitespace-nowrap">
+                Rec. Dept
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -269,7 +272,7 @@ export default function MultiInterviewerPanel({ applicationId }: MultiInterviewe
 
               return (
                 <motion.tr
-                  key={fb.id}
+                  key={(fb as any).id || idx}
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.06, duration: 0.25 }}
@@ -282,7 +285,7 @@ export default function MultiInterviewerPanel({ applicationId }: MultiInterviewe
 
                   {/* Score cells */}
                   {TABLE_SCORE_KEYS.map(({ field }) => {
-                    const val = Number(fb[field]) ?? 0;
+                    const val = Number((fb as any)[field]) ?? 0;
                     return (
                       <td key={field} className="px-3 py-3 text-center">
                         <span className={`font-mono text-xs font-semibold tabular-nums ${scoreTextColor(val)}`}>
@@ -307,11 +310,57 @@ export default function MultiInterviewerPanel({ applicationId }: MultiInterviewe
                       {rec.label}
                     </span>
                   </td>
+
+                  {/* Recommended Dept */}
+                  <td className="px-3 py-3 text-center">
+                    <span className="inline-block px-2 py-0.5 rounded bg-purple-500/20 text-purple-200 border border-purple-500/30 text-[10px] font-bold">
+                      {fb.recommended_dept || (fb as any).recommends_for || 'General'}
+                    </span>
+                  </td>
                 </motion.tr>
               );
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* ── Detailed Interviewer Verdicts & Remarks (SuperAdmin View) ───────── */}
+      <div className="space-y-3 pt-2">
+        <h4 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+          <span className="p-1 rounded bg-purple-500/20 border border-purple-500/30 text-purple-300">💬</span>
+          Interviewer Remarks & Verdicts (SuperAdmin View)
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {feedbacks.map((fb, idx) => {
+            const rec = recommendationMeta(fb.recommendation || 'maybe');
+            const dept = fb.recommended_dept || (fb as any).recommends_for || 'General';
+            const remarksText = fb.interviewer_remarks || fb.comments;
+            const rowTotal = Number(fb.total_score) ||
+              ((Number(fb.score_communication) + Number(fb.score_technical) + Number(fb.score_enthusiasm) + Number(fb.score_leadership) + Number(fb.score_team_fit)) / 5);
+
+            return (
+              <div key={(fb as any).id || idx} className="bg-gradient-to-br from-white/[0.04] to-black/60 border border-white/10 rounded-xl p-4 space-y-2.5 shadow-lg">
+                <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-2.5">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-extrabold text-white font-mono truncate">{fb.interviewer_email}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">Overall Score: <span className="text-white font-bold">{rowTotal.toFixed(1)} / 10</span></div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${rec.color} ${rec.bg} ${rec.border}`}>
+                      {rec.label}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-200 font-extrabold border border-purple-500/30">
+                      Dept: {dept}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-xs text-white/90 italic whitespace-pre-wrap bg-black/40 p-3 rounded-lg border border-white/5 leading-relaxed font-sans">
+                  {remarksText ? `"${remarksText}"` : <span className="text-muted-foreground/50 not-italic">No verbal remarks left by this interviewer.</span>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Recommendation summary pills ─────────────────────────────────────── */}

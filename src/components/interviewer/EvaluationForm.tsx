@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Application, InterviewFeedback, EvaluationRecommendation } from '@/types';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
@@ -217,7 +217,23 @@ export default function EvaluationForm({
   const [recommendation, setRecommendation] = useState<EvaluationRecommendation>(
     (ef?.recommendation as EvaluationRecommendation) ?? 'select'
   );
+  const [recommendedDept, setRecommendedDept] = useState<string>(
+    (ef as any)?.recommended_dept || (ef as any)?.recommends_for || application.primaryDept || application.department || 'Technical'
+  );
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (existingFeedback) {
+      setCommunication(existingFeedback.score_communication ?? 5);
+      setTechnical(existingFeedback.score_technical ?? 5);
+      setEnthusiasm(existingFeedback.score_enthusiasm ?? 5);
+      setLeadership(existingFeedback.score_leadership ?? 5);
+      setTeamFit(existingFeedback.score_team_fit ?? 5);
+      setRemarks(existingFeedback.interviewer_remarks ?? '');
+      setRecommendation((existingFeedback.recommendation as EvaluationRecommendation) ?? 'select');
+      setRecommendedDept((existingFeedback as any).recommended_dept || (existingFeedback as any).recommends_for || application.primaryDept || application.department || 'Technical');
+    }
+  }, [existingFeedback, application.primaryDept, application.department]);
 
   const totalScore = useMemo(
     () => Math.round(((communication + technical + enthusiasm + leadership + teamFit) / 5) * 10) / 10,
@@ -236,7 +252,8 @@ export default function EvaluationForm({
         score_team_fit:      teamFit,
         recommendation,
         interviewer_remarks: remarks,
-      });
+        recommended_dept:    recommendedDept,
+      } as any);
     } finally {
       setSubmitting(false);
     }
@@ -357,28 +374,71 @@ export default function EvaluationForm({
             )}
           </div>
 
-          {/* Application Answers */}
-          <div className="space-y-3 bg-black/40 p-4 rounded-lg border border-white/5 text-sm">
-            {application.domains && application.domains.length > 0 && (
-              <div>
-                <span className="text-white/40 font-semibold block text-xs uppercase mb-1">Domains of Interest</span>
-                <div className="flex flex-wrap gap-1">
-                  {application.domains.map((d, i) => (
-                    <span key={i} className="px-2 py-0.5 rounded-full bg-white/10 text-white/80 text-[10px]">{d}</span>
-                  ))}
+          {/* Application Answers - Organized by Preference */}
+          <div className="space-y-4">
+            {/* Preference 1 */}
+            <div className="bg-gradient-to-r from-purple-950/40 to-black/60 p-4 rounded-xl border border-purple-500/30 space-y-3 shadow-inner">
+              <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded bg-purple-500/30 text-purple-200 font-extrabold text-[10px] uppercase tracking-wider border border-purple-500/40">1st Preference</span>
+                  <span className="text-base font-black text-white tracking-wide">{application.primaryDept || application.department || 'Primary Department'}</span>
                 </div>
               </div>
-            )}
-            {application.skills && (
-              <div>
-                <span className="text-white/40 font-semibold block text-xs uppercase mb-1">Skills</span>
-                <p className="text-white/80 text-sm whitespace-pre-wrap">{application.skills}</p>
-              </div>
-            )}
-            {application.reason && (
-              <div>
-                <span className="text-white/40 font-semibold block text-xs uppercase mb-1">Reason for joining</span>
-                <p className="text-white/80 text-sm whitespace-pre-wrap italic">"{application.reason}"</p>
+              {application.domains && application.domains.length > 0 && (
+                <div>
+                  <span className="text-white/40 font-bold block text-[10px] uppercase tracking-widest mb-1.5">Domains of Interest</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {application.domains.map((d, i) => (
+                      <span key={i} className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-200 border border-purple-500/30 text-xs font-medium">{d}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {application.skills && (
+                <div>
+                  <span className="text-white/40 font-bold block text-[10px] uppercase tracking-widest mb-1">Skills & Experience</span>
+                  <p className="text-white/90 text-xs whitespace-pre-wrap leading-relaxed bg-black/40 p-3 rounded-xl border border-white/5 font-mono">{application.skills}</p>
+                </div>
+              )}
+              {application.reason && (
+                <div>
+                  <span className="text-white/40 font-bold block text-[10px] uppercase tracking-widest mb-1">Reason for Joining</span>
+                  <p className="text-white/80 text-xs whitespace-pre-wrap italic leading-relaxed bg-black/40 p-3 rounded-xl border border-white/5">"{application.reason}"</p>
+                </div>
+              )}
+            </div>
+
+            {/* Preference 2 */}
+            {(application.secondaryDept || (application.secondaryDomains && application.secondaryDomains.length > 0) || application.secondarySkills || application.secondaryReason) && (
+              <div className="bg-gradient-to-r from-blue-950/40 to-black/60 p-4 rounded-xl border border-blue-500/30 space-y-3 shadow-inner">
+                <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded bg-blue-500/30 text-blue-200 font-extrabold text-[10px] uppercase tracking-wider border border-blue-500/40">2nd Preference</span>
+                    <span className="text-base font-black text-white tracking-wide">{application.secondaryDept || 'Secondary Department'}</span>
+                  </div>
+                </div>
+                {application.secondaryDomains && application.secondaryDomains.length > 0 && (
+                  <div>
+                    <span className="text-white/40 font-bold block text-[10px] uppercase tracking-widest mb-1.5">Domains of Interest</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {application.secondaryDomains.map((d, i) => (
+                        <span key={i} className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-200 border border-blue-500/30 text-xs font-medium">{d}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {application.secondarySkills && (
+                  <div>
+                    <span className="text-white/40 font-bold block text-[10px] uppercase tracking-widest mb-1">Skills & Experience</span>
+                    <p className="text-white/90 text-xs whitespace-pre-wrap leading-relaxed bg-black/40 p-3 rounded-xl border border-white/5 font-mono">{application.secondarySkills}</p>
+                  </div>
+                )}
+                {application.secondaryReason && (
+                  <div>
+                    <span className="text-white/40 font-bold block text-[10px] uppercase tracking-widest mb-1">Reason for Joining</span>
+                    <p className="text-white/80 text-xs whitespace-pre-wrap italic leading-relaxed bg-black/40 p-3 rounded-xl border border-white/5">"{application.secondaryReason}"</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -424,6 +484,48 @@ export default function EvaluationForm({
                 disabled={readOnly}
               />
             ))}
+          </div>
+        </div>
+
+        {/* ── Recommended Department ────────────────────────────────────────── */}
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-white/40 flex items-center justify-between">
+            <span>Recommend For Department</span>
+            <span className="text-[10px] text-purple-400 font-normal">Select which committee this candidate fits best</span>
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {Array.from(new Set([
+              application.primaryDept || application.department || 'Technical',
+              application.secondaryDept,
+              'Technical',
+              'Management',
+              'Event Operations',
+              'Creative',
+              'Outreach & Partnerships',
+              'Human Resources',
+              'Editorial & Media'
+            ].filter(Boolean))).map((dept) => {
+              const isSelected = recommendedDept === dept;
+              const isPrimary = dept === (application.primaryDept || application.department);
+              const isSecondary = dept === application.secondaryDept;
+              return (
+                <button
+                  key={dept as string}
+                  type="button"
+                  disabled={readOnly}
+                  onClick={() => setRecommendedDept(dept as string)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-purple-600/30 text-purple-200 border-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.3)]'
+                      : 'bg-white/[0.03] text-white/60 border-white/10 hover:bg-white/[0.06] hover:text-white'
+                  } ${readOnly ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <span>{dept as string}</span>
+                  {isPrimary && <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/30 text-purple-300 font-bold">1st Pref</span>}
+                  {isSecondary && <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/30 text-blue-300 font-bold">2nd Pref</span>}
+                </button>
+              );
+            })}
           </div>
         </div>
 
