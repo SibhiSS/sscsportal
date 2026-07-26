@@ -149,12 +149,8 @@ const Register = () => {
         EMAILJS_PUBLIC_KEY
       );
 
-      // Log form data (placeholder for backend)
-      console.log('Registration Form Submitted:', {
-        ...formData,
-        email: user?.email,
-        submittedAt: new Date().toISOString(),
-      });
+      // FIX #14e: Removed console.log of form PII (name, email, reg number).
+      // Registration data is submitted via EmailJS — no need to log it locally.
 
       toast({
         title: "Confirmation email sent!",

@@ -7,6 +7,16 @@
 const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
 
 /**
+ * FIX #14 — Masks an email address for safe logging.
+ * e.g. "sibhi.s2024@vitstudent.ac.in" → "si***@vitstudent.ac.in"
+ */
+function maskEmail(email: string): string {
+    const [local, domain] = email.split('@');
+    if (!domain) return '***';
+    return local.slice(0, 2) + '***@' + domain;
+}
+
+/**
  * Send a single email via Google Apps Script.
  *
  * Note: Uses `mode: 'no-cors'` because Google Apps Script does not support
@@ -24,7 +34,8 @@ export async function sendEmail(
     message: string
 ): Promise<boolean> {
     if (!GOOGLE_SCRIPT_URL) {
-        console.warn('[Email] VITE_GOOGLE_SCRIPT_URL is not configured. Skipping email to:', email);
+        // FIX #14: Don't log the email address here — it would expose PII in the console.
+        console.warn('[Email] VITE_GOOGLE_SCRIPT_URL is not configured. Email send skipped.');
         return false;
     }
 
@@ -52,17 +63,18 @@ export async function sendEmail(
                 headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
                 body: JSON.stringify({ email, subject, message: formattedBody }),
             });
-            console.log(`[Email] ✓ Dispatched to ${email} — "${subject}"`);
+            // FIX #14: Use masked email in logs — never log raw PII to the console.
+            console.log(`[Email] ✓ Dispatched to ${maskEmail(email)} — "${subject}"`);
             return true;
         } catch (error) {
-            console.error(`[Email] ✗ Attempt ${attempt}/2 failed for ${email}:`, error);
+            console.error(`[Email] ✗ Attempt ${attempt}/2 failed for ${maskEmail(email)}.`);
             if (attempt < 2) {
                 await new Promise(r => setTimeout(r, 1500));
             }
         }
     }
 
-    console.error(`[Email] ✗ All attempts failed for ${email}`);
+    console.error(`[Email] ✗ All attempts failed for ${maskEmail(email)}`);
     return false;
 }
 

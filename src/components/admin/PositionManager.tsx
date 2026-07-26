@@ -130,11 +130,13 @@ const PositionManager = ({ applications, onUpdate }: PositionManagerProps) => {
                     await onUpdate(app.id, { status: 'active_member' });
                     sent++;
                 } else {
-                    console.warn(`[PositionManager] Email returned false for ${app.email} — status NOT updated.`);
+                    // FIX #14: mask email — no PII in console logs.
+                    const masked = app.email.replace(/(\w{2})\w+@/, '$1***@');
+                    console.warn(`[PositionManager] Email returned false for ${masked} — status NOT updated.`);
                     failed++;
                 }
             } catch (err) {
-                console.error(`[PositionManager] Unexpected error sending to ${app.email}:`, err);
+                console.error('[PositionManager] Unexpected error sending position email.');
                 failed++;
             }
 

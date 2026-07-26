@@ -100,23 +100,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
+        options: {
+          // Supabase redirects back to the app after OAuth
+          redirectTo: window.location.origin,
+        }
       });
       if (error) throw error;
       // Redirect happens automatically
     } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err?.message || 'Failed to sign in. Please try again.');
+      // FIX #14: Never log full error objects — they may contain token/session data.
+      // FIX #13: Use generic message to prevent auth error enumeration.
+      console.error('[Auth] Sign-in failed. Cause suppressed for security.');
+      setError('Sign in failed. Please use your VIT email address and try again.');
       setLoading(false);
     }
   };
 
   const logout = async () => {
     try {
+      // FIX #16 (Privacy/Frontend Security): Clear all user form draft data from localStorage
+      // before signing out so sensitive PII is not left on shared/lab computers.
+      const keys = Object.keys(localStorage).filter(k => k.startsWith('sscsFormData_'));
+      keys.forEach(k => localStorage.removeItem(k));
+      localStorage.removeItem('sscs_admin_view');
+
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      setUser(null);
     } catch (err: any) {
-      console.error('Logout error:', err);
-      setError('Failed to log out.');
+      // FIX #14: Don't log error objects that may contain session information.
+      console.error('[Auth] Logout failed.');
+      setError('Failed to log out. Please try again.');
     }
   };
 

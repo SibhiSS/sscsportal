@@ -274,11 +274,13 @@ const Admin = () => {
                         emailCount++;
                         await supabase.from('applications').update({ status: 'active_member', decided_at: new Date().toISOString() }).eq('id', app.id);
                     } else {
-                        console.warn(`[Admin] Selection email failed for ${app.email} — status NOT updated.`);
+                        // FIX #14: Never log raw PII — mask the email address.
+                        const masked = app.email.replace(/(\w{2})\w+@/, '$1***@');
+                        console.warn(`[Admin] Selection email failed for ${masked} — status NOT updated.`);
                     }
                     await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limit protection
                 } catch (err) {
-                    console.error(`Failed for ${app.email}:`, err);
+                    console.error('[Admin] Unexpected error during selection email send.');
                 }
             }
 
@@ -298,11 +300,13 @@ const Admin = () => {
                         emailCount++;
                         await supabase.from('applications').update({ status: 'rejected', decided_at: new Date().toISOString() }).eq('id', app.id);
                     } else {
-                        console.warn(`[Admin] Rejection email failed for ${app.email} — status NOT updated.`);
+                        // FIX #14: Never log raw PII — mask the email address.
+                        const masked = app.email.replace(/(\w{2})\w+@/, '$1***@');
+                        console.warn(`[Admin] Rejection email failed for ${masked} — status NOT updated.`);
                     }
                     await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limit protection
                 } catch (err) {
-                    console.error(`Failed for ${app.email}:`, err);
+                    console.error('[Admin] Unexpected error during rejection email send.');
                 }
             }
 
@@ -321,6 +325,14 @@ const Admin = () => {
         }
     };
 
+    /**
+     * FIX #15 (Privacy) — This export contains full applicant PII (name, email, phone,
+     * roll number, GitHub, LinkedIn). Admin responsibilities:
+     *  1. Store the file only on an encrypted drive — never a shared or cloud folder.
+     *  2. Delete the file securely after use (do not leave it in Downloads).
+     *  3. Per the data-retention policy, all copies must be deleted 60 days after
+     *     recruitment ends.
+     */
     const downloadExcel = () => {
         const data = applications.map(app => ({
             'Full Name': app.fullName,

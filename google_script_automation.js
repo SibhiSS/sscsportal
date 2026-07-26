@@ -1,22 +1,36 @@
 
 /**
  * GOOGLE APPS SCRIPT AUTOMATION FOR NOVA CPS INTERVIEWS
- * 
- * Instructions:
- * 1. Go to https://script.google.com/
- * 2. Create a new project.
- * 3. Paste this code.
- * 4. Update the CONFIG object below with your Supabase URL and Service Role Key (or API Key).
- * 5. Set up a Time-driven trigger to run `automationCheck` every 10 minutes.
- * 6. (Optional) Run `initialSetup` once to authorize.
+ *
+ * ─── SETUP (one-time, done inside Google Apps Script, NEVER in source code) ───
+ * 1. Go to https://script.google.com/ and open this project.
+ * 2. Click Project Settings (⚙️) → Script Properties → Add property.
+ * 3. Add the following properties:
+ *      SUPABASE_URL        → https://your-project-id.supabase.co
+ *      SUPABASE_KEY        → your-service-role-key   (service_role — full DB access)
+ *      ADMIN_ALERT_EMAIL   → sibhi.s2024@vitstudent.ac.in
+ *      SENDER_NAME         → IEEE SSCS HR Team
+ * 4. Set up a Time-driven trigger on `automationCheck` to run every 10 minutes.
+ * 5. (Optional) Run `initialSetup` once to grant OAuth authorisation.
+ *
+ * ⚠️  NEVER hard-code secrets in this file.  PropertiesService keeps them
+ *     server-side in Google's encrypted store and out of version control.
+ * ────────────────────────────────────────────────────────────────────────────
  */
 
-const CONFIG = {
-    SUPABASE_URL: "https://your-project-id.supabase.co",
-    SUPABASE_KEY: "your-service-role-key", // Use service_role key for full read access
-    ADMIN_ALERT_EMAIL: "sibhi.s2024@vitstudent.ac.in",
-    SENDER_NAME: "IEEE SSCS HR Team"
-};
+/**
+ * Returns the script configuration from Google Apps Script PropertiesService.
+ * Values are stored in Project Settings → Script Properties, never in code.
+ */
+function getConfig() {
+    const props = PropertiesService.getScriptProperties();
+    return {
+        SUPABASE_URL:       props.getProperty('SUPABASE_URL'),
+        SUPABASE_KEY:       props.getProperty('SUPABASE_KEY'),
+        ADMIN_ALERT_EMAIL:  props.getProperty('ADMIN_ALERT_EMAIL'),
+        SENDER_NAME:        props.getProperty('SENDER_NAME') || 'IEEE SSCS HR Team',
+    };
+}
 
 /**
  * Main function to be triggered every 10 minutes
@@ -91,12 +105,13 @@ function automationCheck() {
  * API Helper for Supabase
  */
 function fetchSupabase(endpoint) {
-    const url = CONFIG.SUPABASE_URL + endpoint;
+    const cfg = getConfig();
+    const url = cfg.SUPABASE_URL + endpoint;
     const options = {
         method: "get",
         headers: {
-            "apikey": CONFIG.SUPABASE_KEY,
-            "Authorization": "Bearer " + CONFIG.SUPABASE_KEY
+            "apikey": cfg.SUPABASE_KEY,
+            "Authorization": "Bearer " + cfg.SUPABASE_KEY
         }
     };
     const response = UrlFetchApp.fetch(url, options);
@@ -104,13 +119,14 @@ function fetchSupabase(endpoint) {
 }
 
 function patchSupabase(endpoint, payload) {
-    const url = CONFIG.SUPABASE_URL + endpoint;
+    const cfg = getConfig();
+    const url = cfg.SUPABASE_URL + endpoint;
     const options = {
         method: "patch",
         contentType: "application/json",
         headers: {
-            "apikey": CONFIG.SUPABASE_KEY,
-            "Authorization": "Bearer " + CONFIG.SUPABASE_KEY
+            "apikey": cfg.SUPABASE_KEY,
+            "Authorization": "Bearer " + cfg.SUPABASE_KEY
         },
         payload: JSON.stringify(payload)
     };
@@ -146,7 +162,7 @@ function sendInterviewerReminder(email, slot, includeLink) {
         to: email,
         subject: subject,
         htmlBody: body,
-        name: CONFIG.SENDER_NAME
+        name: getConfig().SENDER_NAME
     });
 }
 
@@ -168,7 +184,7 @@ function sendApplicantReminder(email, slot, threshold, meetingLink) {
         to: email,
         subject: "Reminder: Your Interview with IEEE SSCS",
         htmlBody: body,
-        name: CONFIG.SENDER_NAME
+        name: getConfig().SENDER_NAME
     });
 }
 
@@ -182,7 +198,7 @@ function sendAdminAlert(slot) {
     <p>Please assign an interviewer immediately in the Admin Dashboard: <a href="https://sscsportal.netlify.app/admin">Admin Panel</a></p>
   `;
     MailApp.sendEmail({
-        to: CONFIG.ADMIN_ALERT_EMAIL,
+        to: getConfig().ADMIN_ALERT_EMAIL,
         subject: "!!! URGENT: No Interviewer for Upcoming Slot",
         htmlBody: body,
         name: "IEEE SSCS System Alert"
@@ -203,6 +219,6 @@ function sendMissingLinkAlert(email, slot) {
         to: email,
         subject: "URGENT: Add Meeting Link for Upcoming Interview",
         htmlBody: body,
-        name: CONFIG.SENDER_NAME
+        name: getConfig().SENDER_NAME
     });
 }

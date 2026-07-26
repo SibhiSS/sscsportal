@@ -250,7 +250,8 @@ const Apply = () => {
         weeklyHours: '',
         linkedinUrl: '',
         googleDriveUrl: '',
-        anyQuestions: ''
+        anyQuestions: '',
+        hp_website: '' // Bot honeypot field
     });
 
     useEffect(() => {
@@ -259,11 +260,21 @@ const Apply = () => {
 
     const checkRecruitmentStatus = async () => {
         try {
-            // EMERGENCY OVERRIDE: ALWAYS OPEN
-            setRecruitmentStatus({ isOpen: true, message: '' });
+            const { data, error } = await supabase
+                .from('app_settings')
+                .select('value')
+                .eq('key', 'recruitment_status')
+                .single();
+
+            if (error) throw error;
+
+            const isOpen = data?.value?.isOpen ?? false;
+            const message = data?.value?.message ?? '';
+            setRecruitmentStatus({ isOpen, message });
         } catch (error) {
-            console.error("Error checking recruitment status:", error);
-            setRecruitmentStatus({ isOpen: true, message: '' });
+            // FIX #B1: On error, default to CLOSED (fail-safe) rather than always-open.
+            console.error("Error checking recruitment status.");
+            setRecruitmentStatus({ isOpen: false, message: 'Unable to verify recruitment status. Please try again later.' });
         }
     };
 
@@ -455,6 +466,13 @@ const Apply = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
+        // Anti-bot Honeypot check: If invisible field is populated, silently drop request
+        if (formData.hp_website) {
+            console.warn('[Security] Bot detected via honeypot field submission.');
+            setIsSubmitting(false);
+            return;
+        }
+
         if (!formData.weeklyHours) {
             setFormErrors({ weeklyHours: 'Please select your weekly availability' });
             return;

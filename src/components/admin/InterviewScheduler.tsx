@@ -237,7 +237,9 @@ const InterviewScheduler = () => {
                                 <p>Please join 5 minutes before your slot.<br>IEEE SSCS HR Team</p>`
                             );
                         } catch (e) {
-                            console.warn(`Failed to send link email to ${app.email}:`, e);
+                            // FIX #14: mask email — no PII in console logs.
+                            const masked = app.email.replace(/(\w{2})\w+@/, '$1***@');
+                            console.warn(`Failed to send link email to ${masked}.`);
                         }
                     }
                 }
@@ -321,11 +323,13 @@ const InterviewScheduler = () => {
                     await supabase.from('applications').update({ shortlist_notified: true }).eq('id', app.id);
                     count++;
                 } else {
-                    console.warn(`[Scheduler] Booking link email failed for ${app.email} — flag NOT set.`);
+                    // FIX #14: mask email — no PII in console logs.
+                    const masked = app.email.replace(/(\w{2})\w+@/, '$1***@');
+                    console.warn(`[Scheduler] Booking link email failed for ${masked} — flag NOT set.`);
                     failed++;
                 }
             } catch (err) {
-                console.error(`[Scheduler] Unexpected error sending to ${app.email}:`, err);
+                console.error('[Scheduler] Unexpected error sending booking link email.');
                 failed++;
             }
             await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limit protection
