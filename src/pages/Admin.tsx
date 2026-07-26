@@ -764,6 +764,7 @@ const Admin = () => {
                                 <CommitteeDraftBoard
                                     applications={applications}
                                     onUpdate={updateApplication}
+                                    onViewCandidate={(app) => setSelectedApp(app)}
                                 />
                             </TabsContent>
                         )}

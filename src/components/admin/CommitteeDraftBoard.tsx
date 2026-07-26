@@ -23,9 +23,10 @@ const DEPARTMENTS = [
 interface CommitteeDraftBoardProps {
     applications: Application[];
     onUpdate: (id: string, updates: Partial<Application>) => Promise<void>;
+    onViewCandidate?: (app: Application) => void;
 }
 
-export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applications, onUpdate }) => {
+export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applications, onUpdate, onViewCandidate }) => {
     // Quotas per department
     const [quotas, setQuotas] = useState<Record<string, number>>({
         Technical: 15,
@@ -48,6 +49,9 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
     // Drag and drop state
     const [draggedCandidateId, setDraggedCandidateId] = useState<string | null>(null);
     const [dragOverDept, setDragOverDept] = useState<string | null>(null);
+
+    // Quick Preview Candidate State
+    const [previewCandidate, setPreviewCandidate] = useState<Application | null>(null);
 
     // Email sending dialog state
     const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
@@ -510,7 +514,11 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                                                                 setDraggedCandidateId(null);
                                                                 setDragOverDept(null);
                                                             }}
-                                                            className={`flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-purple-500/40 transition-all text-xs group cursor-grab active:cursor-grabbing hover:bg-white/[0.07] ${draggedCandidateId === app.id ? 'opacity-40 border-purple-400 ring-2 ring-purple-400' : ''}`}
+                                                            onClick={() => {
+                                                                setPreviewCandidate(app);
+                                                                if (onViewCandidate) onViewCandidate(app);
+                                                            }}
+                                                            className={`flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-purple-500/40 transition-all text-xs group cursor-pointer hover:bg-white/[0.07] ${draggedCandidateId === app.id ? 'opacity-40 border-purple-400 ring-2 ring-purple-400' : ''}`}
                                                         >
                                                             <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                                                 <GripVertical className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-purple-400 shrink-0" />
@@ -528,7 +536,10 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                                                             </div>
 
                                                             <button
-                                                                onClick={() => removeCandidate(app.id)}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    removeCandidate(app.id);
+                                                                }}
                                                                 className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity shrink-0"
                                                                 title="Remove from Committee"
                                                             >
@@ -643,6 +654,89 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                                 >
                                     {isSending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
                                     Dispatch Now
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+            {/* ── CANDIDATE QUICK MARKS & DETAILS DIALOG ───────────────────────── */}
+            <Dialog open={!!previewCandidate} onOpenChange={(open) => !open && setPreviewCandidate(null)}>
+                <DialogContent className="bg-zinc-950 border-purple-500/30 text-white max-w-lg rounded-3xl p-6">
+                    {previewCandidate && (
+                        <div className="space-y-5">
+                            <DialogHeader>
+                                <div className="flex items-center justify-between gap-2">
+                                    <Badge variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/40 text-[10px] font-bold uppercase">
+                                        {previewCandidate.assignedPosition || previewCandidate.primaryDept || 'Candidate'}
+                                    </Badge>
+                                    <span className="text-xs font-mono text-muted-foreground">{previewCandidate.rollNumber}</span>
+                                </div>
+                                <DialogTitle className="text-2xl font-black text-white pt-1">
+                                    {previewCandidate.fullName}
+                                </DialogTitle>
+                                <DialogDescription className="text-zinc-400 text-xs">
+                                    {previewCandidate.department} — Year {previewCandidate.year} | {previewCandidate.email}
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            {/* Marks & Performance Grid */}
+                            <div className="grid grid-cols-3 gap-3 bg-black/60 p-4 rounded-2xl border border-white/10 text-center">
+                                <div>
+                                    <div className="text-xs text-muted-foreground font-semibold">Interview Score</div>
+                                    <div className="text-xl font-black text-purple-400 mt-1">
+                                        ⭐ {(Number(previewCandidate.interviewScore || previewCandidate.finalScore || previewCandidate.rating * 2) || 0).toFixed(1)} <span className="text-xs font-normal text-muted-foreground">/ 10</span>
+                                    </div>
+                                </div>
+                                <div className="border-x border-white/10">
+                                    <div className="text-xs text-muted-foreground font-semibold">Task Score</div>
+                                    <div className="text-xl font-black text-blue-400 mt-1">
+                                        {(Number(previewCandidate.taskScore) || 0).toFixed(1)} <span className="text-xs font-normal text-muted-foreground">/ 10</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-xs text-muted-foreground font-semibold">Star Rating</div>
+                                    <div className="text-xl font-black text-amber-400 mt-1">
+                                        {previewCandidate.rating || 0} <span className="text-xs font-normal text-muted-foreground">/ 5</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Preferences & Recommendations */}
+                            <div className="space-y-3 bg-white/[0.03] p-4 rounded-2xl border border-white/10">
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="text-muted-foreground font-semibold">1st Preference:</span>
+                                    <span className="font-bold text-purple-300">{previewCandidate.primaryDept}</span>
+                                </div>
+                                {previewCandidate.secondaryDept && (
+                                    <div className="flex justify-between items-center text-xs border-t border-white/5 pt-2">
+                                        <span className="text-muted-foreground font-semibold">2nd Preference:</span>
+                                        <span className="font-bold text-cyan-300">{previewCandidate.secondaryDept}</span>
+                                    </div>
+                                )}
+                                {feedbackMap[previewCandidate.id] && feedbackMap[previewCandidate.id].length > 0 && (
+                                    <div className="flex justify-between items-center text-xs border-t border-white/5 pt-2">
+                                        <span className="text-muted-foreground font-semibold">Interviewer Rec:</span>
+                                        <div className="flex gap-1">
+                                            {feedbackMap[previewCandidate.id].map(r => (
+                                                <Badge key={r} variant="outline" className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-[9px] font-bold">{r}</Badge>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex justify-end gap-3 pt-2">
+                                <Button 
+                                    onClick={() => {
+                                        const app = previewCandidate;
+                                        setPreviewCandidate(null);
+                                        if (onViewCandidate) onViewCandidate(app);
+                                    }}
+                                    className="w-full rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs h-10"
+                                >
+                                    Open Full Application & Interview Details ↗
                                 </Button>
                             </div>
                         </div>
