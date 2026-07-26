@@ -7,18 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Sparkles, Users, Crown, CheckCircle, XCircle, RefreshCw, Send, Mail, ShieldAlert, Award, ArrowRight, Trash2, Plus, Minus, UserCheck } from 'lucide-react';
+import { Sparkles, Users, CheckCircle, XCircle, RefreshCw, Send, Mail, Trash2, Plus, UserCheck } from 'lucide-react';
 import { sendEmail } from '@/lib/email';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const BOARD_POSITIONS = [
-    'Chairperson',
-    'Vice-Chair Person',
-    'Secretary',
-    'Treasurer/Co-Sec',
-    'Chairperson (WiS)',
-    'Vice-Chairperson (WiS)'
-];
 
 const DEPARTMENTS = [
     'Technical',
@@ -26,16 +17,8 @@ const DEPARTMENTS = [
     'Event Operations',
     'Creative',
     'Outreach & Partnerships',
-    'Human Resources',
-    'Editorial & Media'
+    'Human Resources'
 ];
-
-function getRolesForDept(dept: string): string[] {
-    if (dept === 'Technical') {
-        return ['Lead', 'Associate Lead 1', 'Associate Lead 2'];
-    }
-    return ['Lead', 'Associate'];
-}
 
 interface CommitteeDraftBoardProps {
     applications: Application[];
@@ -45,16 +28,15 @@ interface CommitteeDraftBoardProps {
 export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applications, onUpdate }) => {
     // Quotas per department
     const [quotas, setQuotas] = useState<Record<string, number>>({
-        Technical: 12,
-        Management: 10,
-        'Event Operations': 10,
-        Creative: 8,
-        'Outreach & Partnerships': 8,
-        'Human Resources': 8,
-        'Editorial & Media': 6
+        Technical: 15,
+        Management: 12,
+        'Event Operations': 12,
+        Creative: 10,
+        'Outreach & Partnerships': 10,
+        'Human Resources': 10
     });
 
-    // Local draft map: candidateId -> position/department string
+    // Local draft map: candidateId -> department string (e.g., 'Technical')
     const [draftMap, setDraftMap] = useState<Record<string, string>>({});
     // Feedback map: candidateId -> array of recommended_dept strings from interviewers
     const [feedbackMap, setFeedbackMap] = useState<Record<string, string[]>>({});
@@ -102,11 +84,12 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
     useEffect(() => {
         const initialMap: Record<string, string> = {};
         applications.forEach(app => {
-            if (app.assignedPosition) {
+            if (app.assignedPosition && DEPARTMENTS.includes(app.assignedPosition)) {
                 initialMap[app.id] = app.assignedPosition;
             } else if (['selected', 'active_member'].includes(app.status)) {
-                // If selected but no specific role assigned, default to their primary dept
-                initialMap[app.id] = app.primaryDept || 'Technical';
+                // If selected but no specific dept assigned, default to their primary dept if valid
+                const defaultDept = DEPARTMENTS.includes(app.primaryDept) ? app.primaryDept : 'Technical';
+                initialMap[app.id] = defaultDept;
             }
         });
         setDraftMap(initialMap);
@@ -128,31 +111,15 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
         return eligibleCandidates.filter(c => !draftMap[c.id]);
     }, [eligibleCandidates, draftMap]);
 
-    // ── 3. ⚡ SMART AUTO-DRAFT ALGORITHM ─────────────────────────────────────
+    // ── 3. ⚡ SMART AUTO-DRAFT ALGORITHM (COMMITTEE MEMBERS ONLY) ─────────────
     const handleRunAutoDraft = () => {
         setIsDrafting(true);
         setTimeout(() => {
-            const newDraft = { ...draftMap };
-
-            // Keep existing Executive Board positions intact, but clear department allocations if desired,
-            // or let's re-allocate unassigned and non-lead department members!
-            const alreadyAssignedIds = new Set(
-                Object.keys(newDraft).filter(id => {
-                    const pos = newDraft[id];
-                    return BOARD_POSITIONS.includes(pos) || pos.includes('Lead -');
-                })
-            );
-
-            // Remaining candidates available for smart auto-draft
-            const availablePool = eligibleCandidates.filter(c => !alreadyAssignedIds.has(c.id));
+            const newDraft: Record<string, string> = {};
 
             // Track current fill count per department
             const fillCount: Record<string, number> = {};
-            DEPARTMENTS.forEach(d => {
-                fillCount[d] = Object.values(newDraft).filter(pos => 
-                    pos === d || pos.endsWith(`- ${d}`)
-                ).length;
-            });
+            DEPARTMENTS.forEach(d => { fillCount[d] = 0; });
 
             // Score each candidate against each department
             interface MatchScore {
@@ -162,7 +129,7 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
             }
 
             const matches: MatchScore[] = [];
-            availablePool.forEach(c => {
+            eligibleCandidates.forEach(c => {
                 const basePerf = Number(c.finalScore || c.interviewScore || c.rating * 2) || 5;
                 const recDepts = feedbackMap[c.id] || [];
 
@@ -182,12 +149,12 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
             // Sort all potential matches descending by score
             matches.sort((a, b) => b.score - a.score);
 
-            const draftedIds = new Set(alreadyAssignedIds);
+            const draftedIds = new Set<string>();
 
-            // Greedy allocation
+            // Greedy allocation up to quota
             for (const match of matches) {
                 if (draftedIds.has(match.candidateId)) continue;
-                if ((fillCount[match.dept] || 0) < (quotas[match.dept] || 10)) {
+                if ((fillCount[match.dept] || 0) < (quotas[match.dept] || 15)) {
                     newDraft[match.candidateId] = match.dept;
                     draftedIds.add(match.candidateId);
                     fillCount[match.dept] = (fillCount[match.dept] || 0) + 1;
@@ -196,25 +163,18 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
 
             setDraftMap(newDraft);
             setIsDrafting(false);
-            setSuccessMsg('⚡ Smart Auto-Draft Complete! Candidates optimally allocated based on interviewer verdicts, 1st/2nd preferences, and interview scores.');
+            setSuccessMsg('✅ Auto-Fill Complete! Core committee members distributed based on interviewer verdicts, 1st/2nd preferences, and interview scores.');
             setTimeout(() => setSuccessMsg(null), 5000);
         }, 600);
     };
 
     // ── 4. Manual Assignment Helpers ──────────────────────────────────────────
-    const assignCandidate = (candidateId: string, positionOrDept: string) => {
+    const assignCandidateToDept = (candidateId: string, dept: string) => {
         if (candidateId === 'none') return;
-        setDraftMap(prev => {
-            const next = { ...prev };
-            // If positionOrDept is a unique role (like Chairperson or Lead), clear previous holder
-            if (BOARD_POSITIONS.includes(positionOrDept) || positionOrDept.includes('Lead -')) {
-                Object.keys(next).forEach(id => {
-                    if (next[id] === positionOrDept) delete next[id];
-                });
-            }
-            next[candidateId] = positionOrDept;
-            return next;
-        });
+        setDraftMap(prev => ({
+            ...prev,
+            [candidateId]: dept
+        }));
     };
 
     const removeCandidate = (candidateId: string) => {
@@ -225,15 +185,8 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
         });
     };
 
-    const getHolderForRole = (roleName: string) => {
-        return Object.keys(draftMap).find(id => draftMap[id] === roleName) || 'none';
-    };
-
     const getMembersForDept = (dept: string) => {
-        return applications.filter(app => {
-            const pos = draftMap[app.id];
-            return pos === dept || (pos && pos.endsWith(`- ${dept}`) && !pos.includes('Lead -'));
-        });
+        return applications.filter(app => draftMap[app.id] === dept);
     };
 
     // ── 5. Save & Apply Roster to Database ────────────────────────────────────
@@ -242,11 +195,11 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
         try {
             const updatePromises: Promise<any>[] = [];
 
-            // 1. Update all drafted candidates to 'selected' with their assigned position
-            Object.entries(draftMap).forEach(([id, pos]) => {
+            // 1. Update all drafted candidates to 'selected' with their assigned committee department
+            Object.entries(draftMap).forEach(([id, dept]) => {
                 const app = applications.find(a => a.id === id);
-                if (app && (app.assignedPosition !== pos || app.status !== 'selected')) {
-                    updatePromises.push(onUpdate(id, { assignedPosition: pos, status: 'selected' }));
+                if (app && (app.assignedPosition !== dept || app.status !== 'selected')) {
+                    updatePromises.push(onUpdate(id, { assignedPosition: dept, status: 'selected' }));
                 }
             });
 
@@ -258,7 +211,7 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
             });
 
             await Promise.all(updatePromises);
-            setSuccessMsg('✅ Roster Saved! All committee allocations and board roles have been synced to the database.');
+            setSuccessMsg('✅ Committee Roster Saved! All member allocations have been synced to the database.');
             setTimeout(() => setSuccessMsg(null), 5000);
         } catch (err: any) {
             console.error('Failed to save roster:', err);
@@ -279,27 +232,20 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
         let failed = 0;
 
         for (const app of draftedApps) {
-            const pos = draftMap[app.id];
-            if (!pos || !app.email) {
+            const dept = draftMap[app.id];
+            if (!dept || !app.email) {
                 failed++;
                 continue;
             }
 
             try {
-                const displayPos = pos.replace(/ \d -/, ' -');
-                const isRole = BOARD_POSITIONS.includes(pos) || pos.includes('Lead -');
-                const titleText = isRole ? `Selected as "${displayPos}"!` : `Selected for ${pos} Department!`;
-                const bodyText = isRole 
-                    ? `We are thrilled to inform you that you have been selected as <strong>"${displayPos}"</strong> for the tenure 2026-27!`
-                    : `We are pleased to offer you a position as a Core Member in the <strong>${pos} Department</strong> at IEEE SSCS for the tenure 2026-27!`;
-
                 const portalUrl = window.location.origin;
                 const success = await sendEmail(
                     app.email,
-                    `IEEE SSCS Results — ${titleText}`,
+                    `IEEE SSCS Results — Selected for ${dept} Committee!`,
                     `<p>Dear <strong>${app.fullName}</strong>,</p>
-                    <p>The selection results for IEEE SSCS are officially out.</p>
-                    <p>${bodyText}</p>
+                    <p>The selection results for IEEE SSCS are officially out!</p>
+                    <p>We are pleased to offer you a position as a <strong>Core Committee Member in the ${dept} Department</strong> at IEEE SSCS for the tenure 2026-27!</p>
                     <p style="margin: 20px 0;">
                         <a href="${portalUrl}/status" style="background-color: #9333ea; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">View Onboarding & Status Portal</a>
                     </p>
@@ -309,7 +255,7 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                 );
 
                 if (success) {
-                    await onUpdate(app.id, { status: 'active_member', assignedPosition: pos });
+                    await onUpdate(app.id, { status: 'active_member', assignedPosition: dept });
                     sent++;
                 } else {
                     const masked = app.email.replace(/(\w{2})\w+@/, '$1***@');
@@ -336,14 +282,14 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
             <div className="bg-gradient-to-r from-purple-950/50 via-black/80 to-blue-950/50 p-6 md:p-8 rounded-3xl border border-purple-500/30 backdrop-blur-2xl shadow-[0_0_35px_rgba(168,85,247,0.15)] flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                 <div className="space-y-2 max-w-2xl">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs font-bold tracking-widest uppercase">
-                        <Sparkles className="w-3.5 h-3.5 animate-spin text-purple-400" />
-                        AI Smart Allocation Engine & Draft Board
+                        <Users className="w-3.5 h-3.5 text-purple-400" />
+                        Committee Allocation & Roster Management
                     </div>
                     <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">
-                        Committee Draft & Team Roster
+                        Committee Selection & Team Builder
                     </h2>
                     <p className="text-sm text-zinc-300 leading-relaxed">
-                        Visually build your chapter roster. Click <strong className="text-purple-300">Run Smart Auto-Draft</strong> to let the algorithm optimally allocate candidates based on interviewer verdicts, 1st/2nd preferences, and interview scores. Fine-tune teams, then hit <strong className="text-green-400">Save Roster</strong> before publishing results!
+                        Visually organize and assign core committee members across departments. Click <strong className="text-purple-300">Auto-Fill Committees</strong> to distribute eligible candidates based on interviewer verdicts, 1st/2nd preferences, and interview scores. Review and fine-tune teams, then hit <strong className="text-green-400">Save Roster</strong>!
                     </p>
                 </div>
 
@@ -370,10 +316,10 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                         <Button
                             onClick={handleRunAutoDraft}
                             disabled={isDrafting || isLoadingFeedbacks}
-                            className="h-11 px-6 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-500 hover:to-red-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(236,72,153,0.4)] transition-all hover:scale-[1.02]"
+                            className="h-11 px-6 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(147,51,234,0.3)] transition-all hover:scale-[1.02]"
                         >
-                            {isDrafting ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                            ⚡ Run Smart Auto-Draft
+                            {isDrafting ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                            🔄 Auto-Fill Committees
                         </Button>
                         <div className="grid grid-cols-2 gap-2">
                             <Button
@@ -413,74 +359,24 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                 )}
             </AnimatePresence>
 
-            {/* ── SECTION 1: EXECUTIVE BOARD POSITIONS ───────────────────────────── */}
-            <div className="space-y-4">
-                <div className="flex items-center gap-2 border-b border-white/10 pb-3">
-                    <Crown className="w-6 h-6 text-yellow-400" />
-                    <h3 className="text-xl font-heading font-black text-white tracking-widest uppercase">
-                        Executive Board Positions
-                    </h3>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {BOARD_POSITIONS.map(pos => {
-                        const holderId = getHolderForRole(pos);
-                        const holderApp = applications.find(a => a.id === holderId);
-                        return (
-                            <Card key={pos} className="bg-gradient-to-br from-yellow-950/20 via-black/60 to-black/80 border-yellow-500/30 rounded-2xl overflow-hidden shadow-lg">
-                                <CardContent className="p-5 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs font-black tracking-widest uppercase text-yellow-400">
-                                            {pos}
-                                        </span>
-                                        {holderApp && (
-                                            <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500/40 text-[10px] font-bold">
-                                                Assigned
-                                            </Badge>
-                                        )}
-                                    </div>
-                                    <Select 
-                                        value={holderId} 
-                                        onValueChange={(val) => assignCandidate(val, pos)}
-                                    >
-                                        <SelectTrigger className="w-full bg-black/60 border-white/10 h-11 text-xs font-semibold rounded-xl text-white">
-                                            <SelectValue placeholder="Select candidate..." />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-zinc-950 border-zinc-800 max-h-60">
-                                            <SelectItem value="none" className="text-muted-foreground italic text-xs">None (Clear)</SelectItem>
-                                            {eligibleCandidates.map(c => (
-                                                <SelectItem key={c.id} value={c.id} className="text-xs font-medium">
-                                                    {c.fullName} ({c.primaryDept || 'General'}) — ⭐ {(Number(c.finalScore || c.interviewScore || c.rating * 2) || 0).toFixed(1)}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </CardContent>
-                            </Card>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* ── SECTION 2: DEPARTMENT COMMITTEES (LEADS & MEMBERS) ──────────────── */}
-            <div className="space-y-6 pt-6">
+            {/* ── DEPARTMENT COMMITTEES ROSTER ───────────────────────────────────── */}
+            <div className="space-y-6 pt-2">
                 <div className="flex items-center justify-between border-b border-white/10 pb-3 flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                         <Users className="w-6 h-6 text-purple-400" />
                         <h3 className="text-xl font-heading font-black text-white tracking-widest uppercase">
-                            Department Committees & Roster
+                            Department Committee Teams
                         </h3>
                     </div>
                     <span className="text-xs text-muted-foreground font-mono">
-                        Tip: Adjust seat quotas with [+] and [-] to fit your chapter needs.
+                        Tip: Adjust committee seat quotas with [+] and [-] to fit your chapter needs.
                     </span>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                     {DEPARTMENTS.map(dept => {
-                        const roles = getRolesForDept(dept);
                         const members = getMembersForDept(dept);
-                        const currentQuota = quotas[dept] || 10;
+                        const currentQuota = quotas[dept] || 15;
                         const fillRatio = members.length / currentQuota;
                         const progressColor = fillRatio >= 1 ? 'bg-green-500' : fillRatio >= 0.7 ? 'bg-purple-500' : 'bg-blue-500';
 
@@ -497,11 +393,11 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                                             <span className="text-muted-foreground">/ {currentQuota} Seats</span>
                                             <div className="flex items-center gap-0.5 ml-1">
                                                 <button 
-                                                    onClick={() => setQuotas(prev => ({ ...prev, [dept]: Math.max(1, (prev[dept] || 10) - 1) }))}
+                                                    onClick={() => setQuotas(prev => ({ ...prev, [dept]: Math.max(1, (prev[dept] || 15) - 1) }))}
                                                     className="w-4 h-4 rounded bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-[10px] font-bold"
                                                 >-</button>
                                                 <button 
-                                                    onClick={() => setQuotas(prev => ({ ...prev, [dept]: (prev[dept] || 10) + 1 }))}
+                                                    onClick={() => setQuotas(prev => ({ ...prev, [dept]: (prev[dept] || 15) + 1 }))}
                                                     className="w-4 h-4 rounded bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-[10px] font-bold"
                                                 >+</button>
                                             </div>
@@ -516,54 +412,19 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                                     </div>
                                 </div>
 
-                                <CardContent className="p-5 space-y-6 flex-1 flex flex-col justify-between">
-                                    {/* 1. Department Leads Section */}
-                                    <div className="space-y-3 bg-black/40 p-3.5 rounded-2xl border border-white/5">
-                                        <div className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                                            Leadership Allocation
-                                        </div>
-                                        {roles.map(role => {
-                                            const fullPos = `${role} - ${dept}`;
-                                            const holderId = getHolderForRole(fullPos);
-                                            const labelColor = role === 'Lead' ? 'text-blue-400 font-extrabold' : 'text-teal-300 font-bold';
-                                            return (
-                                                <div key={role} className="space-y-1">
-                                                    <label className={`text-[10px] uppercase tracking-wider ${labelColor}`}>
-                                                        {role}
-                                                    </label>
-                                                    <Select 
-                                                        value={holderId} 
-                                                        onValueChange={(val) => assignCandidate(val, fullPos)}
-                                                    >
-                                                        <SelectTrigger className="w-full bg-black/60 border-white/10 h-9 text-xs rounded-lg text-white font-medium">
-                                                            <SelectValue placeholder="Select Lead..." />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="bg-zinc-950 border-zinc-800 max-h-52">
-                                                            <SelectItem value="none" className="text-muted-foreground italic text-xs">None (Clear)</SelectItem>
-                                                            {eligibleCandidates.map(c => (
-                                                                <SelectItem key={c.id} value={c.id} className="text-xs">
-                                                                    {c.fullName} — ⭐ {(Number(c.finalScore || c.interviewScore || c.rating * 2) || 0).toFixed(1)}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-
-                                    {/* 2. Core Members Roster Section */}
+                                <CardContent className="p-5 space-y-4 flex-1 flex flex-col justify-between">
+                                    {/* Core Members Roster Section */}
                                     <div className="space-y-3 flex-1">
                                         <div className="flex items-center justify-between text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                                            <span>Core Committee Members ({members.length})</span>
+                                            <span>Selected Members ({members.length})</span>
                                         </div>
 
                                         {members.length === 0 ? (
-                                            <div className="text-center py-6 border border-dashed border-white/10 rounded-2xl text-xs text-muted-foreground/60 italic">
-                                                No candidates currently assigned to {dept}. Use Auto-Draft or add below.
+                                            <div className="text-center py-10 border border-dashed border-white/10 rounded-2xl text-xs text-muted-foreground/60 italic">
+                                                No members assigned to {dept} yet. Click Auto-Fill or add manually below.
                                             </div>
                                         ) : (
-                                            <div className="space-y-2 max-h-60 overflow-y-auto pr-1 scrollbar-thin">
+                                            <div className="space-y-2 max-h-72 overflow-y-auto pr-1 scrollbar-thin">
                                                 {members.map(app => {
                                                     const is1st = app.primaryDept === dept || app.department === dept;
                                                     const is2nd = app.secondaryDept === dept;
@@ -600,18 +461,18 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                                         )}
                                     </div>
 
-                                    {/* 3. Quick Add Candidate to Committee */}
-                                    <div className="pt-2 border-t border-white/10">
+                                    {/* Quick Add Candidate to Committee */}
+                                    <div className="pt-3 border-t border-white/10">
                                         <Select 
                                             value="none" 
                                             onValueChange={(val) => {
-                                                if (val && val !== 'none') assignCandidate(val, dept);
+                                                if (val && val !== 'none') assignCandidateToDept(val, dept);
                                             }}
                                         >
                                             <SelectTrigger className="w-full bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/20 text-purple-300 h-10 text-xs font-bold rounded-xl">
                                                 <div className="flex items-center gap-2">
                                                     <Plus className="w-3.5 h-3.5" />
-                                                    <span>Add Core Member to {dept}...</span>
+                                                    <span>Add Member to {dept}...</span>
                                                 </div>
                                             </SelectTrigger>
                                             <SelectContent className="bg-zinc-950 border-zinc-800 max-h-60">
@@ -637,10 +498,10 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                     <DialogHeader>
                         <DialogTitle className="text-xl font-heading font-black text-white flex items-center gap-2">
                             <Send className="w-5 h-5 text-purple-400" />
-                            Dispatch Official Offer Mails
+                            Dispatch Official Committee Mails
                         </DialogTitle>
                         <DialogDescription className="text-zinc-400 text-xs leading-relaxed pt-1">
-                            You are about to send formal selection offer and congratulations emails to <strong className="text-white font-bold">{totalDrafted} drafted candidates</strong> across all board roles and committees.
+                            You are about to send formal committee selection offer and congratulations emails to <strong className="text-white font-bold">{totalDrafted} drafted committee members</strong>.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -657,7 +518,7 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                                 </div>
                             )}
                             <h4 className="text-lg font-black text-white">
-                                {sendResult.failed === 0 ? 'All Offer Mails Dispatched Successfully!' :
+                                {sendResult.failed === 0 ? 'All Committee Mails Dispatched Successfully!' :
                                  sendResult.sent === 0 ? 'All Sends Failed' :
                                  'Partially Dispatched'}
                             </h4>

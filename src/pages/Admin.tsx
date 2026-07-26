@@ -521,8 +521,8 @@ const Admin = () => {
                                         <TabsTrigger value="rankings" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
                                             <Trophy className="w-3.5 h-3.5 mr-1.5" />RANKINGS
                                         </TabsTrigger>
-                                        <TabsTrigger value="committees" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
-                                            <Sparkles className="w-3.5 h-3.5 mr-1.5 text-purple-400" />COMMITTEES & DRAFT
+                                        <TabsTrigger value="committees" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                            <Users className="w-3.5 h-3.5 mr-1.5" />COMMITTEE SELECTION
                                         </TabsTrigger>
                                     </>
                                 )}

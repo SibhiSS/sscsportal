@@ -181,7 +181,7 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                                             {application.secondaryDept && (
                                                 <SelectItem value={application.secondaryDept} className="text-xs font-semibold text-blue-300">⭐ 2nd: {application.secondaryDept}</SelectItem>
                                             )}
-                                            {['Technical', 'Management', 'Event Operations', 'Creative', 'Outreach & Partnerships', 'Human Resources', 'Editorial & Media'].filter(d => d !== application.primaryDept && d !== application.secondaryDept).map(d => (
+                                            {['Technical', 'Management', 'Event Operations', 'Creative', 'Outreach & Partnerships', 'Human Resources'].filter(d => d !== application.primaryDept && d !== application.secondaryDept).map(d => (
                                                 <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>
                                             ))}
                                         </SelectContent>

@@ -501,9 +501,7 @@ export default function EvaluationForm({
               'Management',
               'Event Operations',
               'Creative',
-              'Outreach & Partnerships',
-              'Human Resources',
-              'Editorial & Media'
+              'Human Resources'
             ].filter(Boolean))).map((dept) => {
               const isSelected = recommendedDept === dept;
               const isPrimary = dept === (application.primaryDept || application.department);
