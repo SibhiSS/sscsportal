@@ -51,7 +51,7 @@ const ADMIN_EMAILS = [
 type ViewMode = 'table' | 'kanban';
 
 const Admin = () => {
-    const { user, loading: authLoading } = useAuth();
+    const { user, loading: authLoading, loginAsLocalAdmin } = useAuth();
     const navigate = useNavigate();
     const [applications, setApplications] = useState<Application[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -429,7 +429,23 @@ const Admin = () => {
                     <ShieldAlert className="w-16 h-16 text-red-500 mx-auto mb-4" />
                     <h1 className="text-2xl font-bold text-red-500 mb-2">Access Denied</h1>
                     <p className="text-muted-foreground mb-6">Restricted to administrators only.</p>
-                    <Button onClick={() => navigate('/')} variant="outline" className="border-red-500/50 text-red-500 hover:bg-red-950/30">Return Home</Button>
+                    <div className="space-y-3">
+                        <Button onClick={() => navigate('/')} variant="outline" className="w-full border-red-500/50 text-red-500 hover:bg-red-950/30">Return Home</Button>
+                        {import.meta.env.DEV && (
+                            <div className="pt-4 border-t border-red-500/20">
+                                <p className="text-[11px] text-amber-400 font-mono mb-2">⚡ Local Dev Environment Detected</p>
+                                <Button 
+                                    onClick={() => {
+                                        loginAsLocalAdmin();
+                                        window.location.reload();
+                                    }} 
+                                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold hover:from-amber-400 hover:to-orange-400 shadow-lg shadow-amber-500/20 text-xs"
+                                >
+                                    🚀 Bypass OAuth (Login as Super Admin)
+                                </Button>
+                            </div>
+                        )}
+                    </div>
                 </HolographicCard>
             </div>
         );
@@ -465,17 +481,28 @@ const Admin = () => {
                             </div>
                         </div>
 
-                        <div className={`flex items-center gap-3 px-4 py-2 rounded-2xl border backdrop-blur-xl shadow-lg transition-all duration-500 ${isSuperAdmin ? 'text-primary bg-primary/10 border-primary/20' :
-                            user?.role === 'admin' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' :
-                                'text-zinc-400 bg-zinc-500/10 border-white/10'
-                            }`}>
-                            <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${isSuperAdmin ? 'bg-primary' : user?.role === 'admin' ? 'bg-blue-400' : 'bg-zinc-400'}`} />
-                            <span className="text-xs font-bold tracking-widest uppercase">
-                                {isSuperAdmin ? 'Super Admin' : user?.role === 'admin' ? 'Admin' : 'Interviewer'}
-                            </span>
-                            <span className="text-[10px] opacity-50 font-mono px-2 py-0.5 rounded-md bg-white/10 ml-1">
-                                {currentPhase.replace(/_/g, ' ')}
-                            </span>
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <Button
+                                onClick={() => navigate('/interviewer')}
+                                variant="outline"
+                                size="sm"
+                                className="border-white/10 bg-white/5 hover:bg-white/10 text-xs font-bold tracking-wider rounded-xl h-10 px-4 transition-all hover:border-primary/40"
+                            >
+                                <Video className="w-3.5 h-3.5 mr-2 text-primary" />
+                                Interviewer Portal ↗
+                            </Button>
+                            <div className={`flex items-center gap-3 px-4 py-2 rounded-2xl border backdrop-blur-xl shadow-lg transition-all duration-500 h-10 ${isSuperAdmin ? 'text-primary bg-primary/10 border-primary/20' :
+                                user?.role === 'admin' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' :
+                                    'text-zinc-400 bg-zinc-500/10 border-white/10'
+                                }`}>
+                                <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${isSuperAdmin ? 'bg-primary' : user?.role === 'admin' ? 'bg-blue-400' : 'bg-zinc-400'}`} />
+                                <span className="text-xs font-bold tracking-widest uppercase">
+                                    {isSuperAdmin ? 'Super Admin' : user?.role === 'admin' ? 'Admin' : 'Interviewer'}
+                                </span>
+                                <span className="text-[10px] opacity-50 font-mono px-2 py-0.5 rounded-md bg-white/10 ml-1">
+                                    {currentPhase.replace(/_/g, ' ')}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
@@ -498,9 +525,6 @@ const Admin = () => {
                                 )}
                                 <TabsTrigger value="schedule" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
                                     <Calendar className="w-3.5 h-3.5 mr-1.5" />SCHEDULE
-                                </TabsTrigger>
-                                <TabsTrigger value="evaluate" onClick={() => navigate('/interviewer')} className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
-                                    <Video className="w-3.5 h-3.5 mr-1.5" />EVALUATE
                                 </TabsTrigger>
                                 {isSuperAdmin && (
                                     <TabsTrigger value="import" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">

@@ -200,50 +200,9 @@ const InterviewScheduler = () => {
 
     const updateAssignmentLink = async (id: string, link: string) => {
         try {
-            // Get assignment details before updating
-            const assignment = assignments.find(a => a.id === id);
             const { error } = await supabase.from('panel_assignments').update({ meeting_link: link }).eq('id', id);
             if (error) throw error;
             fetchAssignments();
-
-            // Send meeting link email to any booked candidate on this panel
-            if (link.trim() && assignment) {
-                const { data: bookedSlots } = await supabase
-                    .from('interview_slots')
-                    .select('booked_by, start_time, applications(full_name, email, primary_dept)')
-                    .eq('panel_id', assignment.panel_id)
-                    .eq('is_booked', true)
-                    .gte('start_time', `${assignment.date}T00:00:00`)
-                    .lte('start_time', `${assignment.date}T23:59:59`);
-
-                if (bookedSlots && bookedSlots.length > 0) {
-                    for (const slot of bookedSlots) {
-                        const app = (slot as any).applications;
-                        if (!app?.email) continue;
-                        const slotTime = format(parseISO(slot.start_time), 'h:mm a');
-                        const slotDate = format(parseISO(slot.start_time), 'EEEE, MMMM d, yyyy');
-                        try {
-                            const portalUrl = window.location.origin;
-                            await sendEmail(
-                                app.email,
-                                'Your Interview Meeting Link - IEEE SSCS',
-                                `<p>Dear <strong>${app.full_name}</strong>,</p>
-                                <p>Your interview meeting link is ready.</p>
-                                <p><strong>Date:</strong> ${slotDate}<br>
-                                <strong>Time:</strong> ${slotTime}<br>
-                                <strong>Department:</strong> ${app.primary_dept}</p>
-                                <p><strong>Join your interview:</strong> <a href="${link}">${link}</a></p>
-                                <p>You can also check your status at: <a href="${portalUrl}/apply">${portalUrl}/apply</a></p>
-                                <p>Please join 5 minutes before your slot.<br>IEEE SSCS HR Team</p>`
-                            );
-                        } catch (e) {
-                            // FIX #14: mask email — no PII in console logs.
-                            const masked = app.email.replace(/(\w{2})\w+@/, '$1***@');
-                            console.warn(`Failed to send link email to ${masked}.`);
-                        }
-                    }
-                }
-            }
         } catch (error) {
             console.error(error);
             alert('Failed to update link.');
@@ -652,14 +611,14 @@ const InterviewScheduler = () => {
                                                                 for (const assign of panelAssignments) {
                                                                     await updateAssignmentLink(assign.id, inputEl.value);
                                                                 }
-                                                                alert("Panel meeting link saved and emailed to booked candidates!");
+                                                                alert("Panel meeting link saved! Candidates will receive an automated email reminder 15 minutes before their slot.");
                                                             } else if (panelAssignments.length === 0) {
                                                                 alert("Please assign an interviewer to this panel first.");
                                                             }
                                                         }}
                                                     >
-                                                        <Send className="w-3 h-3 mr-1" />
-                                                        Send Link
+                                                        <Save className="w-3 h-3 mr-1" />
+                                                        Save Link
                                                     </Button>
                                                 </div>
 

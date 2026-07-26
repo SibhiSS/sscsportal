@@ -108,6 +108,10 @@ export interface AppSettings {
     isOpen: boolean;
     message: string;
     currentPhase: RecruitmentPhase;
+    aiSettings?: {
+        provider?: 'gemini' | 'openai' | 'local';
+        apiKey?: string;
+    };
 }
 
 export interface PanelAssignment {
@@ -188,3 +192,23 @@ export interface SkillFrequency {
     count: number;
     percentage: number;
 }
+
+export interface AIAnalysisResult {
+    matchScore: number;         // 0-100 percentage
+    summaryBullets: string[];   // 3 bullet points
+    strengths: string[];        // Key matching competency tags
+    gaps: string[];             // Potential gaps or missing domain skills
+    recommendation: string;     // 1-sentence executive recommendation
+    mode: 'local' | 'gemini' | 'openai';
+}
+
+export interface CandidateNote {
+    id: string;
+    application_id: string;
+    author_email: string;
+    author_name: string;
+    content: string;
+    mentions?: string[];
+    created_at: string;
+}
+

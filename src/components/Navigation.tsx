@@ -20,7 +20,7 @@ const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
   const location = useLocation();
-  const { user, signInWithGoogle, logout } = useAuth();
+  const { user, signInWithGoogle, loginAsLocalAdmin, logout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -185,15 +185,31 @@ const Navigation = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                className="hidden sm:flex border-white/10 hover:bg-white/10 text-foreground backdrop-blur-md rounded-full px-6"
-                onClick={signInWithGoogle}
-              >
-                <LogIn className="w-4 h-4 mr-2" />
-                Sign In
-              </Button>
+              <div className="flex items-center gap-2">
+                {import.meta.env.DEV && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="hidden sm:flex border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full px-4 text-xs font-mono font-bold"
+                    onClick={() => {
+                      loginAsLocalAdmin();
+                      if (location.pathname !== '/admin') navigate('/admin');
+                    }}
+                    title="Log in as Super Admin without OAuth (Local Dev Only)"
+                  >
+                    ⚡ Dev Bypass
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="hidden sm:flex border-white/10 hover:bg-white/10 text-foreground backdrop-blur-md rounded-full px-6"
+                  onClick={signInWithGoogle}
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Sign In
+                </Button>
+              </div>
             )}
 
             {/* Mobile Menu Button */}

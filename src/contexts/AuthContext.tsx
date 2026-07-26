@@ -15,6 +15,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   signInWithGoogle: () => void;
+  loginAsLocalAdmin: () => void;
   logout: () => void;
   clearError: () => void;
 }
@@ -40,6 +41,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Monitor Supabase Auth State
   useEffect(() => {
     const validateAndSetUser = async (session: any) => {
+      if (import.meta.env.DEV && localStorage.getItem('sscs_local_bypass') === 'true') {
+        setUser({
+          email: 'sibhi.s2024@vitstudent.ac.in',
+          displayName: 'Sibhi S (Local Dev Admin)',
+          photoURL: '',
+          uid: 'local-dev-admin-uid',
+          role: 'super_admin'
+        });
+        setLoading(false);
+        return;
+      }
+
       if (session?.user) {
         const email = session.user.email;
         const isHardcodedAdmin = email === 'sibhis5223@gmail.com';
@@ -116,8 +129,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const loginAsLocalAdmin = () => {
+    if (import.meta.env.DEV) {
+      localStorage.setItem('sscs_local_bypass', 'true');
+      setUser({
+        email: 'sibhi.s2024@vitstudent.ac.in',
+        displayName: 'Sibhi S (Local Dev Admin)',
+        photoURL: '',
+        uid: 'local-dev-admin-uid',
+        role: 'super_admin'
+      });
+      setLoading(false);
+    }
+  };
+
   const logout = async () => {
     try {
+      localStorage.removeItem('sscs_local_bypass');
       // FIX #16 (Privacy/Frontend Security): Clear all user form draft data from localStorage
       // before signing out so sensitive PII is not left on shared/lab computers.
       const keys = Object.keys(localStorage).filter(k => k.startsWith('sscsFormData_'));
@@ -145,6 +173,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loading,
         error,
         signInWithGoogle,
+        loginAsLocalAdmin,
         logout,
         clearError,
       }}

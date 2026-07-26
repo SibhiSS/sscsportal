@@ -15,6 +15,8 @@ import { canTransition, canPerformAction } from '@/lib/fsm';
 import { useAuth } from '@/contexts/AuthContext';
 import CandidateTimeline from '@/components/admin/CandidateTimeline';
 import MultiInterviewerPanel from '@/components/admin/MultiInterviewerPanel';
+import AICopilotPanel from '@/components/admin/AICopilotPanel';
+import TeamNotesFeed from '@/components/admin/TeamNotesFeed';
 
 interface ApplicationModalProps {
     application: Application | null;
@@ -34,24 +36,6 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
     currentPhase = 'APPLICATIONS_OPEN'
 }) => {
     const { user } = useAuth();
-    const [localNotes, setLocalNotes] = React.useState(application?.notes || '');
-    const [isSaving, setIsSaving] = React.useState(false);
-
-    React.useEffect(() => {
-        if (application) {
-            setLocalNotes(application.notes || '');
-        }
-    }, [application]);
-
-    const handleSave = async () => {
-        if (!application) return;
-        setIsSaving(true);
-        try {
-            await onUpdate(application.id, { notes: localNotes });
-        } finally {
-            setIsSaving(false);
-        }
-    };
     // Logic duplicated from Admin.tsx for consistency
     const ADMIN_EMAILS = [
         'sibhi.s2024@vitstudent.ac.in',
@@ -186,6 +170,9 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                         )}
                     </div>
 
+                    {/* AI Copilot Panel */}
+                    <AICopilotPanel application={application} />
+
                     <div className="grid md:grid-cols-2 gap-8">
                         {/* Personal Info */}
                         <div className="space-y-4">
@@ -256,13 +243,10 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                             </div>
                         )}
 
-                        {/* Questions / Notes */}
-                        {application.notes && (
-                            <div className="md:col-span-2 border-t border-dashed border-white/10 pt-6 mt-2">
-                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Applicant Questions / Notes</h4>
-                                <p className="text-sm bg-white/5 p-4 rounded-lg border border-white/10 whitespace-pre-wrap leading-relaxed">{application.notes}</p>
-                            </div>
-                        )}
+                        {/* Committee Discussion Feed (@mentions enabled) */}
+                        <div className="md:col-span-2 border-t border-dashed border-white/10 pt-6 mt-2">
+                            <TeamNotesFeed applicationId={application.id} />
+                        </div>
 
                         {/* Social Links */}
                         {(application.githubUrl || application.linkedinUrl || application.portfolioUrl) && (
