@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Sparkles, Users, CheckCircle, XCircle, RefreshCw, Send, Mail, Trash2, Plus, UserCheck } from 'lucide-react';
+import { Sparkles, Users, CheckCircle, XCircle, RefreshCw, Send, Mail, Trash2, Plus, UserCheck, GripVertical, Lock } from 'lucide-react';
 import { sendEmail } from '@/lib/email';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -44,6 +44,10 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
     const [isDrafting, setIsDrafting] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+    // Drag and drop state
+    const [draggedCandidateId, setDraggedCandidateId] = useState<string | null>(null);
+    const [dragOverDept, setDragOverDept] = useState<string | null>(null);
 
     // Email sending dialog state
     const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
@@ -187,6 +191,16 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
 
     const getMembersForDept = (dept: string) => {
         return applications.filter(app => draftMap[app.id] === dept);
+    };
+
+    // Helper: Check if candidate can be dropped into target department (must be 1st or 2nd pref)
+    const isDeptAllowedForCandidate = (candidateId: string | null, targetDept: string): boolean => {
+        if (!candidateId) return false;
+        const candidate = applications.find(a => a.id === candidateId);
+        if (!candidate) return false;
+        const p1 = candidate.primaryDept || candidate.department;
+        const p2 = candidate.secondaryDept;
+        return targetDept === p1 || (!!p2 && targetDept === p2);
     };
 
     // ── 5. Save & Apply Roster to Database ────────────────────────────────────
@@ -380,12 +394,64 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                         const fillRatio = members.length / currentQuota;
                         const progressColor = fillRatio >= 1 ? 'bg-green-500' : fillRatio >= 0.7 ? 'bg-purple-500' : 'bg-blue-500';
 
+                        // Drag & drop state for this specific department
+                        const isDraggingAny = !!draggedCandidateId;
+                        const isAllowedTarget = isDraggingAny && isDeptAllowedForCandidate(draggedCandidateId, dept);
+                        const isHoveredTarget = dragOverDept === dept && isAllowedTarget;
+
+                        let cardBgStyle = "bg-gradient-to-br from-white/[0.04] via-black/60 to-black/90 border-white/10";
+                        if (isDraggingAny) {
+                            if (isAllowedTarget) {
+                                cardBgStyle = isHoveredTarget 
+                                    ? "bg-green-500/20 border-green-400 shadow-[0_0_30px_rgba(34,197,94,0.3)] ring-2 ring-green-400"
+                                    : "bg-green-500/10 border-green-500/50 border-dashed shadow-[0_0_15px_rgba(34,197,94,0.15)]";
+                            } else {
+                                cardBgStyle = "bg-black/80 border-red-500/20 opacity-30 pointer-events-none";
+                            }
+                        }
+
                         return (
-                            <Card key={dept} className="bg-gradient-to-br from-white/[0.04] via-black/60 to-black/90 border-white/10 rounded-3xl overflow-hidden flex flex-col shadow-xl">
+                            <Card 
+                                key={dept} 
+                                onDragOver={(e) => {
+                                    if (isAllowedTarget) {
+                                        e.preventDefault();
+                                        e.dataTransfer.dropEffect = 'move';
+                                        if (dragOverDept !== dept) setDragOverDept(dept);
+                                    } else {
+                                        e.dataTransfer.dropEffect = 'none';
+                                    }
+                                }}
+                                onDragLeave={() => {
+                                    if (dragOverDept === dept) setDragOverDept(null);
+                                }}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    setDragOverDept(null);
+                                    if (draggedCandidateId && isAllowedTarget) {
+                                        assignCandidateToDept(draggedCandidateId, dept);
+                                        setDraggedCandidateId(null);
+                                    }
+                                }}
+                                className={`rounded-3xl overflow-hidden flex flex-col shadow-xl transition-all duration-300 ${cardBgStyle}`}
+                            >
                                 {/* Department Header & Quota Bar */}
                                 <div className="bg-white/[0.03] p-5 border-b border-white/10 space-y-3">
                                     <div className="flex items-center justify-between gap-2">
-                                        <h4 className="text-base font-black tracking-wider uppercase text-white">{dept}</h4>
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="text-base font-black tracking-wider uppercase text-white">{dept}</h4>
+                                            {isDraggingAny && (
+                                                isAllowedTarget ? (
+                                                    <Badge className="bg-green-500/20 text-green-300 border-green-500/40 text-[9px] font-extrabold uppercase animate-pulse">
+                                                        Drop Allowed
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30 text-[9px] font-bold">
+                                                        Not Preference
+                                                    </Badge>
+                                                )
+                                            )}
+                                        </div>
                                         <div className="flex items-center gap-1.5 bg-black/50 px-2.5 py-1 rounded-xl border border-white/10 text-xs font-mono">
                                             <span className={`font-bold ${fillRatio >= 1 ? 'text-green-400' : 'text-purple-300'}`}>
                                                 {members.length}
@@ -433,17 +499,31 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                                                     const scoreVal = (Number(app.finalScore || app.interviewScore || app.rating * 2) || 0).toFixed(1);
 
                                                     return (
-                                                        <div key={app.id} className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-purple-500/30 transition-all text-xs group">
-                                                            <div className="min-w-0 flex-1">
-                                                                <div className="font-bold text-white truncate flex items-center gap-1.5">
-                                                                    <span>{app.fullName}</span>
-                                                                    <span className="text-[10px] font-mono font-normal text-purple-300 bg-purple-500/10 px-1.5 py-0.2 rounded">⭐ {scoreVal}</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-1 mt-1 flex-wrap">
-                                                                    {isRec && <Badge variant="outline" className="text-[9px] bg-purple-500/20 text-purple-300 border-purple-500/30 px-1 py-0">Interviewer Rec</Badge>}
-                                                                    {is1st && <Badge variant="outline" className="text-[9px] bg-blue-500/20 text-blue-300 border-blue-500/30 px-1 py-0">1st Pref</Badge>}
-                                                                    {!is1st && is2nd && <Badge variant="outline" className="text-[9px] bg-cyan-500/20 text-cyan-300 border-cyan-500/30 px-1 py-0">2nd Pref</Badge>}
-                                                                    {!is1st && !is2nd && !isRec && <Badge variant="outline" className="text-[9px] bg-amber-500/20 text-amber-300 border-amber-500/30 px-1 py-0">🔄 Transfer</Badge>}
+                                                        <div 
+                                                            key={app.id} 
+                                                            draggable={true}
+                                                            onDragStart={(e) => {
+                                                                e.dataTransfer.setData('text/plain', app.id);
+                                                                setDraggedCandidateId(app.id);
+                                                            }}
+                                                            onDragEnd={() => {
+                                                                setDraggedCandidateId(null);
+                                                                setDragOverDept(null);
+                                                            }}
+                                                            className={`flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-purple-500/40 transition-all text-xs group cursor-grab active:cursor-grabbing hover:bg-white/[0.07] ${draggedCandidateId === app.id ? 'opacity-40 border-purple-400 ring-2 ring-purple-400' : ''}`}
+                                                        >
+                                                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                                <GripVertical className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-purple-400 shrink-0" />
+                                                                <div className="min-w-0 flex-1">
+                                                                    <div className="font-bold text-white truncate flex items-center gap-1.5">
+                                                                        <span>{app.fullName}</span>
+                                                                        <span className="text-[10px] font-mono font-normal text-purple-300 bg-purple-500/10 px-1.5 py-0.2 rounded">⭐ {scoreVal}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1 mt-1 flex-wrap">
+                                                                        {isRec && <Badge variant="outline" className="text-[9px] bg-purple-500/20 text-purple-300 border-purple-500/30 px-1 py-0">Interviewer Rec</Badge>}
+                                                                        {is1st && <Badge variant="outline" className="text-[9px] bg-blue-500/20 text-blue-300 border-blue-500/30 px-1 py-0">1st Pref</Badge>}
+                                                                        {!is1st && is2nd && <Badge variant="outline" className="text-[9px] bg-cyan-500/20 text-cyan-300 border-cyan-500/30 px-1 py-0">2nd Pref</Badge>}
+                                                                    </div>
                                                                 </div>
                                                             </div>
 
