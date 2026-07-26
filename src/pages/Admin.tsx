@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
-import { ShieldAlert, Eye, Star, ArrowUpDown, LayoutGrid, List, Trophy, BarChart3, Settings2, UploadCloud, Video } from 'lucide-react';
+import { ShieldAlert, Eye, Star, ArrowUpDown, LayoutGrid, List, Trophy, BarChart3, Settings2, UploadCloud, Video, Users, Sparkles } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 import { useAuth } from '@/contexts/AuthContext';
 import HolographicCard from '@/components/ui/HolographicCard';
@@ -28,7 +28,7 @@ import ApplicationModal from '@/components/admin/ApplicationModal';
 import AdminSettings from '@/components/admin/AdminSettings';
 import AuditLogViewer from '@/components/admin/AuditLogViewer';
 import InterviewScheduler from '@/components/admin/InterviewScheduler';
-import PositionManager from '@/components/admin/PositionManager';
+import CommitteeDraftBoard from '@/components/admin/CommitteeDraftBoard';
 import KanbanBoard from '@/components/admin/KanbanBoard';
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
 import RankingPanel from '@/components/admin/RankingPanel';
@@ -521,6 +521,9 @@ const Admin = () => {
                                         <TabsTrigger value="rankings" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
                                             <Trophy className="w-3.5 h-3.5 mr-1.5" />RANKINGS
                                         </TabsTrigger>
+                                        <TabsTrigger value="committees" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                            <Sparkles className="w-3.5 h-3.5 mr-1.5 text-purple-400" />COMMITTEES & DRAFT
+                                        </TabsTrigger>
                                     </>
                                 )}
                                 <TabsTrigger value="schedule" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
@@ -751,6 +754,16 @@ const Admin = () => {
                                     applications={applications}
                                     onUpdateTaskScore={updateTaskScore}
                                     userEmail={user?.email || ''}
+                                />
+                            </TabsContent>
+                        )}
+
+                        {/* ── COMMITTEES & DRAFT TAB ───────────────────────── */}
+                        {isAdmin && (
+                            <TabsContent value="committees" className="outline-none">
+                                <CommitteeDraftBoard
+                                    applications={applications}
+                                    onUpdate={updateApplication}
                                 />
                             </TabsContent>
                         )}

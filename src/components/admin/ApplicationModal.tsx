@@ -8,6 +8,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Star, CheckCircle, XCircle, MinusCircle, Trash2, Calendar, Clock, Save, Github, Linkedin, FileText, ExternalLink, Users } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 import { Application, ApplicationStatus, RecruitmentPhase } from '@/types';
@@ -153,19 +154,39 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                                     <MinusCircle className="w-4 h-4 mr-2" />
                                     Waitlist
                                 </Button>
-                                <Button
-                                    size="sm"
-                                    variant={application.status === 'selected' ? 'default' : 'outline'}
-                                    onClick={() => onUpdate(application.id, { status: 'selected' })}
-                                    disabled={!canTransition(application.status, 'selected') || !canPerformAction(currentPhase, 'canDecide')}
-                                    className={application.status === 'selected'
-                                        ? 'bg-green-600 hover:bg-green-700 text-white'
-                                        : 'border-green-500/50 text-green-500 hover:bg-green-500/10 hover:border-green-500'
-                                    }
-                                >
-                                    <CheckCircle className="w-4 h-4 mr-2" />
-                                    Select
-                                </Button>
+                                <div className="flex items-center gap-0.5">
+                                    <Button
+                                        size="sm"
+                                        variant={application.status === 'selected' ? 'default' : 'outline'}
+                                        onClick={() => onUpdate(application.id, { status: 'selected', assignedPosition: application.assignedPosition || application.primaryDept })}
+                                        disabled={!canTransition(application.status, 'selected') || !canPerformAction(currentPhase, 'canDecide')}
+                                        className={application.status === 'selected'
+                                            ? 'bg-green-600 hover:bg-green-700 text-white rounded-r-none px-3'
+                                            : 'border-green-500/50 text-green-500 hover:bg-green-500/10 hover:border-green-500 rounded-r-none px-3'
+                                        }
+                                    >
+                                        <CheckCircle className="w-4 h-4 mr-1.5" />
+                                        {application.status === 'selected' ? `Selected (${application.assignedPosition || application.primaryDept})` : 'Select'}
+                                    </Button>
+                                    <Select
+                                        value={application.assignedPosition || application.primaryDept || ''}
+                                        onValueChange={(val) => onUpdate(application.id, { status: 'selected', assignedPosition: val })}
+                                        disabled={!canPerformAction(currentPhase, 'canDecide')}
+                                    >
+                                        <SelectTrigger className={`h-9 w-8 px-1 rounded-l-none border-l-0 focus:ring-0 ${application.status === 'selected' ? 'bg-green-700 border-green-600 text-white hover:bg-green-800' : 'border-green-500/50 bg-green-500/10 text-green-400 hover:bg-green-500/20'}`}>
+                                            <span className="sr-only">Choose Department</span>
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-zinc-950 border-zinc-800">
+                                            <SelectItem value={application.primaryDept} className="text-xs font-bold text-purple-300">🌟 1st: {application.primaryDept}</SelectItem>
+                                            {application.secondaryDept && (
+                                                <SelectItem value={application.secondaryDept} className="text-xs font-semibold text-blue-300">⭐ 2nd: {application.secondaryDept}</SelectItem>
+                                            )}
+                                            {['Technical', 'Management', 'Event Operations', 'Creative', 'Outreach & Partnerships', 'Human Resources', 'Editorial & Media'].filter(d => d !== application.primaryDept && d !== application.secondaryDept).map(d => (
+                                                <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
                         )}
                     </div>
