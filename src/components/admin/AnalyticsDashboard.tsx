@@ -192,7 +192,7 @@ export default function AnalyticsDashboard({ applications }: AnalyticsDashboardP
     return 'bg-primary/10 text-primary/40';
   };
 
-  // ── Department breakdown ────────────────────────────────────────────────
+  // ── Department breakdown (1st Preference) ───────────────────────────────
   const deptStats = useMemo(() => {
     const map: Record<string, { applied: number; shortlisted: number; selected: number }> = {};
     for (const app of applications) {
@@ -200,10 +200,10 @@ export default function AnalyticsDashboard({ applications }: AnalyticsDashboardP
       if (!map[dept]) map[dept] = { applied: 0, shortlisted: 0, selected: 0 };
       map[dept].applied++;
       const s = normalizeStatus(app.status);
-      if (['shortlisted', 'interview_scheduled', 'interviewed', 'selected', 'active_member', 'alumni'].includes(s)) {
+      if (['shortlisted', 'interview_scheduled', 'interviewed', 'selected_pending', 'selected', 'active_member', 'alumni'].includes(s)) {
         map[dept].shortlisted++;
       }
-      if (['selected', 'active_member', 'alumni'].includes(s)) {
+      if (['selected_pending', 'selected', 'active_member', 'alumni'].includes(s)) {
         map[dept].selected++;
       }
     }
@@ -217,6 +217,34 @@ export default function AnalyticsDashboard({ applications }: AnalyticsDashboardP
       }))
       .sort((a, b) => b.applied - a.applied);
   }, [applications]);
+
+  // ── Department breakdown (2nd Preference) ───────────────────────────────
+  const secondaryDeptStats = useMemo(() => {
+    const map: Record<string, { applied: number; shortlisted: number; selected: number }> = {};
+    for (const app of applications) {
+      const dept = app.secondaryDept || 'Not Specified';
+      if (!map[dept]) map[dept] = { applied: 0, shortlisted: 0, selected: 0 };
+      map[dept].applied++;
+      const s = normalizeStatus(app.status);
+      if (['shortlisted', 'interview_scheduled', 'interviewed', 'selected_pending', 'selected', 'active_member', 'alumni'].includes(s)) {
+        map[dept].shortlisted++;
+      }
+      if (['selected_pending', 'selected', 'active_member', 'alumni'].includes(s)) {
+        map[dept].selected++;
+      }
+    }
+    return Object.entries(map)
+      .filter(([dept]) => dept !== 'Not Specified' && dept !== 'None' && dept !== '')
+      .map(([dept, d]) => ({
+        dept,
+        applied: d.applied,
+        shortlisted: d.shortlisted,
+        selected: d.selected,
+        acceptance: d.applied > 0 ? Math.round((d.selected / d.applied) * 100) : 0,
+      }))
+      .sort((a, b) => b.applied - a.applied);
+  }, [applications]);
+
 
   // ── Render ──────────────────────────────────────────────────────────────
   return (
@@ -377,75 +405,148 @@ export default function AnalyticsDashboard({ applications }: AnalyticsDashboardP
         </TabsContent>
 
         {/* ── TAB 3: Departments ──────────────────────────────────────── */}
-        <TabsContent value="departments" className="space-y-6">
-          {/* Grouped bar chart */}
-          <motion.div
-            className="bg-white/5 border border-white/10 rounded-xl p-5"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider mb-4">
-              Applied vs Selected by Department
-            </h3>
-            {deptStats.length === 0 ? (
-              <p className="text-white/30 text-sm text-center py-10">No department data</p>
-            ) : (
-              <ResponsiveContainer width="100%" height={Math.max(200, deptStats.length * 40)}>
-                <BarChart data={deptStats} layout="vertical" margin={{ top: 0, right: 16, left: 8, bottom: 0 }}>
-                  <XAxis type="number" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis type="category" dataKey="dept" width={130} tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-                  <Bar dataKey="applied" name="Applied" fill="hsl(348,83%,30%)" radius={[0, 2, 2, 0]} maxBarSize={14} />
-                  <Bar dataKey="selected" name="Selected" fill="hsl(142,70%,45%)" radius={[0, 2, 2, 0]} maxBarSize={14} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </motion.div>
+        <TabsContent value="departments" className="space-y-8">
+          {/* ── 1st Preference Section ─────────────────────────────────── */}
+          <div className="space-y-4">
+            <motion.div
+              className="bg-white/5 border border-white/10 rounded-xl p-5"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider mb-4">
+                Applied vs Selected by Department (1st Preference)
+              </h3>
+              {deptStats.length === 0 ? (
+                <p className="text-white/30 text-sm text-center py-10">No department data</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={Math.max(200, deptStats.length * 40)}>
+                  <BarChart data={deptStats} layout="vertical" margin={{ top: 0, right: 16, left: 8, bottom: 0 }}>
+                    <XAxis type="number" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis type="category" dataKey="dept" width={130} tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                    <Bar dataKey="applied" name="Applied (1st Pref)" fill="hsl(348,83%,30%)" radius={[0, 2, 2, 0]} maxBarSize={14} />
+                    <Bar dataKey="selected" name="Selected" fill="hsl(142,70%,45%)" radius={[0, 2, 2, 0]} maxBarSize={14} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </motion.div>
 
-          {/* Department stats table */}
-          <motion.div
-            className="bg-white/5 border border-white/10 rounded-xl overflow-hidden"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.15 }}
-          >
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/10 bg-white/[0.03]">
-                  <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Department</th>
-                  <th className="text-right px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Applied</th>
-                  <th className="text-right px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Shortlisted</th>
-                  <th className="text-right px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Selected</th>
-                  <th className="text-right px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Acceptance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {deptStats.map((d, i) => (
-                  <motion.tr
-                    key={d.dept}
-                    className="border-b border-white/5 hover:bg-white/[0.03] transition-colors"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: 0.2 + i * 0.04 }}
-                  >
-                    <td className="px-4 py-3 text-white font-medium">{d.dept}</td>
-                    <td className="px-4 py-3 text-right text-white/70">{d.applied}</td>
-                    <td className="px-4 py-3 text-right text-cyan-400">{d.shortlisted}</td>
-                    <td className="px-4 py-3 text-right text-emerald-400">{d.selected}</td>
-                    <td className="px-4 py-3 text-right">
-                      <span className={`font-semibold ${
-                        d.acceptance >= 30 ? 'text-emerald-400' :
-                        d.acceptance >= 15 ? 'text-yellow-400' : 'text-red-400'
-                      }`}>
-                        {d.acceptance}%
-                      </span>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </motion.div>
+            {/* 1st Preference stats table */}
+            <motion.div
+              className="bg-white/5 border border-white/10 rounded-xl overflow-hidden"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+            >
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/[0.03]">
+                    <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">1st Preference Department</th>
+                    <th className="text-right px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Applied</th>
+                    <th className="text-right px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Shortlisted</th>
+                    <th className="text-right px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Selected</th>
+                    <th className="text-right px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Acceptance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deptStats.map((d, i) => (
+                    <motion.tr
+                      key={d.dept}
+                      className="border-b border-white/5 hover:bg-white/[0.03] transition-colors"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: 0.1 + i * 0.04 }}
+                    >
+                      <td className="px-4 py-3 text-white font-medium">{d.dept}</td>
+                      <td className="px-4 py-3 text-right text-white/70">{d.applied}</td>
+                      <td className="px-4 py-3 text-right text-cyan-400">{d.shortlisted}</td>
+                      <td className="px-4 py-3 text-right text-emerald-400">{d.selected}</td>
+                      <td className="px-4 py-3 text-right">
+                        <span className={`font-semibold ${
+                          d.acceptance >= 30 ? 'text-emerald-400' :
+                          d.acceptance >= 15 ? 'text-yellow-400' : 'text-red-400'
+                        }`}>
+                          {d.acceptance}%
+                        </span>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </motion.div>
+          </div>
+
+          {/* ── 2nd Preference Section ─────────────────────────────────── */}
+          <div className="space-y-4 pt-6 border-t border-white/10">
+            <motion.div
+              className="bg-white/5 border border-white/10 rounded-xl p-5"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.15 }}
+            >
+              <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider mb-4">
+                Applied vs Selected by Department (2nd Preference)
+              </h3>
+              {secondaryDeptStats.length === 0 ? (
+                <p className="text-white/30 text-sm text-center py-10">No secondary department data</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={Math.max(200, secondaryDeptStats.length * 40)}>
+                  <BarChart data={secondaryDeptStats} layout="vertical" margin={{ top: 0, right: 16, left: 8, bottom: 0 }}>
+                    <XAxis type="number" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis type="category" dataKey="dept" width={130} tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                    <Bar dataKey="applied" name="Applied (2nd Pref)" fill="hsl(217,91%,60%)" radius={[0, 2, 2, 0]} maxBarSize={14} />
+                    <Bar dataKey="selected" name="Selected" fill="hsl(142,70%,45%)" radius={[0, 2, 2, 0]} maxBarSize={14} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </motion.div>
+
+            {/* 2nd Preference stats table */}
+            <motion.div
+              className="bg-white/5 border border-white/10 rounded-xl overflow-hidden"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+            >
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/[0.03]">
+                    <th className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">2nd Preference Department</th>
+                    <th className="text-right px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Applied</th>
+                    <th className="text-right px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Shortlisted</th>
+                    <th className="text-right px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Selected</th>
+                    <th className="text-right px-4 py-3 text-white/40 font-medium text-xs uppercase tracking-wider">Acceptance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {secondaryDeptStats.map((d, i) => (
+                    <motion.tr
+                      key={d.dept}
+                      className="border-b border-white/5 hover:bg-white/[0.03] transition-colors"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: 0.2 + i * 0.04 }}
+                    >
+                      <td className="px-4 py-3 text-white font-medium">{d.dept}</td>
+                      <td className="px-4 py-3 text-right text-white/70">{d.applied}</td>
+                      <td className="px-4 py-3 text-right text-cyan-400">{d.shortlisted}</td>
+                      <td className="px-4 py-3 text-right text-emerald-400">{d.selected}</td>
+                      <td className="px-4 py-3 text-right">
+                        <span className={`font-semibold ${
+                          d.acceptance >= 30 ? 'text-emerald-400' :
+                          d.acceptance >= 15 ? 'text-yellow-400' : 'text-red-400'
+                        }`}>
+                          {d.acceptance}%
+                        </span>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </motion.div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
