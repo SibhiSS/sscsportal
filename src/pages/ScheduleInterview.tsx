@@ -15,7 +15,6 @@ import { sendEmail } from '@/lib/email';
 const ADMIN_EMAILS = [
     'sibhi.s2024@vitstudent.ac.in',
     'sibhis5223@gmail.com',
-    'santhosh.v2024d@vitstudent.ac.in',
     'tspradeepkumar@vit.ac.in'
 ];
 

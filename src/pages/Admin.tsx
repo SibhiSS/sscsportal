@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
-import { ShieldAlert, Eye, Star, ArrowUpDown, LayoutGrid, List, Trophy, BarChart3, Settings2, UploadCloud, Video, Users, Sparkles } from 'lucide-react';
+import { ShieldAlert, Eye, Star, ArrowUpDown, LayoutGrid, List, BarChart3, Settings2, UploadCloud, Video } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 import { useAuth } from '@/contexts/AuthContext';
 import HolographicCard from '@/components/ui/HolographicCard';
@@ -26,17 +26,14 @@ import AdminStats from '@/components/admin/AdminStats';
 import AdminToolbar from '@/components/admin/AdminToolbar';
 import ApplicationModal from '@/components/admin/ApplicationModal';
 import AdminSettings from '@/components/admin/AdminSettings';
-import AuditLogViewer from '@/components/admin/AuditLogViewer';
 import InterviewScheduler from '@/components/admin/InterviewScheduler';
-import CommitteeDraftBoard from '@/components/admin/CommitteeDraftBoard';
 import KanbanBoard from '@/components/admin/KanbanBoard';
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
-import RankingPanel from '@/components/admin/RankingPanel';
 import DeptWeightsEditor from '@/components/admin/DeptWeightsEditor';
 import ImportApplications from '@/components/admin/ImportApplications';
 import { logAction } from '@/services/auditService';
 import CircuitBoardBackground from '@/components/ui/CircuitBoardBackground';
-import { ArrowLeft, LayoutDashboard, Calendar, History } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { parseApplicationText } from '@/utils/resumeParser';
@@ -229,12 +226,13 @@ const Admin = () => {
     };
 
     const handlePublishClick = () => {
-        const selectedApps = applications.filter(app => app.status === 'selected');
+        // selected_pending = admin draft; selected = already published
+        const draftApps = applications.filter(app => app.status === 'selected_pending' || app.status === 'selected');
         const rejectedPendingApps = applications.filter(app => app.status === 'rejected_pending');
         const waitlistedApps = applications.filter(app => app.status === 'waitlisted');
         
-        if (selectedApps.length === 0 && rejectedPendingApps.length === 0 && waitlistedApps.length === 0) {
-            alert("No applications pending publication.");
+        if (draftApps.length === 0 && rejectedPendingApps.length === 0 && waitlistedApps.length === 0) {
+            alert("No applications pending publication. Move candidates to the 'Selected (Draft)' column first.");
             return;
         }
         setPublishConfirm1('');
@@ -245,7 +243,9 @@ const Admin = () => {
     const executePublishResults = async () => {
         setIsPublishDialogOpen(false);
         setIsPublishing(true);
-        const selectedApps = applications.filter(app => app.status === 'selected');
+        // Publish any app that is in the internal draft bucket (selected_pending)
+        // or was already selected but email not yet sent (selected).
+        const selectedApps = applications.filter(app => app.status === 'selected_pending' || app.status === 'selected');
         const rejectedPendingApps = applications.filter(app => app.status === 'rejected_pending');
         const waitlistedApps = applications.filter(app => app.status === 'waitlisted');
         try {
@@ -367,7 +367,7 @@ const Admin = () => {
                 app.rollNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 app.email.toLowerCase().includes(searchTerm.toLowerCase());
 
-            const matchesDept = deptFilter === 'ALL' || app.primaryDept === deptFilter;
+            const matchesDept = deptFilter === 'ALL' || app.primaryDept === deptFilter || app.secondaryDept === deptFilter;
             const matchesStatus = statusFilter === 'ALL' || app.status === statusFilter;
             const matchesProgram = programFilter === 'ALL' || app.programName === programFilter;
             const matchesYear = yearFilter === 'ALL' || (app.admissionYear ? app.admissionYear.toString() === yearFilter : false);
@@ -518,12 +518,6 @@ const Admin = () => {
                                         <TabsTrigger value="analytics" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
                                             <BarChart3 className="w-3.5 h-3.5 mr-1.5" />ANALYTICS
                                         </TabsTrigger>
-                                        <TabsTrigger value="rankings" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
-                                            <Trophy className="w-3.5 h-3.5 mr-1.5" />RANKINGS
-                                        </TabsTrigger>
-                                        <TabsTrigger value="committees" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
-                                            <Users className="w-3.5 h-3.5 mr-1.5" />COMMITTEE SELECTION
-                                        </TabsTrigger>
                                     </>
                                 )}
                                 <TabsTrigger value="schedule" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
@@ -536,9 +530,6 @@ const Admin = () => {
                                 )}
                                 {isAdmin && (
                                     <>
-                                        <TabsTrigger value="activity" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
-                                            <History className="w-3.5 h-3.5 mr-1.5" />ACTIVITY
-                                        </TabsTrigger>
                                         <TabsTrigger value="settings" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
                                             <Settings2 className="w-3.5 h-3.5 mr-1.5" />SETTINGS
                                         </TabsTrigger>
@@ -747,41 +738,10 @@ const Admin = () => {
                             </>
                         )}
 
-                        {/* ── RANKINGS TAB ─────────────────────────────────── */}
-                        {isAdmin && (
-                            <TabsContent value="rankings" className="outline-none">
-                                <RankingPanel
-                                    applications={applications}
-                                    onUpdateTaskScore={updateTaskScore}
-                                    userEmail={user?.email || ''}
-                                />
-                            </TabsContent>
-                        )}
-
-                        {/* ── COMMITTEES & DRAFT TAB ───────────────────────── */}
-                        {isAdmin && (
-                            <TabsContent value="committees" className="outline-none">
-                                <CommitteeDraftBoard
-                                    applications={applications}
-                                    onUpdate={updateApplication}
-                                    onViewCandidate={(app) => setSelectedApp(app)}
-                                />
-                            </TabsContent>
-                        )}
-
                         {/* ── SCHEDULE TAB ────────────────────────────────── */}
                         <TabsContent value="schedule" className="outline-none">
                             <InterviewScheduler />
                         </TabsContent>
-
-
-
-                        {/* ── ACTIVITY LOG TAB ──────────────────────────────── */}
-                        {isAdmin && (
-                            <TabsContent value="activity" className="outline-none">
-                                <AuditLogViewer />
-                            </TabsContent>
-                        )}
 
                         {/* ── SETTINGS TAB ─────────────────────────────────── */}
                         {isAdmin && (
@@ -808,7 +768,6 @@ const Admin = () => {
                         open={!!selectedApp}
                         onClose={() => setSelectedApp(null)}
                         onUpdate={updateApplication}
-                        onDelete={deleteApplication}
                         currentPhase={currentPhase}
                     />
                 )}

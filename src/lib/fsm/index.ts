@@ -20,15 +20,20 @@ export const VALID_TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> =
     'interview_scheduled': ['interviewed', 'shortlisted', 'waitlisted', 'rejected'],
 
     // ── Stage 5: Interviewed (evaluation complete) ────────────────────────
-    'interviewed':         ['selected', 'waitlisted', 'rejected'],
+    'interviewed':         ['selected_pending', 'waitlisted', 'rejected'],
 
-    // ── Stage 6: Selected ────────────────────────────────────────────────
-    'selected':            ['active_member', 'rejected'], // rejection can be revoked
+    // ── Stage 6: Selected (admin internal — not visible to applicant yet) ──
+    // Use selected_pending when shortlisting internally. Only Publish Results
+    // promotes this to 'selected', which triggers the applicant-visible screen.
+    'selected_pending':    ['selected', 'waitlisted', 'rejected', 'interviewed'],
 
-    // ── Stage 7: Waitlisted ──────────────────────────────────────────────
-    'waitlisted':          ['selected', 'rejected', 'interview_scheduled'],
+    // ── Stage 7: Selected (published — applicant can see) ────────────────
+    'selected':            ['active_member', 'rejected'],
 
-    // ── Stage 8: Rejected (terminal) ────────────────────────────────────
+    // ── Stage 8: Waitlisted ──────────────────────────────────────────────
+    'waitlisted':          ['selected_pending', 'rejected', 'interview_scheduled'],
+
+    // ── Stage 9: Rejected (terminal) ────────────────────────────────────
     'rejected':            ['applied', 'under_review'], // Super admin can reopen
 
     // ── Legacy states ────────────────────────────────────────────────────
@@ -46,7 +51,7 @@ export const PIPELINE_STAGES: ApplicationStatus[] = [
     'shortlisted',
     'interview_scheduled',
     'interviewed',
-    'selected',
+    'selected_pending', // internal staging — promoted to 'selected' on Publish
     'active_member',
     'waitlisted',
     'rejected',
@@ -58,6 +63,7 @@ export const STAGE_LABELS: Record<string, string> = {
     shortlisted:          'Shortlisted',
     interview_scheduled:  'Interview Scheduled',
     interviewed:          'Interviewed',
+    selected_pending:     'Selected (Draft)', // admin sees "Selected (Draft)"
     selected:             'Selected',
     active_member:        'Placed',
     waitlisted:           'Waitlisted',
@@ -74,6 +80,7 @@ export const STAGE_COLORS: Record<string, string> = {
     shortlisted:          'cyan',
     interview_scheduled:  'purple',
     interviewed:          'orange',
+    selected_pending:     'green', // same colour family as selected
     selected:             'green',
     active_member:        'emerald',
     waitlisted:           'amber',
@@ -130,5 +137,7 @@ export const normalizeStatus = (status: ApplicationStatus): ApplicationStatus =>
     if (status === 'pending') return 'applied';
     if (status === 'neutral') return 'under_review';
     if (status === 'rejected_pending') return 'rejected';
+    // selected_pending maps to its own Kanban column (not 'selected') so admins can
+    // distinguish draft picks from officially published selections.
     return status;
 };

@@ -56,19 +56,21 @@ export interface Application {
 }
 
 export type ApplicationStatus =
-    // Canonical 8-stage pipeline
+    // Canonical pipeline
     | 'applied'
     | 'under_review'
     | 'shortlisted'
     | 'interview_scheduled'
     | 'interviewed'
-    | 'selected'
+    | 'selected_pending'  // admin internal draft — NOT visible to applicants
+    | 'selected'          // published — applicant sees Congratulations screen
     | 'waitlisted'
     | 'rejected'
     // Legacy/backward compat
     | 'pending' | 'neutral' | 'rejected_pending'
     // Lifecycle post-selection
     | 'active_member' | 'alumni' | 'inactive';
+
 
 export type RecruitmentPhase =
     | 'APPLICATIONS_OPEN'

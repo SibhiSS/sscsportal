@@ -166,18 +166,36 @@ const FormInput = ({ label, icon: Icon, error, ...props }: any) => (
     </div>
 );
 
-const FormTextarea = ({ label, error, ...props }: any) => (
-    <div className="space-y-2">
-        <label className="text-sm font-medium text-white/90 block">
-            {label}
-        </label>
-        <textarea
-            {...props}
-            className={`w-full min-h-[120px] bg-black/40 border rounded-xl px-4 py-3 text-white text-base focus:ring-2 outline-none transition-all placeholder:text-white/20 resize-y ${error ? 'border-red-500 focus:ring-red-500/50' : 'border-white/10 focus:ring-primary/50 focus:border-primary/50'}`}
-        />
-        {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
-    </div>
-);
+const FormTextarea = ({ label, error, maxLength, ...props }: any) => {
+    const currentLength = (props.value || '').length;
+    const isNearLimit = maxLength && currentLength >= maxLength * 0.9;
+    const isAtLimit = maxLength && currentLength >= maxLength;
+    return (
+        <div className="space-y-2">
+            <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-white/90 block">
+                    {label}
+                </label>
+                {maxLength && (
+                    <span className={`text-xs tabular-nums transition-colors ${
+                        isAtLimit ? 'text-red-400 font-bold' : isNearLimit ? 'text-yellow-400' : 'text-white/30'
+                    }`}>
+                        {currentLength}/{maxLength}
+                    </span>
+                )}
+            </div>
+            <textarea
+                {...props}
+                maxLength={maxLength}
+                className={`w-full min-h-[120px] bg-black/40 border rounded-xl px-4 py-3 text-white text-base focus:ring-2 outline-none transition-all placeholder:text-white/20 resize-y ${
+                    isAtLimit ? 'border-red-500/70' : error ? 'border-red-500 focus:ring-red-500/50' : 'border-white/10 focus:ring-primary/50 focus:border-primary/50'
+                }`}
+            />
+            {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
+            {isAtLimit && !error && <p className="text-xs text-red-400 mt-1">Character limit reached.</p>}
+        </div>
+    );
+};
 
 // ── Welcome Splash Component ──────────────────────────────────────
 const WelcomeSplash = ({ onComplete }: { onComplete: () => void }) => {
@@ -249,6 +267,8 @@ const Apply = () => {
 
         weeklyHours: '',
         linkedinUrl: '',
+        githubUrl: '',        // Fix 1: was missing from initial state
+        portfolioWebsite: '', // Fix 1: was missing from initial state
         googleDriveUrl: '',
         anyQuestions: '',
         hp_website: '' // Bot honeypot field
@@ -390,8 +410,21 @@ const Apply = () => {
         const { name, value } = e.target;
 
         if (name === 'phone') {
-            const val = value.replace(/\D/g, '').slice(0, 10);
+            // Fix 4: Allow up to 12 digits so country-code entries (e.g. 91XXXXXXXXXX) aren't silently truncated to 8 digits
+            const val = value.replace(/\D/g, '').slice(0, 12);
             setFormData(prev => ({ ...prev, phone: val }));
+            return;
+        }
+
+        // Fix A: Auto-prepend https:// to URL fields if user types a bare domain (e.g. linkedin.com/in/...)
+        // This prevents the DB check_linkedin_url_format / check_github_url_format constraints from rejecting the row.
+        if (name === 'linkedinUrl' || name === 'githubUrl' || name === 'portfolioWebsite' || name === 'googleDriveUrl') {
+            // Only auto-correct on non-empty values that don't already start with a protocol
+            if (value && !value.startsWith('http://') && !value.startsWith('https://') && value.includes('.')) {
+                setFormData(prev => ({ ...prev, [name]: `https://${value}` }));
+            } else {
+                setFormData(prev => ({ ...prev, [name]: value }));
+            }
             return;
         }
 
@@ -501,8 +534,11 @@ const Apply = () => {
                 full_name: formData.fullName,
                 roll_number: formData.rollNumber,
                 phone: formData.phone,
-                linkedin_url: formData.linkedinUrl,
-                github_url: formData.githubUrl,
+                // Fix B: Ensure all URL fields have a protocol prefix before hitting DB CHECK constraints.
+                // The DB requires: linkedin_url ~* '^https?://' (check_linkedin_url_format etc.)
+                // Users may type bare URLs like 'linkedin.com/in/...' — we normalise here as a safety net.
+                linkedin_url: formData.linkedinUrl && !formData.linkedinUrl.startsWith('http') ? `https://${formData.linkedinUrl}` : (formData.linkedinUrl || null),
+                github_url: formData.githubUrl && !formData.githubUrl.startsWith('http') ? `https://${formData.githubUrl}` : (formData.githubUrl || null),
 
                 primary_dept: formData.primaryDept,
                 secondary_dept: formData.secondaryDept,
@@ -511,7 +547,7 @@ const Apply = () => {
                 // New Fields
                 hostel_day: formData.hostelDay,
                 weekly_hours: formData.weeklyHours,
-                portfolio_website: formData.portfolioWebsite,
+                portfolio_website: formData.portfolioWebsite && !formData.portfolioWebsite.startsWith('http') ? `https://${formData.portfolioWebsite}` : (formData.portfolioWebsite || null),
                 why_join_sscs: formData.whyJoinSscs,
                 why_these_depts: formData.whyTheseDepts,
                 dept_answer: combinedDeptAnswer,
@@ -519,6 +555,7 @@ const Apply = () => {
                 // For backward compatibility with existing admin panel
                 skills: combinedDeptAnswer,
                 reason: formData.whyJoinSscs,
+                // Fix 2: secondaryDeptAnswer was collected but never submitted — now correctly mapped
                 secondary_skills: formData.secondaryDeptAnswer,
                 secondary_reason: formData.whyTheseDepts,
                 notes: formData.anyQuestions ? `Questions for us: ${formData.anyQuestions}` : '',
@@ -581,11 +618,33 @@ const Apply = () => {
             setIsSubmitted(true);
             setShowWelcome(false);
         } catch (error: any) {
-            console.error('Error submitting application:', error);
-            if (error?.code === '23505') {
-                alert("It looks like you've already submitted an application.");
+            // Fix 5: Log full error for debugging and map Postgres codes to friendly messages
+            console.error('[Apply] Submission error — full details:', JSON.stringify(error, null, 2));
+
+            const code = error?.code || '';
+            const msg = error?.message || '';
+
+            if (code === '23505') {
+                alert("It looks like you've already submitted an application. Please refresh and check your status.");
+            } else if (code === '23514') {
+                // CHECK constraint violation — answer too long, invalid phone, or invalid roll number
+                if (msg.includes('phone')) {
+                    alert("Your phone number format is invalid. Please enter a 10-digit mobile number (without +91 or dashes).");
+                } else if (msg.includes('roll_number')) {
+                    alert("Your registration number format is invalid. It must be in the format 24BCE1234.");
+                } else if (msg.includes('reason') || msg.includes('skills')) {
+                    alert("One of your answers exceeds the 4000-character limit. Please shorten it and try again.");
+                } else if (msg.includes('full_name')) {
+                    alert("Your full name exceeds 100 characters. Please shorten it.");
+                } else {
+                    alert(`A validation constraint was violated: ${msg}\n\nPlease check your inputs and try again.`);
+                }
+            } else if (code === '42501' || msg.includes('row-level security') || msg.includes('policy')) {
+                alert("Submission blocked by a security policy. Please sign out, sign back in, and try again. If the problem persists, contact the SSCS team.");
+            } else if (code?.startsWith('PGRST') || msg.includes('fetch') || msg.includes('network')) {
+                alert("A network error occurred. Please check your internet connection and try again.");
             } else {
-                alert("Something went wrong saving your application. Please check console or try again.");
+                alert(`Something went wrong saving your application.\n\nError: ${msg || 'Unknown error'}\n\nPlease try again or contact us if this persists.`);
             }
             setIsSubmitting(false);
         }
@@ -912,8 +971,8 @@ const Apply = () => {
                                             })}
                                         </div>
                                         <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-white/10">
-                                            <FormTextarea error={formErrors.whyJoinSscs} label="Why do you want to join IEEE SSCS?" name="whyJoinSscs" value={formData.whyJoinSscs} onChange={handleInputChange} placeholder="Explain your motivation for joining SSCS..." />
-                                            <FormTextarea error={formErrors.whyTheseDepts} label="Why did you choose these departments?" name="whyTheseDepts" value={formData.whyTheseDepts} onChange={handleInputChange} placeholder="What draws you to this specific role?" />
+                                            <FormTextarea error={formErrors.whyJoinSscs} maxLength={4000} label="Why do you want to join IEEE SSCS?" name="whyJoinSscs" value={formData.whyJoinSscs} onChange={handleInputChange} placeholder="Explain your motivation for joining SSCS..." />
+                                            <FormTextarea error={formErrors.whyTheseDepts} maxLength={4000} label="Why did you choose these departments?" name="whyTheseDepts" value={formData.whyTheseDepts} onChange={handleInputChange} placeholder="What draws you to this specific role?" />
                                         </div>
                                     </div>
                                 )}
@@ -932,7 +991,7 @@ const Apply = () => {
                                                     {DEPT_QUESTIONS[formData.primaryDept]?.prompt || "Tell us something amazing about yourself."}
                                                 </p>
                                             </div>
-                                            <FormTextarea error={formErrors.deptAnswer} label="Your Answer" name="deptAnswer" value={formData.deptAnswer} onChange={handleInputChange} placeholder="Type your answer here..." style={{ minHeight: '150px' }} />
+                                            <FormTextarea error={formErrors.deptAnswer} maxLength={4000} label="Your Answer" name="deptAnswer" value={formData.deptAnswer} onChange={handleInputChange} placeholder="Type your answer here..." style={{ minHeight: '150px' }} />
                                             {formData.primaryDept === 'Creative' && (
                                                 <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-xl">
                                                     <FormInput label="Portfolio / Drive Link (Optional)" type="url" name="googleDriveUrl" value={formData.googleDriveUrl} onChange={handleInputChange} placeholder="https://drive.google.com/..." />
@@ -949,7 +1008,7 @@ const Apply = () => {
                                                         {DEPT_QUESTIONS[formData.secondaryDept]?.prompt || "Tell us something amazing about yourself."}
                                                     </p>
                                                 </div>
-                                                <FormTextarea error={formErrors.secondaryDeptAnswer} label="Your Answer" name="secondaryDeptAnswer" value={formData.secondaryDeptAnswer} onChange={handleInputChange} placeholder="Type your answer here..." style={{ minHeight: '150px' }} />
+                                                <FormTextarea error={formErrors.secondaryDeptAnswer} maxLength={4000} label="Your Answer" name="secondaryDeptAnswer" value={formData.secondaryDeptAnswer} onChange={handleInputChange} placeholder="Type your answer here..." style={{ minHeight: '150px' }} />
                                                 {formData.secondaryDept === 'Creative' && (
                                                     <div className="mt-4 p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl">
                                                         <FormInput label="Portfolio / Drive Link (Optional)" type="url" name="googleDriveUrl" value={formData.googleDriveUrl} onChange={handleInputChange} placeholder="https://drive.google.com/..." />

@@ -69,6 +69,14 @@ const COLUMN_STYLES: Record<string, { border: string; text: string; badge: strin
     badge: 'bg-green-500/20 text-green-300 border-green-500/30',
     glow: 'shadow-green-500/10',
   },
+  // selected_pending = admin draft bucket — same green palette but with a
+  // dashed top border so admins can visually distinguish it from 'Placed'.
+  selected_pending: {
+    border: 'border-t-green-400/40 border-dashed',
+    text: 'text-green-300',
+    badge: 'bg-green-400/10 text-green-200 border-green-400/20 border-dashed',
+    glow: 'shadow-green-400/10',
+  },
   active_member: {
     border: 'border-t-emerald-400/80',
     text: 'text-emerald-300',

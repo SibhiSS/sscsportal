@@ -63,9 +63,12 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
     useEffect(() => {
         const fetchRecommendations = async () => {
             setIsLoadingFeedbacks(true);
+            // Fix C: removed non-existent column 'recommends_for' (error 42703).
+            // The actual schema column is 'recommends_committee' (boolean).
+            // The fallback to recommends_for in the loop below is kept for legacy read safety.
             const { data, error } = await supabase
                 .from('interview_feedback')
-                .select('application_id, recommended_dept, recommends_for, comments, interviewer_remarks');
+                .select('application_id, recommended_dept, recommends_committee, comments, interviewer_remarks');
             
             const map: Record<string, string[]> = {};
             if (data && !error) {

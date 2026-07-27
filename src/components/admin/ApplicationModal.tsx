@@ -9,7 +9,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Star, CheckCircle, XCircle, MinusCircle, Trash2, Calendar, Clock, Save, Github, Linkedin, FileText, ExternalLink, Users } from 'lucide-react';
+import { Star, CheckCircle, XCircle, MinusCircle, Calendar, Clock, Save, Github, Linkedin, FileText, ExternalLink, Users } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 import { Application, ApplicationStatus, RecruitmentPhase } from '@/types';
 import { canTransition, canPerformAction } from '@/lib/fsm';
@@ -24,7 +24,6 @@ interface ApplicationModalProps {
     open: boolean;
     onClose: () => void;
     onUpdate: (id: string, updates: Partial<Application>) => Promise<void>;
-    onDelete: (id: string) => Promise<void>;
     currentPhase?: RecruitmentPhase;
 }
 
@@ -33,7 +32,6 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
     open,
     onClose,
     onUpdate,
-    onDelete,
     currentPhase = 'APPLICATIONS_OPEN'
 }) => {
     const { user } = useAuth();
@@ -41,7 +39,6 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
     const ADMIN_EMAILS = [
         'sibhi.s2024@vitstudent.ac.in',
         'sibhis5223@gmail.com',
-        'santhosh.v2024d@vitstudent.ac.in',
         'tspradeepkumar@vit.ac.in'
     ];
     const isSuperAdmin = user?.role === 'super_admin' || (user?.email && ADMIN_EMAILS.includes(user.email) && !user?.role);
@@ -327,17 +324,6 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                             </div>
                         )}
 
-                        {/* Delete Action */}
-                        <div className="md:col-span-2 pt-4 border-t border-white/10 flex justify-end">
-                            <Button
-                                variant="destructive"
-                                onClick={() => onDelete(application.id)}
-                                className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50"
-                            >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete Application
-                            </Button>
-                        </div>
                     </div>
                 </div>
             </DialogContent>
