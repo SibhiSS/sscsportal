@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
-import { ShieldAlert, Eye, Star, ArrowUpDown, LayoutGrid, List, BarChart3, Settings2, UploadCloud, Video } from 'lucide-react';
+import { ShieldAlert, Eye, Star, ArrowUpDown, LayoutGrid, List, BarChart3, Settings2, UploadCloud, Video, Trophy, Sparkles, Activity } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 import { useAuth } from '@/contexts/AuthContext';
 import HolographicCard from '@/components/ui/HolographicCard';
@@ -31,6 +31,9 @@ import KanbanBoard from '@/components/admin/KanbanBoard';
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
 import DeptWeightsEditor from '@/components/admin/DeptWeightsEditor';
 import ImportApplications from '@/components/admin/ImportApplications';
+import RankingPanel from '@/components/admin/RankingPanel';
+import CommitteeDraftBoard from '@/components/admin/CommitteeDraftBoard';
+import AuditLogViewer from '@/components/admin/AuditLogViewer';
 import { logAction } from '@/services/auditService';
 import CircuitBoardBackground from '@/components/ui/CircuitBoardBackground';
 import { ArrowLeft, LayoutDashboard, Calendar } from 'lucide-react';
@@ -524,9 +527,20 @@ const Admin = () => {
                                     <Calendar className="w-3.5 h-3.5 mr-1.5" />SCHEDULE
                                 </TabsTrigger>
                                 {isSuperAdmin && (
-                                    <TabsTrigger value="import" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
-                                        <UploadCloud className="w-3.5 h-3.5 mr-1.5" />IMPORT
-                                    </TabsTrigger>
+                                    <>
+                                        <TabsTrigger value="rankings" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                            <Trophy className="w-3.5 h-3.5 mr-1.5" />RANKINGS
+                                        </TabsTrigger>
+                                        <TabsTrigger value="committees" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                            <Sparkles className="w-3.5 h-3.5 mr-1.5 text-purple-400" />COMMITTEES & DRAFT
+                                        </TabsTrigger>
+                                        <TabsTrigger value="activity" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                            <Activity className="w-3.5 h-3.5 mr-1.5" />ACTIVITY
+                                        </TabsTrigger>
+                                        <TabsTrigger value="import" className="px-5 py-2.5 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-xs font-bold tracking-wider">
+                                            <UploadCloud className="w-3.5 h-3.5 mr-1.5" />IMPORT
+                                        </TabsTrigger>
+                                    </>
                                 )}
                                 {isAdmin && (
                                     <>
@@ -732,6 +746,25 @@ const Admin = () => {
                         {/* ── SUPER ADMIN TABS ────────────────────────────────── */}
                         {isSuperAdmin && (
                             <>
+                                <TabsContent value="rankings" className="outline-none">
+                                    <RankingPanel
+                                        applications={applications}
+                                        onUpdateTaskScore={updateApplication}
+                                        userEmail={user?.email || ''}
+                                    />
+                                </TabsContent>
+
+                                <TabsContent value="committees" className="outline-none">
+                                    <CommitteeDraftBoard
+                                        applications={applications}
+                                        onUpdate={updateApplication}
+                                    />
+                                </TabsContent>
+
+                                <TabsContent value="activity" className="outline-none">
+                                    <AuditLogViewer />
+                                </TabsContent>
+
                                 <TabsContent value="import" className="outline-none">
                                     <ImportApplications />
                                 </TabsContent>
