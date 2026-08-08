@@ -8,7 +8,7 @@
  * 3. Add the following properties:
  *      SUPABASE_URL        → https://your-project-id.supabase.co
  *      SUPABASE_KEY        → your-service-role-key   (service_role — full DB access)
- *      ADMIN_ALERT_EMAIL   → sibhi.s2024@vitstudent.ac.in
+ *      ADMIN_ALERT_EMAIL   → ieee.sscs.vitchennai@gmail.com
  *      SENDER_NAME         → IEEE SSCS HR Team
  * 4. Set up a Time-driven trigger on `automationCheck` to run every 10 minutes.
  * 5. (Optional) Run `initialSetup` once to grant OAuth authorisation.
@@ -37,63 +37,71 @@ function getConfig() {
  */
 function automationCheck() {
     const now = new Date();
-    const startTimeMin = new Date(now.getTime() + 55 * 60 * 1000); // ~1 hour from now
-    const startTimeMax = new Date(now.getTime() + 65 * 60 * 1000);
-    const applicantRemind5Min = new Date(now.getTime() + 0 * 60 * 1000); // 5 min threshold
-    const applicantRemind5Max = new Date(now.getTime() + 10 * 60 * 1000);
-
-    console.log("Checking slots starting between " + startTimeMin + " and " + startTimeMax);
+    console.log("Running automation check at " + now.toISOString());
 
     // 1. Fetch Slots and Assignments
     const slots = fetchSupabase("/rest/v1/interview_slots?select=*,applications(*)");
     const assignments = fetchSupabase("/rest/v1/panel_assignments?select=*");
 
+    // 2. Pre-calculate the earliest slot of the day for each assigned interviewer
+    // This allows us to send only ONE email 10 mins before they start their day, preventing spam.
+    const interviewerEarliestSlot = {};
+
+    slots.forEach(slot => {
+        if (!slot.is_booked) return;
+        const slotDate = slot.start_time.split('T')[0];
+        const assignedInterviewers = assignments.filter(a => a.panel_id === slot.panel_id && a.date === slotDate);
+        
+        assignedInterviewers.forEach(interviewer => {
+            const key = interviewer.interviewer_email + "_" + slotDate;
+            const slotStart = new Date(slot.start_time);
+            if (!interviewerEarliestSlot[key] || slotStart < new Date(interviewerEarliestSlot[key].start_time)) {
+                interviewerEarliestSlot[key] = slot;
+            }
+        });
+    });
+
+    // 3. Process each slot
     slots.forEach(slot => {
         if (!slot.is_booked || !slot.applications) return;
 
         const slotStart = new Date(slot.start_time);
         const timeDiffMinutes = (slotStart - now) / (1000 * 60);
 
-        // --- LOGIC 1 & 2: Interviewer Reminders ---
-        // Find interviewer for this panel and date
         const slotDate = slot.start_time.split('T')[0];
         const assignedInterviewers = assignments.filter(a => a.panel_id === slot.panel_id && a.date === slotDate);
+        const meetingLink = slot.meeting_link || (assignedInterviewers.length > 0 ? assignedInterviewers[0].meeting_link : null);
 
-        if (assignedInterviewers.length > 0) {
-            // A: 1 Hour Before -> Send GMeet Link
-            if (timeDiffMinutes >= 55 && timeDiffMinutes <= 65) {
-                assignedInterviewers.forEach(interviewer => {
-                    sendInterviewerReminder(interviewer.interviewer_email, slot, true);
-                });
-            }
-            // B: Every 10 mins (if within 60 min)
-            else if (timeDiffMinutes > 0 && timeDiffMinutes < 60) {
-                assignedInterviewers.forEach(interviewer => {
-                    sendInterviewerReminder(interviewer.interviewer_email, slot, false);
-                });
-            }
-        } else {
-            // --- LOGIC 3: No Interviewer Alert ---
-            if (timeDiffMinutes >= 55 && timeDiffMinutes <= 65) {
+        // --- LOGIC 1: Admin & Missing Link Alerts (T-60 mins Window: 50 to 60 mins before) ---
+        if (timeDiffMinutes > 50 && timeDiffMinutes <= 60) {
+            if (assignedInterviewers.length === 0) {
                 sendAdminAlert(slot);
+            } else if (!meetingLink) {
+                assignedInterviewers.forEach(interviewer => {
+                    sendMissingLinkAlert(interviewer.interviewer_email, slot);
+                });
             }
         }
 
-        // --- LOGIC 4: Applicant Reminders ---
-        // A: 1 Hour Before
-        if (timeDiffMinutes >= 55 && timeDiffMinutes <= 65) {
-            sendApplicantReminder(slot.applications.email, slot, "1 hour", assignedInterviewers.length > 0 ? assignedInterviewers[0].meeting_link : null);
+        // --- LOGIC 2: Interviewer Daily Reminder (T-10 mins Window: 0 to 10 mins before) ---
+        if (timeDiffMinutes > 0 && timeDiffMinutes <= 10) {
+            assignedInterviewers.forEach(interviewer => {
+                const key = interviewer.interviewer_email + "_" + slotDate;
+                // Only send if this specific slot is their very FIRST slot of the day
+                if (interviewerEarliestSlot[key] && interviewerEarliestSlot[key].id === slot.id) {
+                    sendInterviewerFirstSlotReminder(interviewer.interviewer_email, slot);
+                }
+            });
         }
-        // B: 15 Mins Before
-        else if (timeDiffMinutes >= 10 && timeDiffMinutes <= 20) {
-            sendApplicantReminder(slot.applications.email, slot, "15 minutes", assignedInterviewers.length > 0 ? assignedInterviewers[0].meeting_link : null);
+
+        // --- LOGIC 3: Applicant Pre-Reminder (T-15 mins Window: 10 to 20 mins before) ---
+        if (timeDiffMinutes > 10 && timeDiffMinutes <= 20) {
+            sendApplicantReminder(slot.applications.email, slot, "15 minutes", false, null);
         }
         
-        // --- LOGIC 5: Missing Meeting Link Alert ---
-        if (timeDiffMinutes >= 55 && timeDiffMinutes <= 65 && !slot.meeting_link) {
-            assignedInterviewers.forEach(interviewer => {
-                sendMissingLinkAlert(interviewer.interviewer_email, slot);
-            });
+        // --- LOGIC 4: Applicant Immediate Join Link (T=0 mins Window: 0 to 10 mins AFTER start) ---
+        if (timeDiffMinutes > -10 && timeDiffMinutes <= 0) {
+            sendApplicantReminder(slot.applications.email, slot, "now", true, meetingLink);
         }
     });
     
@@ -147,42 +155,45 @@ function checkShortlistedExpiry() {
     });
 }
 
-function sendInterviewerReminder(email, slot, includeLink) {
-    const subject = includeLink ? "ACTION REQUIRED: Join Interview & GMeet Link - IEEE SSCS" : "REMINDER: Interview starting in " + Math.round((new Date(slot.start_time) - new Date()) / 60000) + "m";
+function sendInterviewerFirstSlotReminder(email, firstSlot) {
     const body = `
-    <h3>Interview Reminder</h3>
+    <h3>Daily Interview Schedule Reminder</h3>
     <p>Hi,</p>
-    <p>You have an interview scheduled with <b>${slot.applications.full_name}</b>.</p>
-    <p><b>Time:</b> ${new Date(slot.start_time).toLocaleTimeString()} - ${new Date(slot.end_time).toLocaleTimeString()}</p>
-    <p><b>Panel:</b> ${slot.panel_id}</p>
-    ${includeLink ? '<p>Please ensure you have generated a GMeet link and shared it or joined the designated room.</p>' : ''}
+    <p>Your first interview of the day starts in approximately 10 minutes with <b>${firstSlot.applications.full_name}</b>.</p>
+    <p><b>Time:</b> ${new Date(firstSlot.start_time).toLocaleTimeString()}</p>
+    <p><b>Panel:</b> ${firstSlot.panel_id}</p>
+    <p>Please ensure you are ready and have your GMeet link active. You will not receive further email reminders for subsequent back-to-back interviews today.</p>
     <p>Login to Dashboard: <a href="https://sscsportal.netlify.app/interviewer">Interviewer Dashboard</a></p>
   `;
     MailApp.sendEmail({
         to: email,
-        subject: subject,
+        subject: "REMINDER: Your Interviews Start Soon - IEEE SSCS",
         htmlBody: body,
         name: getConfig().SENDER_NAME
     });
 }
 
-function sendApplicantReminder(email, slot, threshold, meetingLink) {
-    const linkHtml = meetingLink 
-        ? `<p><b>Meeting Link:</b> <a href="${meetingLink}">${meetingLink}</a></p>`
-        : `<p>Your meeting link will be shared shortly.</p>`;
+function sendApplicantReminder(email, slot, threshold, includeLink, meetingLink) {
+    const linkHtml = includeLink 
+        ? (meetingLink ? `<p><b>Meeting Link:</b> <a href="${meetingLink}">${meetingLink}</a></p>` : `<p>Your meeting link will be shared shortly.</p>`)
+        : `<p>Your meeting link will be sent in a separate email exactly when your slot begins.</p>`;
+
+    const subject = includeLink 
+        ? "JOIN NOW: Your IEEE SSCS Interview Link" 
+        : `Reminder: Your Interview in ${threshold} - IEEE SSCS`;
 
     const body = `
     <h3>Interview Reminder - IEEE SSCS</h3>
     <p>Hi ${slot.applications.full_name},</p>
-    <p>This is a reminder that your interview starts in <b>${threshold}</b>.</p>
+    <p>This is a reminder that your interview ${includeLink ? "is starting <b>now</b>." : `starts in <b>${threshold}</b>.`}</p>
     <p><b>Time:</b> ${new Date(slot.start_time).toLocaleTimeString()}</p>
     ${linkHtml}
-    <p>Please be ready 5 minutes before the slot starts.</p>
+    ${includeLink ? '<p>Please join the meeting link immediately.</p>' : '<p>Please be ready 5 minutes before the slot starts.</p>'}
     <p>Best regards,<br/>IEEE SSCS Team</p>
   `;
     MailApp.sendEmail({
         to: email,
-        subject: "Reminder: Your Interview with IEEE SSCS",
+        subject: subject,
         htmlBody: body,
         name: getConfig().SENDER_NAME
     });

@@ -18,10 +18,11 @@ export async function fetchCommitteeMembers(): Promise<CommitteeMember[]> {
             .order('email', { ascending: true });
 
         if (error || !data) {
-            return [
-                { email: 'sibhi.s2024@vitstudent.ac.in', name: 'Sibhi (Super Admin)', role: 'super_admin' },
-                { email: 'sibhis5223@gmail.com', name: 'Sibhi (Admin)', role: 'admin' }
-            ];
+            // No hardcoded fallback: the `admins` table is the only source of truth, and
+            // committee emails must not be baked into the public bundle. An empty list
+            // simply means @mentions are unavailable until the query succeeds.
+            console.warn('[Notes] Could not load committee members for @mentions.');
+            return [];
         }
 
         return data.map((admin: any) => {

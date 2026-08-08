@@ -35,13 +35,10 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
     currentPhase = 'APPLICATIONS_OPEN'
 }) => {
     const { user } = useAuth();
-    // Logic duplicated from Admin.tsx for consistency
-    const ADMIN_EMAILS = [
-        'sibhi.s2024@vitstudent.ac.in',
-        'sibhis5223@gmail.com',
-        'tspradeepkumar@vit.ac.in'
-    ];
-    const isSuperAdmin = user?.role === 'super_admin' || (user?.email && ADMIN_EMAILS.includes(user.email) && !user?.role);
+    // Role comes from the `admins` table via AuthContext; RLS enforces the same rule
+    // server-side. The old hardcoded-email fallback was also dead code — it required
+    // `!user?.role`, and AuthContext always assigns a role (defaulting to 'viewer').
+    const isSuperAdmin = user?.role === 'super_admin';
 
     if (!application) return null;
 

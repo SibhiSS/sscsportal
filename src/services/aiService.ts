@@ -227,12 +227,15 @@ Return ONLY a valid JSON object with the following schema (no markdown formattin
 
 export async function analyzeCandidate(application: Application): Promise<AIAnalysisResult> {
     try {
-        // Check if custom AI API settings exist in Supabase app_settings
-        const { data } = await supabase.from('app_settings').select('value').eq('key', 'recruitment_status').single();
-        const settings: AppSettings | undefined = data?.value;
+        // AI settings live in their own 'ai_settings' row, NOT in 'recruitment_status'.
+        // The latter is world-readable (app_settings_select_public) because the apply
+        // form needs it, so an API key stored there is public. 'ai_settings' is gated
+        // behind app_settings_select_admin; non-admins get null and fall back to local.
+        const { data } = await supabase.from('app_settings').select('value').eq('key', 'ai_settings').maybeSingle();
+        const aiSettings: AppSettings['aiSettings'] | undefined = data?.value;
 
-        const provider = settings?.aiSettings?.provider;
-        const apiKey = settings?.aiSettings?.apiKey || 
+        const provider = aiSettings?.provider;
+        const apiKey = aiSettings?.apiKey ||
             (provider === 'gemini' ? import.meta.env.VITE_GEMINI_API_KEY : import.meta.env.VITE_OPENAI_API_KEY);
 
         if (provider && (provider === 'gemini' || provider === 'openai') && apiKey) {

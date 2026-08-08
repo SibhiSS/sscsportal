@@ -29,12 +29,8 @@ const InterviewScheduler = () => {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState("my-interviews");
 
-    // Static Admin Emails Fallback (Matches Admin.tsx)
-    const ADMIN_EMAILS = [
-        'sibhi.s2024@vitstudent.ac.in',
-        'sibhis5223@gmail.com'
-    ];
-    const isSuperAdmin = user?.role === 'super_admin' || (user?.email && ADMIN_EMAILS.includes(user.email) && !user?.role);
+    // Role comes from the `admins` table via AuthContext, matching what RLS enforces.
+    const isSuperAdmin = user?.role === 'super_admin';
 
     // Data State
     const [interviews, setInterviews] = useState<Interview[]>([]);
@@ -656,9 +652,9 @@ const InterviewScheduler = () => {
                                                                         <SelectItem key={admin.id} value={admin.email} className="text-xs">{admin.email}</SelectItem>
                                                                     ))
                                                                 ) : (
-                                                                    ADMIN_EMAILS.map(email => (
-                                                                        <SelectItem key={email} value={email} className="text-xs">{email}</SelectItem>
-                                                                    ))
+                                                                    <div className="px-2 py-3 text-xs text-muted-foreground">
+                                                                        No interviewers found. Add them under Settings → Admins.
+                                                                    </div>
                                                                 )}
                                                             </SelectContent>
                                                         </Select>

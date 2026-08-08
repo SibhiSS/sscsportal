@@ -7,8 +7,23 @@
 const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
 
 /**
+ * Shared secret checked by the Apps Script `doPost` before it will send anything.
+ *
+ * This is NOT authentication — like every VITE_* value it is compiled into the public
+ * bundle, so anyone willing to read the JS can extract it. It exists to stop drive-by
+ * abuse of what was otherwise a completely open relay: the endpoint URL alone was
+ * enough to send arbitrary mail from the club Gmail account, which burns the ~100/day
+ * send quota and silently kills real interview and result emails.
+ *
+ * The durable fix is to move sending behind a Supabase Edge Function that validates
+ * the caller's JWT and holds this token server-side. Until then, rotate the token in
+ * Script Properties whenever it is abused.
+ */
+const MAIL_TOKEN = import.meta.env.VITE_MAIL_RELAY_TOKEN;
+
+/**
  * FIX #14 — Masks an email address for safe logging.
- * e.g. "sibhi.s2024@vitstudent.ac.in" → "si***@vitstudent.ac.in"
+ * e.g. "jane.doe2024@vitstudent.ac.in" → "ja***@vitstudent.ac.in"
  */
 function maskEmail(email: string): string {
     const [local, domain] = email.split('@');
@@ -61,7 +76,7 @@ export async function sendEmail(
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-                body: JSON.stringify({ email, subject, message: formattedBody }),
+                body: JSON.stringify({ token: MAIL_TOKEN, email, subject, message: formattedBody }),
             });
             // FIX #14: Use masked email in logs — never log raw PII to the console.
             console.log(`[Email] ✓ Dispatched to ${maskEmail(email)} — "${subject}"`);

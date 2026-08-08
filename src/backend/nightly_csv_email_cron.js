@@ -22,26 +22,32 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-const CONFIG = {
-  // Replace with your actual Supabase URL and API Key (from project Settings -> API)
-  SUPABASE_URL: "https://your-supabase-project.supabase.co", 
-  SUPABASE_ANON_KEY: "your-supabase-anon-or-service-role-key",
-  
-  // The recipient email address you specified
-  TARGET_EMAIL: "ieee.sscs.vitchennai@gmail.com",
-  SUBJECT_PREFIX: "📊 [IEEE SSCS] Nightly Candidate CSV Backup Report"
-};
+function getNightlyConfig() {
+  const props = PropertiesService.getScriptProperties();
+  return {
+    SUPABASE_URL: props.getProperty('SUPABASE_URL'),
+    SUPABASE_KEY: props.getProperty('SUPABASE_KEY'), // Uses the same key as automationCheck
+    TARGET_EMAIL: props.getProperty('ADMIN_ALERT_EMAIL') || "ieee.sscs.vitchennai@gmail.com",
+    SUBJECT_PREFIX: "📊 [IEEE SSCS] Nightly Candidate CSV Backup Report"
+  };
+}
 
 function sendNightlyCSVReport() {
   try {
     Logger.log("Starting Nightly Candidate CSV Backup Job...");
+    const CONFIG = getNightlyConfig();
+    
+    if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_KEY) {
+      throw new Error("Missing SUPABASE_URL or SUPABASE_KEY in Script Properties. Please add them in Project Settings -> Script Properties.");
+    }
+    
     const url = `${CONFIG.SUPABASE_URL}/rest/v1/applications?select=*&order=created_at.desc`;
     
     const response = UrlFetchApp.fetch(url, {
       method: "get",
       headers: {
-        "apikey": CONFIG.SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${CONFIG.SUPABASE_ANON_KEY}`,
+        "apikey": CONFIG.SUPABASE_KEY,
+        "Authorization": `Bearer ${CONFIG.SUPABASE_KEY}`,
         "Content-Type": "application/json"
       }
     });

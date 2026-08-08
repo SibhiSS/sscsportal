@@ -59,12 +59,14 @@ CREATE TABLE public.admins (
   added_by TEXT -- Email of the admin who added this user
 );
 
--- Seed initial admins (You can edit this list)
-INSERT INTO public.admins (email, role) VALUES 
-('sibhi.s2024@vitstudent.ac.in', 'super_admin'),
-('sibhis5223@gmail.com', 'super_admin'),
-('santhosh.v2024d@vitstudent.ac.in', 'super_admin'),
-('tspradeepkumar@vit.ac.in', 'viewer')
+-- Seed the bootstrap admin.
+--
+-- Replace the placeholder with your own address before running, then manage everyone
+-- else through Admin → Settings → Admins. Do NOT commit real committee emails here:
+-- this repo is public, and a re-run of this file would silently restore anyone listed
+-- (including people already removed from the team).
+INSERT INTO public.admins (email, role) VALUES
+('REPLACE_ME@vitstudent.ac.in', 'super_admin')
 ON CONFLICT (email) DO NOTHING;
 
 -- 3. Audit Logs (Security Tracking)

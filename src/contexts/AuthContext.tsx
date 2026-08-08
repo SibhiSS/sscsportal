@@ -20,6 +20,24 @@ interface AuthContextType {
   clearError: () => void;
 }
 
+/**
+ * Identity used by the DEV-only local bypass.
+ *
+ * Set VITE_DEV_ADMIN_EMAIL in your local .env if you need it to match a real row in the
+ * `admins` table. It is deliberately not a committee member's address: this is a public
+ * repo, and the bypass grants super_admin in the UI.
+ *
+ * This only affects client-side state — RLS still evaluates the real (absent) JWT, so
+ * database reads will fail regardless. It is a UI convenience, not an auth backdoor.
+ */
+const DEV_ADMIN = {
+  email: import.meta.env.VITE_DEV_ADMIN_EMAIL || 'dev@vitstudent.ac.in',
+  displayName: 'Local Dev Admin',
+  photoURL: '',
+  uid: 'local-dev-admin-uid',
+  role: 'super_admin' as const,
+};
+
 // Create context
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -42,13 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const validateAndSetUser = async (session: any) => {
       if (import.meta.env.DEV && localStorage.getItem('sscs_local_bypass') === 'true') {
-        setUser({
-          email: 'sibhi.s2024@vitstudent.ac.in',
-          displayName: 'Sibhi S (Local Dev Admin)',
-          photoURL: '',
-          uid: 'local-dev-admin-uid',
-          role: 'super_admin'
-        });
+        setUser(DEV_ADMIN);
         setLoading(false);
         return;
       }
@@ -138,13 +150,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginAsLocalAdmin = () => {
     if (import.meta.env.DEV) {
       localStorage.setItem('sscs_local_bypass', 'true');
-      setUser({
-        email: 'sibhi.s2024@vitstudent.ac.in',
-        displayName: 'Sibhi S (Local Dev Admin)',
-        photoURL: '',
-        uid: 'local-dev-admin-uid',
-        role: 'super_admin'
-      });
+      setUser(DEV_ADMIN);
       setLoading(false);
     }
   };

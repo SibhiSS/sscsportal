@@ -1,6 +1,6 @@
 # Setting up Email Notifications with EmailJS
 
-To allow the admin dashboard to send acceptance emails from `nova.cpsc@gmail.com`, you need to configure **EmailJS**. This is a free service that lets you send emails directly from the frontend without a backend server.
+To allow the admin dashboard to send acceptance emails from `ieee.sscs.vitchennai@gmail.com`, you need to configure **EmailJS**. This is a free service that lets you send emails directly from the frontend without a backend server.
 
 ## Step 1: Create an EmailJS Account
 1. Go to [https://www.emailjs.com/](https://www.emailjs.com/) and Sign Up for a free account.
@@ -9,7 +9,7 @@ To allow the admin dashboard to send acceptance emails from `nova.cpsc@gmail.com
 1. In the EmailJS Dashboard, go to **Email Services** (on the left).
 2. Click **Add New Service**.
 3. Select **Gmail**.
-4. Click **Connect Account** and sign in with `nova.cpsc@gmail.com`.
+4. Click **Connect Account** and sign in with `ieee.sscs.vitchennai@gmail.com`.
 5. Make sure the toggle "Send test email to verify" is checked if you want to verify it works.
 6. Click **Create Service**.
 7. **Copy the Service ID** (e.g., `service_xyz123`) - you will need this later.
@@ -17,14 +17,14 @@ To allow the admin dashboard to send acceptance emails from `nova.cpsc@gmail.com
 ## Step 3: Create the Email Template
 1. Go to **Email Templates** (on the left).
 2. Click **Create New Template**.
-3. **Subject Line**: `Congratulations! You're in - NOVA CPS`
+3. **Subject Line**: `Congratulations! You're in - IEEE SSCS`
 4. **Content**: Design your email. You can use variables using `{{variable_name}}`.
    
    Example Content:
    ```html
    Hi {{to_name}},
 
-   Congratulations! We are thrilled to inform you that you have been selected to join the {{department}} team at NOVA CPS.
+   Congratulations! We are thrilled to inform you that you have been selected to join the {{department}} team at IEEE SSCS.
 
    We were impressed by your application and believe you will be a great addition to our community.
 
@@ -34,7 +34,7 @@ To allow the admin dashboard to send acceptance emails from `nova.cpsc@gmail.com
    Welcome aboard!
    
    Best regards,
-   NOVA CPS Team
+   IEEE SSCS Team
    ```
 5. **Auto-Reply**: (Optional) You can leave this blank or default.
 6. Click **Save**.
@@ -62,4 +62,4 @@ To allow the admin dashboard to send acceptance emails from `nova.cpsc@gmail.com
 - [ ] Public Key replaced in code
 - [ ] Template variables (`{{to_name}}`, `{{to_email}}`, `{{department}}`) match what is used in `Admin.tsx`.
 
-That's it! When you click "Publish Results" in the Admin Dashboard, emails will be sent via `nova.cpsc@gmail.com`.
+That's it! When you click "Publish Results" in the Admin Dashboard, emails will be sent via `ieee.sscs.vitchennai@gmail.com`.

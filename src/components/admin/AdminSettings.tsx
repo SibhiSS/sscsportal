@@ -131,9 +131,14 @@ const AdminSettings = () => {
 
     const fetchData = async () => {
         try {
-            // 1. Fetch Settings
-            const { data: settingsData } = await supabase.from('app_settings').select('value').eq('key', 'recruitment_status').single();
-            if (settingsData) setSettings(settingsData.value);
+            // 1. Fetch Settings. The AI provider key is kept out of the world-readable
+            // 'recruitment_status' row and lives in the admin-only 'ai_settings' row;
+            // merge the two back together for the UI.
+            const [{ data: settingsData }, { data: aiData }] = await Promise.all([
+                supabase.from('app_settings').select('value').eq('key', 'recruitment_status').single(),
+                supabase.from('app_settings').select('value').eq('key', 'ai_settings').maybeSingle(),
+            ]);
+            if (settingsData) setSettings({ ...settingsData.value, aiSettings: aiData?.value ?? undefined });
 
             // 2. Fetch Admins
             const { data: adminsData } = await supabase.from('admins').select('*').order('created_at', { ascending: false });
@@ -204,13 +209,37 @@ const AdminSettings = () => {
         }
     };
 
+    /**
+     * Writes settings back to app_settings, splitting the AI provider key out of the
+     * 'recruitment_status' row.
+     *
+     * 'recruitment_status' is readable by anyone holding the anon key (which ships in
+     * the public JS bundle) because the apply form needs to check whether recruitment
+     * is open. Any aiSettings written into it would be world-readable, so it goes to
+     * the admin-only 'ai_settings' row instead. Every write path must go through here.
+     */
+    const persistSettings = async (next: AppSettings) => {
+        const { aiSettings, ...publicSettings } = next;
+
+        const { error } = await supabase.from('app_settings')
+            .update({ value: publicSettings })
+            .eq('key', 'recruitment_status');
+        if (error) return error;
+
+        if (aiSettings) {
+            const { error: aiError } = await supabase.from('app_settings')
+                .upsert({ key: 'ai_settings', value: aiSettings }, { onConflict: 'key' });
+            if (aiError) return aiError;
+        }
+
+        return null;
+    };
+
     const toggleRecruitment = async (checked: boolean) => {
         const newSettings = { ...settings, isOpen: checked };
         setSettings(newSettings);
 
-        const { error } = await supabase.from('app_settings')
-            .update({ value: newSettings })
-            .eq('key', 'recruitment_status');
+        const error = await persistSettings(newSettings);
 
         if (error) {
             console.error("Failed to save recruitment status:", error);
@@ -234,9 +263,7 @@ const AdminSettings = () => {
 
         setSettings(newSettings);
 
-        const { error } = await supabase.from('app_settings')
-            .update({ value: newSettings })
-            .eq('key', 'recruitment_status');
+        const error = await persistSettings(newSettings);
 
         if (error) {
             console.error("Failed to save phase change:", error);
@@ -251,14 +278,18 @@ const AdminSettings = () => {
     const saveRecruitmentSettings = async () => {
         setSavingSettings(true);
         try {
-            const { error } = await supabase.from('app_settings')
-                .update({ value: settings })
-                .eq('key', 'recruitment_status');
+            const error = await persistSettings(settings);
 
             if (error) throw error;
             toast.success("All recruitment settings saved successfully!");
             if (currentUser?.email) {
-                await logAction(currentUser.email, 'UPDATE_RECRUITMENT_SETTINGS', undefined, settings);
+                // Never log aiSettings — it carries the provider API key, and audit_logs
+                // is readable by every admin role including 'viewer'.
+                const { aiSettings, ...loggableSettings } = settings;
+                await logAction(currentUser.email, 'UPDATE_RECRUITMENT_SETTINGS', undefined, {
+                    ...loggableSettings,
+                    aiProvider: aiSettings?.provider ?? 'local',
+                });
             }
         } catch (err: any) {
             console.error("Error saving recruitment settings:", err);

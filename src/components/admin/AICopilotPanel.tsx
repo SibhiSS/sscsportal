@@ -9,6 +9,27 @@ interface AICopilotPanelProps {
     application: Application;
 }
 
+/**
+ * Renders **bold** markers as <strong> without injecting raw HTML.
+ *
+ * Summary bullets interpolate applicant-controlled fields (program_name, department,
+ * batch, primary_dept, secondary_dept), and a direct PostgREST insert bypasses the
+ * apply form entirely — so this text must never reach dangerouslySetInnerHTML.
+ */
+function BoldMarkdown({ text }: { text: string }) {
+    return (
+        <>
+            {text.split(/(\*\*.*?\*\*)/g).map((part, i) =>
+                part.startsWith('**') && part.endsWith('**') && part.length > 4 ? (
+                    <strong key={i} className="text-white font-semibold">{part.slice(2, -2)}</strong>
+                ) : (
+                    part
+                )
+            )}
+        </>
+    );
+}
+
 export default function AICopilotPanel({ application }: AICopilotPanelProps) {
     const [analysis, setAnalysis] = useState<AIAnalysisResult | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
@@ -127,7 +148,7 @@ export default function AICopilotPanel({ application }: AICopilotPanelProps) {
                     {analysis.summaryBullets.map((bullet, i) => (
                         <div key={i} className="flex items-start gap-2.5">
                             <Zap className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
-                            <span className="flex-1" dangerouslySetInnerHTML={{ __html: bullet.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>') }} />
+                            <span className="flex-1"><BoldMarkdown text={bullet} /></span>
                         </div>
                     ))}
                 </div>

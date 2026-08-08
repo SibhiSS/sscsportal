@@ -43,10 +43,10 @@ import { parseApplicationText } from '@/utils/resumeParser';
 
 
 
-const ADMIN_EMAILS = [
-    'sibhi.s2024@vitstudent.ac.in',
-    'sibhis5223@gmail.com'
-];
+// Roles that may open the admin dashboard. The `admins` table is the single source of
+// truth — AuthContext resolves the role from it on sign-in, and RLS enforces the same
+// thing server-side. There is deliberately no hardcoded email fallback here.
+const ALLOWED_ROLES = ['super_admin', 'admin', 'interviewer'];
 
 type ViewMode = 'table' | 'kanban';
 
@@ -85,7 +85,9 @@ const Admin = () => {
 
     useEffect(() => {
         if (!authLoading && !user) return;
-        const hasAccess = user?.role || (user?.email && ADMIN_EMAILS.includes(user.email));
+        // Note: AuthContext assigns every signed-in user a role, defaulting to 'viewer',
+        // so `user?.role` alone is always truthy and gated nothing. Check the role value.
+        const hasAccess = !!user?.role && ALLOWED_ROLES.includes(user.role);
         if (hasAccess) {
             fetchApplications();
             fetchPhase();
@@ -417,9 +419,7 @@ const Admin = () => {
         }
     };
 
-    const ALLOWED_ROLES = ['super_admin', 'admin', 'interviewer'];
-    const hasAccess = (user?.role && ALLOWED_ROLES.includes(user.role)) ||
-        (user?.email && ADMIN_EMAILS.includes(user.email));
+    const hasAccess = !!user?.role && ALLOWED_ROLES.includes(user.role);
     const isSuperAdmin = user?.role === 'super_admin';
     const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
 

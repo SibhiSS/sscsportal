@@ -12,11 +12,16 @@ import SlotCalendar from '@/components/ui/SlotCalendar';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 
 import { sendEmail } from '@/lib/email';
-const ADMIN_EMAILS = [
-    'sibhi.s2024@vitstudent.ac.in',
-    'sibhis5223@gmail.com',
-    'tspradeepkumar@vit.ac.in'
-];
+
+/**
+ * Shared club mailbox for operational alerts.
+ *
+ * This page is applicant-facing, so it cannot read the `admins` table — RLS restricts
+ * that to the admin's own row or a super_admin. Personal admin addresses were hardcoded
+ * here previously, which published them in the public JS bundle and the public repo.
+ * A shared org address avoids that without needing a DB lookup.
+ */
+const ADMIN_ALERT_EMAIL = import.meta.env.VITE_ADMIN_ALERT_EMAIL || 'ieee.sscs.vitchennai@gmail.com';
 
 interface PendingSlot {
     id: string;
@@ -175,8 +180,12 @@ const ScheduleInterview = () => {
 
                     const hasLink = assignments?.some(a => a.meeting_link?.trim());
                     if (!hasLink) {
+                        // Note: `assignments` is normally empty here — panel_assignments is
+                        // admin-only under RLS, so an applicant's query returns nothing. The
+                        // club mailbox is the reliable recipient; the Apps Script cron sends
+                        // the authoritative "no interviewer assigned" alert server-side.
                         const interviewerEmails = assignments?.map(a => a.interviewer_email) || [];
-                        const recipients = [...new Set([...interviewerEmails, ...ADMIN_EMAILS])];
+                        const recipients = [...new Set([...interviewerEmails, ADMIN_ALERT_EMAIL])];
                         for (const alertEmail of recipients) {
                             sendEmail(
                                 alertEmail,

@@ -763,6 +763,14 @@ const Apply = () => {
                                     >
                                         Follow on Instagram
                                     </a>
+                                    <a
+                                        href="https://www.linkedin.com/company/ieee-sscs-vitc/"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center justify-center h-12 px-6 rounded-lg bg-[#0A66C2] text-white font-bold hover:bg-[#004182] transition-colors w-full"
+                                    >
+                                        Follow on LinkedIn
+                                    </a>
                                 </div>
                             </>
                         )}
@@ -804,7 +812,7 @@ const Apply = () => {
                             Follow us on Instagram
                         </a>
                         <a
-                            href="https://www.linkedin.com/company/ieee-sscs-vitcc"
+                            href="https://www.linkedin.com/company/ieee-sscs-vitc/"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center justify-center h-12 px-6 rounded-lg bg-[#0A66C2] text-white font-bold hover:bg-[#004182] transition-colors w-full"
