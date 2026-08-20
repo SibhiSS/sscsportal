@@ -7,6 +7,7 @@ import RevealText from '@/components/ui/RevealText';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { useRecruitmentWindow } from '@/hooks/useRecruitmentWindow';
 
 const benefits = [
   { title: 'Hands-on Projects', description: 'Work on real SSCS projects' },
@@ -19,13 +20,11 @@ const JoinSection = () => {
   const [hasApplied, setHasApplied] = useState(false);
   const [canBookSlot, setCanBookSlot] = useState(false);
   const [isSelected, setIsSelected] = useState(false);
-  const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(false);
+  // Server-evaluated: the manual switch AND the scheduled window.
+  const { isOpen: isRecruitmentOpen } = useRecruitmentWindow();
 
   useEffect(() => {
     const checkStatus = async () => {
-      // EMERGENCY OVERRIDE: ALWAYS OPEN
-      setIsRecruitmentOpen(true);
-
       if (!user) return;
       const { data } = await supabase
         .from('applications')

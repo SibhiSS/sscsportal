@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { sendEmail } from '@/lib/email';
 import { validateRegistrationNumber, RegNoDetails } from '@/utils/validation';
+import { useRecruitmentWindow, formatCountdown } from '@/hooks/useRecruitmentWindow';
 import confetti from 'canvas-confetti';
 import {
     Select,
@@ -223,11 +224,62 @@ const WelcomeSplash = ({ onComplete }: { onComplete: () => void }) => {
 };
 
 
+/**
+ * Live countdown to the submission deadline.
+ *
+ * Ticks against the SERVER clock (serverNow) rather than the device clock, so a
+ * skewed laptop still sees the instant the database will actually stop accepting
+ * inserts. Renders nothing when no deadline is scheduled.
+ */
+const DeadlineBanner = ({ closesAt, serverNow }: { closesAt: string | null; serverNow: () => number }) => {
+    const [remaining, setRemaining] = useState(() => (closesAt ? new Date(closesAt).getTime() - serverNow() : 0));
+
+    useEffect(() => {
+        if (!closesAt) return;
+        const deadline = new Date(closesAt).getTime();
+        if (!Number.isFinite(deadline)) return;
+
+        const tick = () => setRemaining(deadline - serverNow());
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+    }, [closesAt, serverNow]);
+
+    // NaN when closesAt is unparseable — `NaN <= 0` is false, so without the finite
+    // check a malformed timestamp would fall through to format() and throw.
+    if (!closesAt || !Number.isFinite(remaining) || remaining <= 0) return null;
+
+    const urgent = remaining < 60 * 60 * 1000; // final hour
+
+    return (
+        <div className={`mb-8 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 px-6 py-4 rounded-2xl border backdrop-blur-xl ${urgent ? 'border-red-500/30 bg-red-500/10' : 'border-white/10 bg-white/5'}`}>
+            <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className={`w-4 h-4 ${urgent ? 'text-red-400' : 'text-primary'}`} />
+                Applications close {format(new Date(closesAt), "d MMM yyyy 'at' h:mm a")}
+            </span>
+            <span className={`font-mono font-bold tracking-wider ${urgent ? 'text-red-400' : 'text-white'}`}>
+                {formatCountdown(remaining)}
+            </span>
+        </div>
+    );
+};
+
+
 // ── Application Form Component ──────────────────────────────────────
 const Apply = () => {
     let { user, signInWithGoogle, loading: authLoading } = useAuth();
     let [checkingStatus, setCheckingStatus] = useState(true);
-    const [recruitmentStatus, setRecruitmentStatus] = useState<{ isOpen: boolean, message: string }>({ isOpen: true, message: '' });
+    // Authoritative open/closed verdict, computed by the database from the manual
+    // switch and the scheduled window. The same expression gates the INSERT in RLS
+    // and in tr_enforce_recruitment_window, so this screen cannot disagree with it.
+    const {
+        isOpen: recruitmentOpen,
+        closesAt,
+        message: closedMessage,
+        loading: windowLoading,
+        unavailable: windowUnavailable,
+        serverNow,
+    } = useRecruitmentWindow();
 
     // Application Flow State
     const [step, setStep] = useState(1);
@@ -273,30 +325,6 @@ const Apply = () => {
         anyQuestions: '',
         hp_website: '' // Bot honeypot field
     });
-
-    useEffect(() => {
-        checkRecruitmentStatus();
-    }, []);
-
-    const checkRecruitmentStatus = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('app_settings')
-                .select('value')
-                .eq('key', 'recruitment_status')
-                .single();
-
-            if (error) throw error;
-
-            const isOpen = data?.value?.isOpen ?? false;
-            const message = data?.value?.message ?? '';
-            setRecruitmentStatus({ isOpen, message });
-        } catch (error) {
-            // FIX #B1: On error, default to CLOSED (fail-safe) rather than always-open.
-            console.error("Error checking recruitment status.");
-            setRecruitmentStatus({ isOpen: false, message: 'Unable to verify recruitment status. Please try again later.' });
-        }
-    };
 
     useEffect(() => {
         if (user) {
@@ -639,6 +667,11 @@ const Apply = () => {
                 } else {
                     alert(`A validation constraint was violated: ${msg}\n\nPlease check your inputs and try again.`);
                 }
+            } else if (msg.includes('RECRUITMENT_CLOSED')) {
+                // Raised by tr_enforce_recruitment_window when the deadline passed
+                // mid-session (the form was open when this tab loaded).
+                alert("Applications have closed. The deadline passed while you were filling this in, so this submission could not be accepted.");
+                window.location.reload();
             } else if (code === '42501' || msg.includes('row-level security') || msg.includes('policy')) {
                 alert("Submission blocked by a security policy. Please sign out, sign back in, and try again. If the problem persists, contact the SSCS team.");
             } else if (code?.startsWith('PGRST') || msg.includes('fetch') || msg.includes('network')) {
@@ -650,7 +683,7 @@ const Apply = () => {
         }
     };
 
-    if (authLoading || checkingStatus) {
+    if (authLoading || checkingStatus || windowLoading) {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center">
                 <LogoSpinner size="md" />
@@ -658,7 +691,7 @@ const Apply = () => {
         );
     }
 
-    if (!existingApp && !recruitmentStatus.isOpen) {
+    if (!existingApp && !recruitmentOpen) {
         return (
             <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground bg-[#050505]">
                 <CircuitBoardBackground />
@@ -669,9 +702,13 @@ const Apply = () => {
                     </Link>
                     <div className="relative p-12 md:p-16 max-w-xl mx-auto border border-white/10 bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl">
 
-                        <h2 className="text-4xl font-heading font-bold mb-6 text-white tracking-tight">Recruitments are closed</h2>
+                        <h2 className="text-4xl font-heading font-bold mb-6 text-white tracking-tight">
+                            {windowUnavailable ? 'Unable to verify status' : 'Recruitments are closed'}
+                        </h2>
                         <p className="text-muted-foreground/80 mb-10 leading-relaxed text-lg font-medium">
-                            We are not accepting applications right now. Catch us next time!
+                            {windowUnavailable
+                                ? 'We could not reach the server to check whether applications are open. Please try again in a moment.'
+                                : closedMessage || 'We are not accepting applications right now. Catch us next time!'}
                         </p>
                         <Button asChild variant="outline" className="w-full h-14 rounded-2xl border-white/10 hover:bg-white/10 font-bold">
                             <Link to="/">Return to Home</Link>
@@ -896,6 +933,8 @@ const Apply = () => {
                                 ))}
                             </div>
                         </div>
+
+                        <DeadlineBanner closesAt={closesAt} serverNow={serverNow} />
 
                         {/* Main Form Container - Clean and Modern */}
                         <div className="relative p-6 md:p-10 border border-white/10 bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl">

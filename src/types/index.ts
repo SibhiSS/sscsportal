@@ -110,6 +110,14 @@ export interface AppSettings {
     isOpen: boolean;
     message: string;
     currentPhase: RecruitmentPhase;
+    /**
+     * Scheduled window, ISO-8601 UTC, both optional. Null means "no schedule —
+     * the manual switch alone decides". Super-admin-only: a trigger on
+     * app_settings rejects changes to these two keys from anyone else.
+     * Evaluated server-side by is_recruitment_open().
+     */
+    opensAt?: string | null;
+    closesAt?: string | null;
     aiSettings?: {
         provider?: 'gemini' | 'openai' | 'local';
         apiKey?: string;

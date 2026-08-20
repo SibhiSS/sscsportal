@@ -7,20 +7,20 @@ import TechGridBackground from '@/components/ui/TechGridBackground';
 import GlitchText from '@/components/ui/GlitchText';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { useRecruitmentWindow } from '@/hooks/useRecruitmentWindow';
 
 const HeroSection = () => {
   const { user } = useAuth();
   const [hasApplied, setHasApplied] = useState(false);
   const [canBookSlot, setCanBookSlot] = useState(false);
   const [isSelected, setIsSelected] = useState(false);
-  const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(false);
+  // Server-evaluated: the manual switch AND the scheduled window. Was hardcoded
+  // to true, which left this CTA advertising an open form after it had closed.
+  const { isOpen: isRecruitmentOpen } = useRecruitmentWindow();
 
   useEffect(() => {
     const checkStatus = async () => {
-      // EMERGENCY OVERRIDE: ALWAYS OPEN
-      setIsRecruitmentOpen(true);
-
-      // 2. Fetch user application status
+      // Fetch user application status
       if (!user) return;
       const { data } = await supabase
         .from('applications')

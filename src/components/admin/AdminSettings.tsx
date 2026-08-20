@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2, ShieldAlert, Shield, ShieldCheck, User, Sparkles, Database, Download, Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, RefreshCw, FileJson, Mail } from 'lucide-react';
+import { Plus, Trash2, ShieldAlert, Shield, ShieldCheck, User, Sparkles, Database, Download, Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, RefreshCw, FileJson, Mail, CalendarClock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 import { AdminUser, AppSettings, RecruitmentPhase } from '@/types';
 import { logAction } from '@/services/auditService';
@@ -217,12 +218,23 @@ const AdminSettings = () => {
      * the public JS bundle) because the apply form needs to check whether recruitment
      * is open. Any aiSettings written into it would be world-readable, so it goes to
      * the admin-only 'ai_settings' row instead. Every write path must go through here.
+     *
+     * Read-modify-write, and opensAt/closesAt are deliberately dropped from `next`:
+     * the schedule belongs to /admin/schedule and is super-admin-only at the database
+     * level. Echoing a stale copy of it back here would make an ordinary admin's
+     * phase toggle look like a schedule edit and get the whole update rejected.
      */
     const persistSettings = async (next: AppSettings) => {
-        const { aiSettings, ...publicSettings } = next;
+        const { aiSettings, opensAt, closesAt, ...ownedSettings } = next;
+
+        const { data: current, error: readError } = await supabase.from('app_settings')
+            .select('value')
+            .eq('key', 'recruitment_status')
+            .single();
+        if (readError) return readError;
 
         const { error } = await supabase.from('app_settings')
-            .update({ value: publicSettings })
+            .update({ value: { ...(current?.value ?? {}), ...ownedSettings } })
             .eq('key', 'recruitment_status');
         if (error) return error;
 
@@ -540,6 +552,32 @@ const AdminSettings = () => {
                                     checked={!settings.isOpen}
                                     onCheckedChange={(checked) => toggleRecruitment(!checked)}
                                 />
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/50 border p-6 rounded-lg">
+                                <div className="space-y-1">
+                                    <Label className="text-lg font-medium flex items-center gap-2">
+                                        <CalendarClock className="w-4 h-4 text-primary" />
+                                        Scheduled close
+                                    </Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        {settings.closesAt
+                                            ? `Applications close automatically on ${new Date(settings.closesAt).toLocaleString()}.`
+                                            : 'No automatic close time is set — the switch above is the only thing holding the form open.'}
+                                        {!isSuperAdmin && ' Super admins only.'}
+                                    </p>
+                                </div>
+                                {isSuperAdmin ? (
+                                    <Button asChild variant="outline" className="shrink-0 rounded-xl h-11">
+                                        <Link to="/admin/schedule">Open schedule</Link>
+                                    </Button>
+                                ) : (
+                                    // asChild + disabled would render a disabled attribute on an anchor,
+                                    // which does nothing — the link would still be clickable.
+                                    <Button variant="outline" disabled className="shrink-0 rounded-xl h-11">
+                                        Open schedule
+                                    </Button>
+                                )}
                             </div>
 
                             <div className="pt-4 flex justify-end">

@@ -7,6 +7,7 @@ import Apply from '@/pages/Apply';
 import Team from '@/pages/Team';
 import NotFound from '@/pages/NotFound';
 import Admin from '@/pages/Admin';
+import RecruitmentSchedule from '@/pages/RecruitmentSchedule';
 import InterviewerDashboard from '@/pages/InterviewerDashboard';
 import StatusPage from '@/pages/Status';
 import './App.css';
@@ -50,6 +51,7 @@ function App() {
                 <Route path="/team" element={<Team />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/admin/schedule" element={<RecruitmentSchedule />} />
                 <Route path="/interviewer" element={<InterviewerDashboard />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

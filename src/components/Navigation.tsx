@@ -5,6 +5,7 @@ import { Menu, X, LogIn, LogOut, User as UserIcon, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { useRecruitmentWindow } from '@/hooks/useRecruitmentWindow';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,13 +33,11 @@ const Navigation = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(false);
+  // Server-evaluated: the manual switch AND the scheduled window.
+  const { isOpen: isRecruitmentOpen } = useRecruitmentWindow();
 
   useEffect(() => {
     const checkStatus = async () => {
-      // EMERGENCY OVERRIDE: ALWAYS OPEN
-      setIsRecruitmentOpen(true);
-
       if (!user) {
         setHasApplied(false);
         return;
