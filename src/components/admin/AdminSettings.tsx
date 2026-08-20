@@ -300,7 +300,7 @@ const AdminSettings = () => {
                 const { aiSettings, ...loggableSettings } = settings;
                 await logAction(currentUser.email, 'UPDATE_RECRUITMENT_SETTINGS', undefined, {
                     ...loggableSettings,
-                    aiProvider: aiSettings?.provider ?? 'local',
+                    aiProvider: aiSettings?.provider ?? 'none',
                 });
             }
         } catch (err: any) {
@@ -607,9 +607,9 @@ const AdminSettings = () => {
                             <div className="bg-muted/50 p-6 rounded-lg border space-y-4">
                                 <div>
                                     <Label className="text-base font-semibold mb-1 block">Analysis Engine Provider</Label>
-                                    <p className="text-xs text-muted-foreground mb-3">Choose between zero-config local NLP matching or cloud LLMs (Gemini / OpenAI).</p>
+                                    <p className="text-xs text-muted-foreground mb-3">Cloud LLM used to analyze candidates. Requires an API key — nothing runs until one is set.</p>
                                     <Select
-                                        value={settings.aiSettings?.provider || 'local'}
+                                        value={settings.aiSettings?.provider}
                                         onValueChange={(val: any) => setSettings({
                                             ...settings,
                                             aiSettings: { ...settings.aiSettings, provider: val }
@@ -619,20 +619,17 @@ const AdminSettings = () => {
                                             <SelectValue placeholder="Select Provider" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="local">
-                                                <span className="font-semibold text-emerald-500">Local Semantic NLP Engine</span> (Recommended - 100% Reliable, Zero Cost)
-                                            </SelectItem>
                                             <SelectItem value="gemini">
-                                                <span className="font-semibold text-purple-400">Google Gemini 1.5 Flash</span> (Requires API Key)
+                                                <span className="font-semibold text-purple-400">Google Gemini 3 Pro</span> (best quality, falls back to Gemini 2.5 Flash — requires API Key)
                                             </SelectItem>
                                             <SelectItem value="openai">
-                                                <span className="font-semibold text-blue-400">OpenAI GPT-4o Mini</span> (Requires API Key)
+                                                <span className="font-semibold text-blue-400">OpenAI GPT-4o Mini</span> (requires API Key)
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
 
-                                {settings.aiSettings?.provider && settings.aiSettings.provider !== 'local' && (
+                                {settings.aiSettings?.provider && (
                                     <div>
                                         <Label className="text-sm font-medium mb-1 block">API Key ({settings.aiSettings.provider.toUpperCase()})</Label>
                                         <Input
@@ -646,7 +643,7 @@ const AdminSettings = () => {
                                             className="bg-background font-mono text-xs"
                                         />
                                         <p className="text-[11px] text-muted-foreground mt-1">
-                                            If left blank, the system will fall back to environment variables or the Local NLP Engine.
+                                            If left blank, the system falls back to the VITE_GEMINI_API_KEY / VITE_OPENAI_API_KEY env var. If neither is set, the AI Copilot panel shows a "not configured" error instead of analyzing candidates.
                                         </p>
                                     </div>
                                 )}

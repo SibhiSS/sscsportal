@@ -34,10 +34,12 @@ export default function AICopilotPanel({ application }: AICopilotPanelProps) {
     const [analysis, setAnalysis] = useState<AIAnalysisResult | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [refreshing, setRefreshing] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         let isMounted = true;
         setLoading(true);
+        setError(null);
         analyzeCandidate(application).then(res => {
             if (isMounted) {
                 setAnalysis(res);
@@ -45,7 +47,10 @@ export default function AICopilotPanel({ application }: AICopilotPanelProps) {
             }
         }).catch(err => {
             console.error("AI Copilot failed:", err);
-            if (isMounted) setLoading(false);
+            if (isMounted) {
+                setError(err?.message || 'AI Copilot failed to analyze this candidate.');
+                setLoading(false);
+            }
         });
         return () => { isMounted = false; };
     }, [application.id, application.skills, application.reason]);
@@ -56,8 +61,10 @@ export default function AICopilotPanel({ application }: AICopilotPanelProps) {
         try {
             const res = await analyzeCandidate(application);
             setAnalysis(res);
-        } catch (err) {
+            setError(null);
+        } catch (err: any) {
             console.error("Refresh AI Copilot failed:", err);
+            setError(err?.message || 'AI Copilot failed to analyze this candidate.');
         } finally {
             setRefreshing(false);
         }
@@ -74,6 +81,30 @@ export default function AICopilotPanel({ application }: AICopilotPanelProps) {
                     <div className="h-4 bg-purple-500/10 rounded w-3/4" />
                     <div className="h-4 bg-purple-500/10 rounded w-5/6" />
                     <div className="h-4 bg-purple-500/10 rounded w-2/3" />
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="bg-gradient-to-r from-amber-950/30 via-black/80 to-amber-950/10 border border-amber-500/30 rounded-2xl p-6 backdrop-blur-xl relative overflow-hidden shadow-2xl">
+                <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 space-y-2">
+                        <p className="text-sm font-semibold text-amber-200">AI Copilot unavailable</p>
+                        <p className="text-xs text-amber-200/70 leading-relaxed">{error}</p>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleRefresh}
+                            disabled={refreshing}
+                            className="mt-1 h-8 border-amber-500/30 text-amber-200 hover:bg-amber-500/10"
+                        >
+                            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
+                            Retry
+                        </Button>
+                    </div>
                 </div>
             </div>
         );
@@ -106,7 +137,7 @@ export default function AICopilotPanel({ application }: AICopilotPanelProps) {
                         <h3 className="text-base font-bold text-white tracking-wide flex items-center gap-2">
                             AI Recruitment Copilot
                             <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">
-                                {analysis.mode === 'local' ? 'Local NLP Engine' : `Cloud LLM (${analysis.mode.toUpperCase()})`}
+                                {`Cloud LLM (${analysis.mode.toUpperCase()})`}
                             </span>
                         </h3>
                         <p className="text-xs text-muted-foreground mt-0.5">

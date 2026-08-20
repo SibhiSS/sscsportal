@@ -119,7 +119,7 @@ export interface AppSettings {
     opensAt?: string | null;
     closesAt?: string | null;
     aiSettings?: {
-        provider?: 'gemini' | 'openai' | 'local';
+        provider?: 'gemini' | 'openai';
         apiKey?: string;
     };
 }
@@ -210,7 +210,7 @@ export interface AIAnalysisResult {
     strengths: string[];        // Key matching competency tags
     gaps: string[];             // Potential gaps or missing domain skills
     recommendation: string;     // 1-sentence executive recommendation
-    mode: 'local' | 'gemini' | 'openai';
+    mode: 'gemini' | 'openai';
 }
 
 export interface CandidateNote {

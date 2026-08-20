@@ -2,41 +2,51 @@ import { Application, AIAnalysisResult, AppSettings } from '@/types';
 import { supabase } from '@/lib/supabase';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Competency Rubrics for IEEE SSCS Domains
+// Competency Rubrics for IEEE SSCS Domains — passed into the LLM prompt as
+// reference vocabulary so scoring stays grounded in this chapter's actual
+// sub-teams instead of generic "resume screening."
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DOMAIN_KEYWORDS: Record<string, string[]> = {
     'Analog IC Design': [
-        'cadence', 'virtuoso', 'opamp', 'op-amp', 'cmos', 'vlsi', 'layout', 'spice', 
-        'circuit', 'mosfet', 'amplifier', 'adc', 'dac', 'pll', 'rfic', 'analog', 
+        'cadence', 'virtuoso', 'opamp', 'op-amp', 'cmos', 'vlsi', 'layout', 'spice',
+        'circuit', 'mosfet', 'amplifier', 'adc', 'dac', 'pll', 'rfic', 'analog',
         'tsmc', 'transistor', 'analog design', 'circuit design', 'bandgap', 'ltspice'
     ],
     'Digital IC / FPGA': [
-        'verilog', 'vhdl', 'systemverilog', 'fpga', 'rtl', 'vivado', 'quartus', 
-        'model', 'digital design', 'state machine', 'fsm', 'risc-v', 'riscv', 
+        'verilog', 'vhdl', 'systemverilog', 'fpga', 'rtl', 'vivado', 'quartus',
+        'model', 'digital design', 'state machine', 'fsm', 'risc-v', 'riscv',
         'asic', 'synthesis', 'simulation', 'modelsim', 'verilator', 'timing analysis', 'computer architecture'
     ],
     'Embedded Systems / IoT': [
-        'microcontroller', 'arduino', 'stm32', 'esp32', 'raspberry pi', 'embedded c', 
-        'c++', 'iot', 'pcb', 'kicad', 'altium', 'eagle', 'sensor', 'uart', 'spi', 
+        'microcontroller', 'arduino', 'stm32', 'esp32', 'raspberry pi', 'embedded c',
+        'c++', 'iot', 'pcb', 'kicad', 'altium', 'eagle', 'sensor', 'uart', 'spi',
         'i2c', 'can bus', 'rtos', 'firmware', 'hardware', 'robotics', 'arm', 'pic'
     ],
     'AI / ML & Signal Processing': [
-        'python', 'pytorch', 'tensorflow', 'keras', 'scikit-learn', 'machine learning', 
-        'deep learning', 'neural network', 'cnn', 'rnn', 'nlp', 'computer vision', 
+        'python', 'pytorch', 'tensorflow', 'keras', 'scikit-learn', 'machine learning',
+        'deep learning', 'neural network', 'cnn', 'rnn', 'nlp', 'computer vision',
         'opencv', 'data analysis', 'numpy', 'pandas', 'matlab', 'signal processing', 'dsp', 'ai'
     ],
     'Web Dev & Software': [
-        'react', 'next.js', 'vue', 'angular', 'typescript', 'javascript', 'html', 
-        'css', 'tailwind', 'node.js', 'express', 'python', 'django', 'flask', 
+        'react', 'next.js', 'vue', 'angular', 'typescript', 'javascript', 'html',
+        'css', 'tailwind', 'node.js', 'express', 'python', 'django', 'flask',
         'fastapi', 'database', 'sql', 'postgres', 'mongodb', 'git', 'github', 'docker', 'api', 'fullstack', 'frontend', 'backend', 'web'
     ],
     'Management & Finance': [
-        'leadership', 'management', 'event', 'organize', 'teamwork', 'communication', 
-        'budget', 'finance', 'sponsorship', 'marketing', 'social media', 'content', 
+        'leadership', 'management', 'event', 'organize', 'teamwork', 'communication',
+        'budget', 'finance', 'sponsorship', 'marketing', 'social media', 'content',
         'canva', 'figma', 'ui/ux', 'public speaking', 'project management', 'agile', 'scrum', 'logistics'
     ]
 };
+
+// Signals of genuine IEEE community involvement, surfaced to the LLM as things to
+// specifically look for — independent of whichever DOMAIN_KEYWORDS list applies.
+const IEEE_INVOLVEMENT_KEYWORDS: string[] = [
+    'ieee', 'sscs', 'solid-state circuits', 'solid state circuits', 'ieee student member',
+    'ieee membership', 'student branch', 'technical paper', 'research paper', 'publication',
+    'ieee day', 'ieee event', 'workshop', 'symposium', 'conference', 'hackathon'
+];
 
 // Helper to normalize department name to domain key
 function getDomainKey(deptName: string): string {
@@ -49,106 +59,48 @@ function getDomainKey(deptName: string): string {
     return 'Management & Finance';
 }
 
-// Helper to capitalize strings nicely for badges
-function formatTag(str: string): string {
-    return str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+// ECE/EEE are the core academic branches for an SSCS chapter; surfaced to the LLM
+// so it can give a modest, explicit scoring boost without penalizing strong
+// candidates from other branches.
+function isCoreEceEeeBranch(dept: string): boolean {
+    const lower = (dept || '').toLowerCase();
+    return (
+        /\bece\b/.test(lower) || /\beee\b/.test(lower) ||
+        lower.includes('electronics and communication') ||
+        lower.includes('electronics & communication') ||
+        lower.includes('electrical and electronics') ||
+        lower.includes('electrical & electronics') ||
+        lower.includes('electronics engineering') ||
+        lower.includes('electrical engineering')
+    );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Local Semantic NLP Engine
+// Cloud LLM Integration (Gemini primary / OpenAI alternative — no local fallback)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function runLocalAnalysis(application: Application): AIAnalysisResult {
+// Best-available Gemini model first, falling back to the stable model only if the
+// preview model errors out (e.g. not yet enabled on a given API key).
+const GEMINI_MODELS = ['gemini-3-pro-preview', 'gemini-2.5-flash'] as const;
+
+function buildPrompt(application: Application): string {
     const primaryDept = application.primaryDept || application.department || 'General';
     const domainKey = getDomainKey(primaryDept);
-    const expectedKeywords = DOMAIN_KEYWORDS[domainKey] || DOMAIN_KEYWORDS['Management & Finance'];
+    const referenceKeywords = (DOMAIN_KEYWORDS[domainKey] || []).join(', ');
+    const academicBranch = application.programName || application.department || 'Unknown';
+    const coreBranch = isCoreEceEeeBranch(academicBranch);
 
-    // Combine candidate text corpus
-    const corpus = `${application.skills || ''} ${application.reason || ''} ${application.domains?.join(' ') || ''} ${application.secondarySkills || ''}`.toLowerCase();
+    return `You are an AI Recruitment Copilot for the IEEE Solid-State Circuits Society (SSCS) student chapter. Analyze the following candidate application for technical committee recruitment.
 
-    // Find keyword matches
-    const matchedKeywords = expectedKeywords.filter(kw => {
-        // Match exact word or substring with boundary check
-        const regex = new RegExp(`\\b${kw.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i');
-        return regex.test(corpus) || corpus.includes(kw);
-    });
+Chapter scoring priorities for this recruitment cycle — apply these explicitly:
+1. Give a meaningful matchScore boost to candidates whose academic branch is ECE (Electronics & Communication Engineering) or EEE (Electrical & Electronics Engineering) — these are the core technical fit for an SSCS chapter. This candidate's academic branch is "${academicBranch}", which is${coreBranch ? '' : ' NOT'} a core ECE/EEE branch by pattern match — use your own judgment too, since department names vary.
+2. Give a meaningful matchScore boost for demonstrated IEEE involvement: IEEE student membership, having attended/volunteered at IEEE events, technical papers/publications, workshops, symposiums, or hackathons. Look for signals like: ${IEEE_INVOLVEMENT_KEYWORDS.join(', ')}.
+3. Candidates from other branches (CSE, IT, Mech, etc.) with genuinely strong hands-on technical skills relevant to their chosen department should still score well — do not penalize them purely for branch — but an ECE/EEE candidate with comparable technical skill signals should generally score a few points higher.
+4. Reference vocabulary for the "${primaryDept}" (${domainKey}) sub-team, to ground your technical assessment: ${referenceKeywords}.
+5. When branch alignment or IEEE involvement materially affected the score, say so explicitly in summaryBullets or strengths.
 
-    // Compute Match Score (0 - 100%)
-    let matchScore = 55; // Base qualification score
-    matchScore += Math.min(matchedKeywords.length * 8, 35); // Up to +35% for keyword depth
-    if (application.githubUrl || application.portfolioUrl || application.linkedinUrl) {
-        matchScore += 5; // +5% for external portfolio validation
-    }
-    if ((application.reason || '').length > 100) {
-        matchScore += 3; // +3% for detailed motivation
-    }
-    matchScore = Math.min(Math.max(matchScore, 48), 98); // Clamp between 48% and 98%
-
-    // Formulate 3 Executive Summary Bullets
-    const deptDisplay = application.programName || application.department || 'Engineering';
-    const yearDisplay = application.batch ? `Batch ${application.batch}` : `Year ${application.admissionYear || application.year || '1'}`;
-    const bullet1 = `Candidate from ${deptDisplay} (${yearDisplay}) targeting **${primaryDept}** as primary preference${application.secondaryDept ? ` and **${application.secondaryDept}** as secondary` : ''}.`;
-    
-    let bullet2 = matchedKeywords.length > 0
-        ? `Demonstrates technical familiarity with **${matchedKeywords.slice(0, 4).map(formatTag).join(', ')}** relevant to ${domainKey}.`
-        : `Enthusiastic applicant expressing strong foundational interest in ${domainKey} with eagerness for technical mentorship.`;
-    
-    const reasonClean = (application.reason || '').replace(/\s+/g, ' ').trim();
-    const reasonSnippet = reasonClean.length > 110 ? `${reasonClean.slice(0, 110)}...` : reasonClean || 'Active participation and contribution to IEEE SSCS projects.';
-    const bullet3 = `Motivation & Alignment: "${reasonSnippet}"`;
-
-    const summaryBullets = [bullet1, bullet2, bullet3];
-
-    // Formulate Strengths
-    const strengths: string[] = matchedKeywords.slice(0, 5).map(formatTag);
-    if (application.githubUrl) strengths.push('Active GitHub Profile');
-    if (application.portfolioUrl) strengths.push('External Portfolio Link');
-    if (application.domains && application.domains.length >= 2) strengths.push('Multi-Domain Interest');
-    if (strengths.length === 0) strengths.push('High Enthusiasm & Eagerness to Learn');
-
-    // Formulate Gaps
-    const gaps: string[] = [];
-    if (matchedKeywords.length < 2) {
-        gaps.push(`Limited explicit mentions of ${domainKey} core tools in application`);
-    }
-    if (!application.githubUrl && !application.portfolioUrl && domainKey !== 'Management & Finance') {
-        gaps.push('No GitHub or technical project repository linked');
-    }
-    if ((application.skills || '').length < 40) {
-        gaps.push('Brief description of technical skills and past projects');
-    }
-    if (gaps.length === 0) {
-        gaps.push('No major qualification gaps identified from resume text');
-    }
-
-    // Executive Recommendation
-    let recommendation = '';
-    if (matchScore >= 80) {
-        recommendation = `Strong technical alignment with ${primaryDept}; recommend focusing interview on advanced practical implementations and team leadership fit.`;
-    } else if (matchScore >= 65) {
-        recommendation = `Solid potential for ${primaryDept}; verify hands-on understanding of key domain concepts and problem-solving fundamentals during panel review.`;
-    } else {
-        recommendation = `Entry-level candidate for ${primaryDept}; assess foundational learning aptitude, dedication, and openness to committee training programs.`;
-    }
-
-    return {
-        matchScore,
-        summaryBullets,
-        strengths: Array.from(new Set(strengths)).slice(0, 6),
-        gaps: Array.from(new Set(gaps)).slice(0, 4),
-        recommendation,
-        mode: 'local'
-    };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Cloud LLM Integration (Gemini / OpenAI Optional Fallback)
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function runCloudLLMAnalysis(application: Application, provider: 'gemini' | 'openai', apiKey: string): Promise<AIAnalysisResult> {
-    const prompt = `You are an AI Recruitment Copilot for IEEE Solid-State Circuits Society (SSCS). Analyze the following candidate application for our technical committee recruitment:
 Applicant Name: ${application.fullName}
-Academic Profile: ${application.programName || application.department} (Year/Batch: ${application.batch || application.year})
+Academic Branch: ${academicBranch} (Year/Batch: ${application.batch || application.year})
 Primary Department Choice: ${application.primaryDept}
 Domains of Interest: ${application.domains?.join(', ') || 'N/A'}
 Skills / Experience (Primary Dept): ${application.skills || 'N/A'}
@@ -165,60 +117,65 @@ Return ONLY a valid JSON object with the following schema (no markdown formattin
   "gaps": [array of 1 to 3 potential gaps or areas to probe during interview],
   "recommendation": "1-sentence executive recommendation for the interview panel"
 }`;
+}
 
-    if (provider === 'gemini') {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.2, responseMimeType: "application/json" }
-            })
-        });
-        if (!response.ok) throw new Error(`Gemini API Error: ${response.status}`);
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) throw new Error("Empty response from Gemini");
-        const parsed = JSON.parse(text);
-        return {
-            matchScore: Math.round(Number(parsed.matchScore) || 75),
-            summaryBullets: Array.isArray(parsed.summaryBullets) ? parsed.summaryBullets.slice(0, 3) : runLocalAnalysis(application).summaryBullets,
-            strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 6) : ['Cloud AI Verified'],
-            gaps: Array.isArray(parsed.gaps) ? parsed.gaps.slice(0, 4) : ['None noted'],
-            recommendation: parsed.recommendation || 'Verified candidate profile.',
-            mode: 'gemini'
-        };
-    } else {
-        // OpenAI
-        const url = `https://api.openai.com/v1/chat/completions`;
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                model: "gpt-4o-mini",
-                messages: [{ role: "user", content: prompt }],
-                temperature: 0.2,
-                response_format: { type: "json_object" }
-            })
-        });
-        if (!response.ok) throw new Error(`OpenAI API Error: ${response.status}`);
-        const data = await response.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (!text) throw new Error("Empty response from OpenAI");
-        const parsed = JSON.parse(text);
-        return {
-            matchScore: Math.round(Number(parsed.matchScore) || 75),
-            summaryBullets: Array.isArray(parsed.summaryBullets) ? parsed.summaryBullets.slice(0, 3) : runLocalAnalysis(application).summaryBullets,
-            strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 6) : ['Cloud AI Verified'],
-            gaps: Array.isArray(parsed.gaps) ? parsed.gaps.slice(0, 4) : ['None noted'],
-            recommendation: parsed.recommendation || 'Verified candidate profile.',
-            mode: 'openai'
-        };
+function parseLLMJson(text: string, mode: 'gemini' | 'openai'): AIAnalysisResult {
+    const parsed = JSON.parse(text);
+    return {
+        matchScore: Math.round(Number(parsed.matchScore) || 75),
+        summaryBullets: Array.isArray(parsed.summaryBullets) ? parsed.summaryBullets.slice(0, 3) : [],
+        strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 6) : ['Cloud AI Verified'],
+        gaps: Array.isArray(parsed.gaps) ? parsed.gaps.slice(0, 4) : ['None noted'],
+        recommendation: parsed.recommendation || 'Verified candidate profile.',
+        mode
+    };
+}
+
+async function runGeminiAnalysis(prompt: string, apiKey: string): Promise<AIAnalysisResult> {
+    let lastError: unknown;
+    for (const model of GEMINI_MODELS) {
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
+                })
+            });
+            if (!response.ok) throw new Error(`Gemini API error on ${model}: ${response.status}`);
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) throw new Error(`Empty response from Gemini (${model})`);
+            return parseLLMJson(text, 'gemini');
+        } catch (err) {
+            lastError = err;
+            console.warn(`[AI Copilot] Gemini model "${model}" failed, trying next fallback if available.`, err);
+        }
     }
+    throw lastError instanceof Error ? lastError : new Error('All Gemini models failed');
+}
+
+async function runOpenAIAnalysis(prompt: string, apiKey: string): Promise<AIAnalysisResult> {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.2,
+            response_format: { type: 'json_object' }
+        })
+    });
+    if (!response.ok) throw new Error(`OpenAI API Error: ${response.status}`);
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content;
+    if (!text) throw new Error('Empty response from OpenAI');
+    return parseLLMJson(text, 'openai');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -226,30 +183,21 @@ Return ONLY a valid JSON object with the following schema (no markdown formattin
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function analyzeCandidate(application: Application): Promise<AIAnalysisResult> {
-    try {
-        // AI settings live in their own 'ai_settings' row, NOT in 'recruitment_status'.
-        // The latter is world-readable (app_settings_select_public) because the apply
-        // form needs it, so an API key stored there is public. 'ai_settings' is gated
-        // behind app_settings_select_admin; non-admins get null and fall back to local.
-        const { data } = await supabase.from('app_settings').select('value').eq('key', 'ai_settings').maybeSingle();
-        const aiSettings: AppSettings['aiSettings'] | undefined = data?.value;
+    // AI settings live in their own 'ai_settings' row, NOT in 'recruitment_status'.
+    // The latter is world-readable (app_settings_select_public) because the apply
+    // form needs it, so an API key stored there is public. 'ai_settings' is gated
+    // behind app_settings_select_admin; non-admins get null.
+    const { data } = await supabase.from('app_settings').select('value').eq('key', 'ai_settings').maybeSingle();
+    const aiSettings: AppSettings['aiSettings'] | undefined = data?.value;
 
-        const provider = aiSettings?.provider;
-        const apiKey = aiSettings?.apiKey ||
-            (provider === 'gemini' ? import.meta.env.VITE_GEMINI_API_KEY : import.meta.env.VITE_OPENAI_API_KEY);
+    const provider = aiSettings?.provider;
+    const apiKey = aiSettings?.apiKey ||
+        (provider === 'gemini' ? import.meta.env.VITE_GEMINI_API_KEY : import.meta.env.VITE_OPENAI_API_KEY);
 
-        if (provider && (provider === 'gemini' || provider === 'openai') && apiKey) {
-            try {
-                return await runCloudLLMAnalysis(application, provider, apiKey);
-            } catch (cloudError) {
-                console.warn(`[AI Copilot] Cloud LLM (${provider}) failed or rate-limited. Falling back to Local NLP Engine:`, cloudError);
-                return runLocalAnalysis(application);
-            }
-        }
-    } catch (dbError) {
-        console.warn("[AI Copilot] Could not check app_settings for AI provider, defaulting to Local NLP Engine.", dbError);
+    if (!provider || (provider !== 'gemini' && provider !== 'openai') || !apiKey) {
+        throw new Error('AI Copilot is not configured. Add a Gemini (or OpenAI) API key under Admin → System Configuration → AI Copilot.');
     }
 
-    // Default 100% reliable out-of-the-box Local Semantic NLP analysis
-    return runLocalAnalysis(application);
+    const prompt = buildPrompt(application);
+    return provider === 'gemini' ? runGeminiAnalysis(prompt, apiKey) : runOpenAIAnalysis(prompt, apiKey);
 }
