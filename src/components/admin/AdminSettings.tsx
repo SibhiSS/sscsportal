@@ -306,8 +306,11 @@ const AdminSettings = () => {
             return;
         }
 
+        // Normalize casing/whitespace so this row matches the lowercased email OAuth returns.
+        const normalizedEmail = newAdminEmail.trim().toLowerCase();
+
         const newAdmin = {
-            email: newAdminEmail,
+            email: normalizedEmail,
             role: 'interviewer', // Default role for new additions
             added_by: currentUser?.email
         };
@@ -316,14 +319,14 @@ const AdminSettings = () => {
 
         if (error) {
             console.error("Supabase Error adding admin:", error);
-            
+
             // If it's a column missing error, try without added_by as fallback
             if (error.message.includes('added_by') || error.code === '42703') {
                 const { error: retryError } = await supabase.from('admins').insert({
-                    email: newAdminEmail,
+                    email: normalizedEmail,
                     role: 'interviewer'
                 });
-                
+
                 if (retryError) {
                     toast.error(`Database Error: ${retryError.message}`);
                 } else {
@@ -338,7 +341,7 @@ const AdminSettings = () => {
             toast.success('Admin added successfully.');
             setNewAdminEmail('');
             fetchData();
-            logAction(currentUser?.email || 'unknown', 'ADD_ADMIN', newAdminEmail, { role: 'interviewer' });
+            logAction(currentUser?.email || 'unknown', 'ADD_ADMIN', normalizedEmail, { role: 'interviewer' });
         }
     };
 

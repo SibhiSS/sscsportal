@@ -76,12 +76,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           alert('Access Restricted: Please sign in with your VIT email address (@vitstudent.ac.in).');
           setUser(null);
         } else {
-          // Fetch Role from DB
-          const { data: adminData } = await supabase
+          // Fetch Role from DB. `admins.email` is matched case-insensitively here because
+          // rows can be entered with inconsistent casing (e.g. pasted from a roster), while
+          // OAuth always returns the email lowercased — a byte-exact match would silently
+          // miss the row and downgrade a real admin to 'viewer'.
+          const { data: adminData, error: adminLookupError } = await supabase
             .from('admins')
             .select('role')
-            .eq('email', email)
-            .single();
+            .ilike('email', email)
+            .maybeSingle();
+
+          if (adminLookupError) {
+            console.error('[Auth] Admin role lookup failed:', adminLookupError.message);
+          }
 
           // Use DB role if present, fallback to super_admin for exception email
           const role = adminData?.role || (isHardcodedAdmin ? 'super_admin' : 'viewer');
