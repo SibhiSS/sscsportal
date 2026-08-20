@@ -432,6 +432,13 @@ const InterviewerDashboard = () => {
                                                                                     <p>Please join 5 minutes before your slot.<br>IEEE SSCS HR Team</p>`
                                                                                 );
                                                                                 if (ok) {
+                                                                                    // This mail already carries the link, so claim the slot's
+                                                                                    // reminder flag — otherwise automationCheck sends its own
+                                                                                    // T-10 reminder and the candidate gets the link twice.
+                                                                                    await supabase
+                                                                                        .from('interview_slots')
+                                                                                        .update({ reminder_sent: true })
+                                                                                        .eq('id', slot.id);
                                                                                     alert(`Meeting link email sent to ${app.full_name || app.fullName}!`);
                                                                                 } else {
                                                                                     alert(`Failed to send email to ${app.full_name || app.fullName}. Check console for details.`);

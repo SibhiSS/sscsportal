@@ -255,6 +255,7 @@ const Admin = () => {
         const waitlistedApps = applications.filter(app => app.status === 'waitlisted');
         try {
             let emailCount = 0;
+            let statusWriteFailures = 0;
 
             for (const app of selectedApps) {
                 try {
@@ -277,7 +278,17 @@ const Admin = () => {
                     );
                     if (ok) {
                         emailCount++;
-                        await supabase.from('applications').update({ status: 'active_member', decided_at: new Date().toISOString() }).eq('id', app.id);
+                        // If this write fails the candidate keeps a pre-publish status, so the
+                        // next publish mails them again. A silent failure here is a duplicate
+                        // email later — count it and warn at the end.
+                        const { error: statusError } = await supabase
+                            .from('applications')
+                            .update({ status: 'active_member', decided_at: new Date().toISOString() })
+                            .eq('id', app.id);
+                        if (statusError) {
+                            console.error('[Admin] Selection email sent but status was NOT updated:', statusError.message);
+                            statusWriteFailures++;
+                        }
                     } else {
                         // FIX #14: Never log raw PII — mask the email address.
                         const masked = app.email.replace(/(\w{2})\w+@/, '$1***@');
@@ -303,7 +314,14 @@ const Admin = () => {
                     );
                     if (ok) {
                         emailCount++;
-                        await supabase.from('applications').update({ status: 'rejected', decided_at: new Date().toISOString() }).eq('id', app.id);
+                        const { error: statusError } = await supabase
+                            .from('applications')
+                            .update({ status: 'rejected', decided_at: new Date().toISOString() })
+                            .eq('id', app.id);
+                        if (statusError) {
+                            console.error('[Admin] Rejection email sent but status was NOT updated:', statusError.message);
+                            statusWriteFailures++;
+                        }
                     } else {
                         // FIX #14: Never log raw PII — mask the email address.
                         const masked = app.email.replace(/(\w{2})\w+@/, '$1***@');
@@ -315,7 +333,12 @@ const Admin = () => {
                 }
             }
 
-            alert(`Results published!\n\n${emailCount} emails sent\n${selectedApps.length} accepted\n${rejectedPendingApps.length + waitlistedApps.length} rejected`);
+            alert(
+                `Results published!\n\n${emailCount} emails sent\n${selectedApps.length} accepted\n${rejectedPendingApps.length + waitlistedApps.length} rejected` +
+                (statusWriteFailures > 0
+                    ? `\n\nWarning: ${statusWriteFailures} candidate(s) were emailed but their status could not be saved. Fix those rows before publishing again, or they will receive the same email twice.`
+                    : '')
+            );
             if (user?.email) {
                 await logAction(user.email, 'PUBLISHED_RESULTS', 'BATCH_OPERATION', {
                     selectedCount: selectedApps.length,

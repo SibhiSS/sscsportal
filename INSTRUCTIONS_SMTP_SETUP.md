@@ -40,6 +40,17 @@ Paste this into `Code.gs`:
 var ALLOWED_DOMAINS = ['vitstudent.ac.in', 'vit.ac.in'];
 var ALLOWED_ADDRESSES = ['ieee.sscs.vitchennai@gmail.com'];
 
+/**
+ * How long a dedupeId is remembered, in seconds (max 21600 for CacheService).
+ *
+ * The client sends one dedupeId per logical email. If the same id arrives again inside
+ * this window we acknowledge it without sending, so a re-POST cannot become a second
+ * copy in the candidate's inbox. This matters because the relay sends the mail and
+ * *then* answers with a redirect: any client-side failure is reported after delivery,
+ * so a retry on the client is always a duplicate, never a recovery.
+ */
+var DEDUPE_WINDOW_SECONDS = 900;
+
 function isAllowedRecipient(email) {
   if (!email || email.indexOf('@') === -1) return false;
   var addr = email.trim().toLowerCase();
@@ -49,6 +60,7 @@ function isAllowedRecipient(email) {
 }
 
 function doPost(e) {
+  var lock = LockService.getScriptLock();
   try {
     var props = PropertiesService.getScriptProperties();
     var expectedToken = props.getProperty('MAIL_RELAY_TOKEN');
@@ -73,16 +85,40 @@ function doPost(e) {
       return jsonOut({ status: 'error', message: 'quota exhausted' });
     }
 
-    GmailApp.sendEmail(data.email, data.subject, data.message, {
-      htmlBody: data.message,
-      name: props.getProperty('SENDER_NAME') || 'IEEE SSCS Team'
-    });
+    // 4. Idempotency. The lock serialises concurrent duplicates; the cache entry is
+    //    written *before* sending so a crash mid-send cannot be replayed by a client
+    //    retry, and is cleared again only if the send itself threw.
+    var cache = CacheService.getScriptCache();
+    var dedupeKey = data.dedupeId ? 'mail:' + data.dedupeId : null;
+
+    if (dedupeKey) {
+      lock.waitLock(10000);
+      if (cache.get(dedupeKey)) {
+        console.log('Ignored duplicate send for dedupeId ' + data.dedupeId);
+        return jsonOut({ status: 'duplicate', message: 'already sent' });
+      }
+      cache.put(dedupeKey, '1', DEDUPE_WINDOW_SECONDS);
+      lock.releaseLock();
+    }
+
+    try {
+      GmailApp.sendEmail(data.email, data.subject, data.message, {
+        htmlBody: data.message,
+        name: props.getProperty('SENDER_NAME') || 'IEEE SSCS Team'
+      });
+    } catch (sendError) {
+      // Nothing was delivered, so let the id be used again.
+      if (dedupeKey) cache.remove(dedupeKey);
+      throw sendError;
+    }
 
     return jsonOut({ status: 'success' });
 
   } catch (error) {
     console.error(error.toString());
     return jsonOut({ status: 'error', message: 'send failed' });
+  } finally {
+    try { lock.releaseLock(); } catch (ignored) {}
   }
 }
 
@@ -109,9 +145,23 @@ Copy the Web App URL (`https://script.google.com/macros/s/.../exec`) into `.env`
 > archive that deployment — archive old deployments once you have cut over, otherwise
 > a previously leaked URL stays live indefinitely.
 
+## Step 5: Keep the CSP in sync
+
+A POST to `/exec` is answered with a `302` to **`script.googleusercontent.com`**, so
+*both* hosts must appear in `connect-src` in `netlify.toml` and `vercel.json`:
+
+```
+connect-src 'self' … https://script.google.com https://script.googleusercontent.com …
+```
+
+Drop the second host and the browser blocks the redirect, `fetch` rejects on every
+send, and the app cannot tell a delivered mail from a lost one — the failure mode that
+previously mailed every applicant twice.
+
 ## Checklist
 
 - [ ] `MAIL_RELAY_TOKEN` set in Script Properties and matching `VITE_MAIL_RELAY_TOKEN`
 - [ ] `ALLOWED_DOMAINS` / `ALLOWED_ADDRESSES` reviewed
+- [ ] Both `script.google.com` and `script.googleusercontent.com` in `connect-src`
 - [ ] Old deployments archived
 - [ ] Token rotated if it has ever been committed or shared

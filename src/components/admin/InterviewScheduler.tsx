@@ -241,21 +241,42 @@ const InterviewScheduler = () => {
     };
 
     const sendBookingLinkBatch = async () => {
-        const shortlistedToNotify = applications.filter(app =>
+        const selected = applications.filter(app =>
             app.status === 'shortlisted' &&
             selectedCandidateIds.includes(app.id)
         );
 
-        if (shortlistedToNotify.length === 0) {
+        if (selected.length === 0) {
             alert("No candidates selected to notify.");
             return;
         }
 
-        if (!confirm(`Send interview booking links to ${shortlistedToNotify.length} selected candidates?`)) return;
+        // Sending the booking link does not change `status`, so an already-notified
+        // candidate stays in this list forever. Skip them unless the admin explicitly
+        // asks for a resend — otherwise a second click mails the whole batch twice.
+        const alreadyNotified = selected.filter(app => app.shortlistNotified);
+        let shortlistedToNotify = selected.filter(app => !app.shortlistNotified);
+
+        if (alreadyNotified.length > 0) {
+            const resend = confirm(
+                `${alreadyNotified.length} of the ${selected.length} selected candidates have already been sent a booking link.\n\n` +
+                `OK — send to them again as well (they receive a duplicate email).\n` +
+                `Cancel — skip them and only email the ${shortlistedToNotify.length} not yet notified.`
+            );
+            if (resend) shortlistedToNotify = selected;
+        }
+
+        if (shortlistedToNotify.length === 0) {
+            alert("Every selected candidate has already been notified. Nothing to send.");
+            return;
+        }
+
+        if (!confirm(`Send interview booking links to ${shortlistedToNotify.length} candidates?`)) return;
 
         setIsSending(true);
         let count = 0;
         let failed = 0;
+        let flagWriteFailures = 0;
         for (const app of shortlistedToNotify) {
             try {
                 const portalUrl = window.location.origin;
@@ -274,8 +295,17 @@ const InterviewScheduler = () => {
                 );
 
                 if (ok) {
-                    // Update DB flag only after confirmed dispatch
-                    await supabase.from('applications').update({ shortlist_notified: true }).eq('id', app.id);
+                    // Update DB flag only after confirmed dispatch. If this write fails the
+                    // candidate looks un-notified next time, so surface it rather than
+                    // letting a silent error turn into a duplicate mail on the next run.
+                    const { error: flagError } = await supabase
+                        .from('applications')
+                        .update({ shortlist_notified: true })
+                        .eq('id', app.id);
+                    if (flagError) {
+                        console.error('[Scheduler] Email sent but shortlist_notified was NOT saved:', flagError.message);
+                        flagWriteFailures++;
+                    }
                     count++;
                 } else {
                     // FIX #14: mask email — no PII in console logs.
@@ -289,8 +319,13 @@ const InterviewScheduler = () => {
             }
             await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limit protection
         }
-        alert(`Booking links sent: ${count} succeeded${failed > 0 ? `, ${failed} failed` : ''}.`);
-        if (user?.email) logAction(user.email, 'SEND_BOOKING_LINKS', 'BATCH', { count, candidateIds: selectedCandidateIds });
+        alert(
+            `Booking links sent: ${count} succeeded${failed > 0 ? `, ${failed} failed` : ''}.` +
+            (flagWriteFailures > 0
+                ? `\n\nWarning: ${flagWriteFailures} candidate(s) were emailed but could not be marked as notified. Do NOT re-send to them or they will get a duplicate.`
+                : '')
+        );
+        if (user?.email) logAction(user.email, 'SEND_BOOKING_LINKS', 'BATCH', { count, failed, flagWriteFailures, candidateIds: shortlistedToNotify.map(a => a.id) });
         setIsNotifyDialogOpen(false);
         fetchCandidates(); // Refresh list
         setIsSending(false);
@@ -811,12 +846,14 @@ const InterviewScheduler = () => {
                                     <th className="p-5 w-16">
                                         <Checkbox
                                             checked={
-                                                selectedCandidateIds.length === applications.filter(app => app.status === 'shortlisted').length &&
+                                                selectedCandidateIds.length === applications.filter(app => app.status === 'shortlisted' && !app.shortlistNotified).length &&
                                                 selectedCandidateIds.length > 0
                                             }
                                             onCheckedChange={(checked) => {
                                                 if (checked) {
-                                                    setSelectedCandidateIds(applications.filter(app => app.status === 'shortlisted').map(app => app.id));
+                                                    // Select-all covers PENDING candidates only. Already-notified
+                                                    // ones can still be ticked individually for a deliberate resend.
+                                                    setSelectedCandidateIds(applications.filter(app => app.status === 'shortlisted' && !app.shortlistNotified).map(app => app.id));
                                                 } else {
                                                     setSelectedCandidateIds([]);
                                                 }

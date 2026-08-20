@@ -1,4 +1,3 @@
-
 /**
  * GOOGLE APPS SCRIPT AUTOMATION FOR NOVA CPS INTERVIEWS
  *
@@ -11,10 +10,23 @@
  *      ADMIN_ALERT_EMAIL   → ieee.sscs.vitchennai@gmail.com
  *      SENDER_NAME         → IEEE SSCS HR Team
  * 4. Set up a Time-driven trigger on `automationCheck` to run every 10 minutes.
- * 5. (Optional) Run `initialSetup` once to grant OAuth authorisation.
+ * 5. Apply src/database/migration_notification_idempotency.sql to the database. The
+ *    send-once guards below depend on the columns it adds; without them every slot
+ *    reads as "not yet notified" and a drifted trigger re-sends.
+ * 6. Delete any trigger on `send15MinuteInterviewReminders` — that cron has been
+ *    removed. `automationCheck` is now the only thing that mails candidates.
+ * 7. (Optional) Run `initialSetup` once to grant OAuth authorisation.
  *
  * ⚠️  NEVER hard-code secrets in this file.  PropertiesService keeps them
  *     server-side in Google's encrypted store and out of version control.
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * ─── WHAT THIS SENDS ────────────────────────────────────────────────────────
+ * A candidate receives exactly ONE automated email per booked slot: a reminder
+ * 10 minutes before the interview, carrying the meeting link the super admin set
+ * on the panel. There is deliberately no T-15 pre-reminder, no separate "join now"
+ * mail, and no interviewer reminder — every one of those was a second copy landing
+ * in the same Gmail thread.
  * ────────────────────────────────────────────────────────────────────────────
  */
 
@@ -43,25 +55,7 @@ function automationCheck() {
     const slots = fetchSupabase("/rest/v1/interview_slots?select=*,applications(*)");
     const assignments = fetchSupabase("/rest/v1/panel_assignments?select=*");
 
-    // 2. Pre-calculate the earliest slot of the day for each assigned interviewer
-    // This allows us to send only ONE email 10 mins before they start their day, preventing spam.
-    const interviewerEarliestSlot = {};
-
-    slots.forEach(slot => {
-        if (!slot.is_booked) return;
-        const slotDate = slot.start_time.split('T')[0];
-        const assignedInterviewers = assignments.filter(a => a.panel_id === slot.panel_id && a.date === slotDate);
-        
-        assignedInterviewers.forEach(interviewer => {
-            const key = interviewer.interviewer_email + "_" + slotDate;
-            const slotStart = new Date(slot.start_time);
-            if (!interviewerEarliestSlot[key] || slotStart < new Date(interviewerEarliestSlot[key].start_time)) {
-                interviewerEarliestSlot[key] = slot;
-            }
-        });
-    });
-
-    // 3. Process each slot
+    // 2. Process each slot
     slots.forEach(slot => {
         if (!slot.is_booked || !slot.applications) return;
 
@@ -72,39 +66,40 @@ function automationCheck() {
         const assignedInterviewers = assignments.filter(a => a.panel_id === slot.panel_id && a.date === slotDate);
         const meetingLink = slot.meeting_link || (assignedInterviewers.length > 0 ? assignedInterviewers[0].meeting_link : null);
 
-        // --- LOGIC 1: Admin & Missing Link Alerts (T-60 mins Window: 50 to 60 mins before) ---
-        if (timeDiffMinutes > 50 && timeDiffMinutes <= 60) {
+        // --- LOGIC 1: Staff alerts (T-60 mins Window: 50 to 60 mins before) ---
+        // `alert_sent` guards the window: this trigger runs every 10 minutes against a
+        // 10-minute window, so drift or a manual run would otherwise alert twice.
+        // These exist so the meeting link is in place before LOGIC 2 needs it.
+        if (timeDiffMinutes > 50 && timeDiffMinutes <= 60 && !slot.alert_sent) {
             if (assignedInterviewers.length === 0) {
+                markSlot(slot.id, { alert_sent: true });
                 sendAdminAlert(slot);
             } else if (!meetingLink) {
+                markSlot(slot.id, { alert_sent: true });
                 assignedInterviewers.forEach(interviewer => {
                     sendMissingLinkAlert(interviewer.interviewer_email, slot);
                 });
             }
         }
 
-        // --- LOGIC 2: Interviewer Daily Reminder (T-10 mins Window: 0 to 10 mins before) ---
-        if (timeDiffMinutes > 0 && timeDiffMinutes <= 10) {
-            assignedInterviewers.forEach(interviewer => {
-                const key = interviewer.interviewer_email + "_" + slotDate;
-                // Only send if this specific slot is their very FIRST slot of the day
-                if (interviewerEarliestSlot[key] && interviewerEarliestSlot[key].id === slot.id) {
-                    sendInterviewerFirstSlotReminder(interviewer.interviewer_email, slot);
-                }
-            });
-        }
-
-        // --- LOGIC 3: Applicant Pre-Reminder (T-15 mins Window: 10 to 20 mins before) ---
-        if (timeDiffMinutes > 10 && timeDiffMinutes <= 20) {
-            sendApplicantReminder(slot.applications.email, slot, "15 minutes", false, null);
-        }
-        
-        // --- LOGIC 4: Applicant Immediate Join Link (T=0 mins Window: 0 to 10 mins AFTER start) ---
-        if (timeDiffMinutes > -10 && timeDiffMinutes <= 0) {
-            sendApplicantReminder(slot.applications.email, slot, "now", true, meetingLink);
+        // --- LOGIC 2: The candidate's single reminder (T-10 mins) ---
+        //
+        // Fires once, in the window from 10 minutes before the slot to 15 minutes after,
+        // and `reminder_sent` closes it permanently. If the super admin has not set a
+        // meeting link yet at T-10 we hold for one cycle rather than mailing a reminder
+        // with nothing in it; by T-0 we send regardless, because a candidate waiting with
+        // no email at all is worse than one told the link is coming.
+        if (timeDiffMinutes <= 10 && timeDiffMinutes > -15 && !slot.reminder_sent) {
+            if (meetingLink) {
+                markSlot(slot.id, { reminder_sent: true });
+                sendApplicantReminder(slot.applications.email, slot, meetingLink);
+            } else if (timeDiffMinutes <= 0) {
+                markSlot(slot.id, { reminder_sent: true });
+                sendApplicantReminder(slot.applications.email, slot, null);
+            }
         }
     });
-    
+
     // Check for expired shortlisted applications (older than 48 hours)
     checkShortlistedExpiry();
 }
@@ -141,6 +136,22 @@ function patchSupabase(endpoint, payload) {
     UrlFetchApp.fetch(url, options);
 }
 
+/**
+ * Marks a notification as sent on the slot row.
+ *
+ * Called BEFORE the mail goes out, on purpose. If the write succeeds and the send then
+ * fails, one candidate misses one reminder; if the send succeeds and the write fails,
+ * every subsequent run of this trigger mails them again. The first failure is the one
+ * worth having.
+ */
+function markSlot(slotId, patch) {
+    try {
+        patchSupabase("/rest/v1/interview_slots?id=eq." + slotId, patch);
+    } catch (err) {
+        console.error("Failed to mark slot " + slotId + ": " + err);
+    }
+}
+
 function checkShortlistedExpiry() {
     const apps = fetchSupabase("/rest/v1/applications?select=id,shortlisted_at&status=eq.shortlisted");
     const now = new Date();
@@ -155,45 +166,29 @@ function checkShortlistedExpiry() {
     });
 }
 
-function sendInterviewerFirstSlotReminder(email, firstSlot) {
-    const body = `
-    <h3>Daily Interview Schedule Reminder</h3>
-    <p>Hi,</p>
-    <p>Your first interview of the day starts in approximately 10 minutes with <b>${firstSlot.applications.full_name}</b>.</p>
-    <p><b>Time:</b> ${new Date(firstSlot.start_time).toLocaleTimeString()}</p>
-    <p><b>Panel:</b> ${firstSlot.panel_id}</p>
-    <p>Please ensure you are ready and have your GMeet link active. You will not receive further email reminders for subsequent back-to-back interviews today.</p>
-    <p>Login to Dashboard: <a href="https://sscsportal.netlify.app/interviewer">Interviewer Dashboard</a></p>
-  `;
-    MailApp.sendEmail({
-        to: email,
-        subject: "REMINDER: Your Interviews Start Soon - IEEE SSCS",
-        htmlBody: body,
-        name: getConfig().SENDER_NAME
-    });
-}
-
-function sendApplicantReminder(email, slot, threshold, includeLink, meetingLink) {
-    const linkHtml = includeLink 
-        ? (meetingLink ? `<p><b>Meeting Link:</b> <a href="${meetingLink}">${meetingLink}</a></p>` : `<p>Your meeting link will be shared shortly.</p>`)
-        : `<p>Your meeting link will be sent in a separate email exactly when your slot begins.</p>`;
-
-    const subject = includeLink 
-        ? "JOIN NOW: Your IEEE SSCS Interview Link" 
-        : `Reminder: Your Interview in ${threshold} - IEEE SSCS`;
+/**
+ * The one automated email a candidate gets for a booked slot.
+ */
+function sendApplicantReminder(email, slot, meetingLink) {
+    const linkHtml = meetingLink
+        ? `<p style="margin: 20px 0;">
+             <a href="${meetingLink}" style="background-color: #dc143c; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Join Interview</a>
+           </p>
+           <p><b>Meeting link:</b> <a href="${meetingLink}">${meetingLink}</a></p>`
+        : `<p>Your interviewer is finalising the meeting link and will share it in a moment. Please stay available.</p>`;
 
     const body = `
-    <h3>Interview Reminder - IEEE SSCS</h3>
+    <h3>Your IEEE SSCS interview starts in 10 minutes</h3>
     <p>Hi ${slot.applications.full_name},</p>
-    <p>This is a reminder that your interview ${includeLink ? "is starting <b>now</b>." : `starts in <b>${threshold}</b>.`}</p>
     <p><b>Time:</b> ${new Date(slot.start_time).toLocaleTimeString()}</p>
     ${linkHtml}
-    ${includeLink ? '<p>Please join the meeting link immediately.</p>' : '<p>Please be ready 5 minutes before the slot starts.</p>'}
+    <p>Please join on time, and keep your camera on if you can.</p>
     <p>Best regards,<br/>IEEE SSCS Team</p>
   `;
+
     MailApp.sendEmail({
         to: email,
-        subject: subject,
+        subject: "Your IEEE SSCS interview starts in 10 minutes",
         htmlBody: body,
         name: getConfig().SENDER_NAME
     });
@@ -223,7 +218,7 @@ function sendMissingLinkAlert(email, slot) {
     <p>Your interview with <b>${slot.applications.full_name}</b> starts in less than 1 hour!</p>
     <p><b>Time:</b> ${new Date(slot.start_time).toLocaleTimeString()}</p>
     <p><b>Panel:</b> ${slot.panel_id}</p>
-    <p><b>You have not provided a meeting link for this slot.</b> Please log in to your dashboard immediately and add a GMeet link so the candidate can join.</p>
+    <p><b>You have not provided a meeting link for this slot.</b> Please log in to your dashboard immediately and add a GMeet link — the candidate's 10-minute reminder carries whatever link is set at that point.</p>
     <p>Login to Dashboard: <a href="https://sscsportal.netlify.app/interviewer">Interviewer Dashboard</a></p>
   `;
     MailApp.sendEmail({

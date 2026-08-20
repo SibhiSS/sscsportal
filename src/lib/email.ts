@@ -1,7 +1,7 @@
 /**
  * Centralized email sending utility for IEEE SSCS Portal.
  * All email sends go through this module for consistency,
- * retry logic, and rate-limiting protection.
+ * idempotency, and rate-limiting protection.
  */
 
 const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
@@ -32,6 +32,22 @@ function maskEmail(email: string): string {
 }
 
 /**
+ * Per-send idempotency key.
+ *
+ * The relay records it in CacheService and ignores a repeat within the dedupe window,
+ * so a re-POST — from a browser retry, an admin double-click, or a re-run of a batch —
+ * can never become a second copy of the same email. The same value is embedded in the
+ * body as the hidden Ref ID, so a duplicate in someone's inbox can be traced back to
+ * either one send that got through twice or two genuinely separate sends.
+ */
+function newDedupeId(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+}
+
+/**
  * Send a single email via Google Apps Script.
  *
  * Note: Uses `mode: 'no-cors'` because Google Apps Script does not support
@@ -42,6 +58,23 @@ function maskEmail(email: string): string {
  * `no-cors` mode downgrades non-simple headers. By explicitly setting
  * `text/plain`, we avoid the silent header stripping by the browser.
  * The JSON body is still parsed correctly server-side via JSON.parse().
+ *
+ * ── Why there is no retry here ──────────────────────────────────────────────
+ * `doPost` sends the mail and *then* answers with a 302 to
+ * script.googleusercontent.com. An opaque `no-cors` response tells us nothing, and a
+ * rejection tells us even less: the throw can happen after Gmail has already accepted
+ * the message. Retrying on failure therefore does not recover a lost email, it just
+ * sends a second one.
+ *
+ * That is exactly what happened once `connect-src` was tightened without listing
+ * script.googleusercontent.com: the browser refused to follow the relay's redirect,
+ * `fetch` rejected on every single send, and the old two-attempt loop mailed every
+ * applicant twice — identical subject and body, so Gmail threaded the pair and hid the
+ * second copy behind "quoted text". Keep that host in the CSP (netlify.toml and
+ * vercel.json) or this call starts failing again.
+ *
+ * The return value means "handed to the relay", never "delivered". Callers that use it
+ * to flip a `notified` flag should treat it as best-effort.
  */
 export async function sendEmail(
     email: string,
@@ -54,7 +87,9 @@ export async function sendEmail(
         return false;
     }
 
-    // Clean up HTML whitespace & append unique hidden ref tag so Gmail never collapses the body into quoted text [...]
+    const dedupeId = newDedupeId();
+
+    // Clean up HTML whitespace & append the hidden ref tag so Gmail never collapses the body into quoted text
     const cleanedMessage = message
         .split('\n')
         .map(line => line.trim())
@@ -65,32 +100,29 @@ export async function sendEmail(
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #18181b; font-size: 14px; line-height: 1.6; max-width: 600px;">
             ${cleanedMessage}
             <div style="display:none !important; font-size:1px; color:#ffffff; opacity:0; overflow:hidden; mso-hide:all;">
-                Ref ID: ${Date.now()}-${Math.random().toString(36).substring(2, 7)}
+                Ref ID: ${dedupeId}
             </div>
         </div>
     `.trim();
 
-    for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-            await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-                body: JSON.stringify({ token: MAIL_TOKEN, email, subject, message: formattedBody }),
-            });
-            // FIX #14: Use masked email in logs — never log raw PII to the console.
-            console.log(`[Email] ✓ Dispatched to ${maskEmail(email)} — "${subject}"`);
-            return true;
-        } catch (error) {
-            console.error(`[Email] ✗ Attempt ${attempt}/2 failed for ${maskEmail(email)}.`);
-            if (attempt < 2) {
-                await new Promise(r => setTimeout(r, 1500));
-            }
-        }
+    try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+            body: JSON.stringify({ token: MAIL_TOKEN, dedupeId, email, subject, message: formattedBody }),
+        });
+        // FIX #14: Use masked email in logs — never log raw PII to the console.
+        console.log(`[Email] ✓ Dispatched to ${maskEmail(email)} — "${subject}"`);
+        return true;
+    } catch (error) {
+        // Almost always this means the request never left the browser — a CSP block, an
+        // offline tab, an extension. It can also fire after the relay already accepted
+        // the message, which is exactly why this is reported as a failure but never
+        // retried: see the note above.
+        console.error(`[Email] ✗ Dispatch blocked before sending for ${maskEmail(email)} — "${subject}"`);
+        return false;
     }
-
-    console.error(`[Email] ✗ All attempts failed for ${maskEmail(email)}`);
-    return false;
 }
 
 /**
