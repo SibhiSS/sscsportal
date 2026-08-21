@@ -421,7 +421,7 @@ const Admin = () => {
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Applications");
-        XLSX.writeFile(wb, "IEEE_SSCS_Applications.xlsx");
+        XLSX.writeFile(wb, "IEEE_SSCS_Applications.csv", { bookType: 'csv' });
     };
 
     // ── Filter Logic ────────────────────────────────────────────────────────
@@ -839,7 +839,7 @@ const Admin = () => {
                                 </TabsContent>
 
                                 <TabsContent value="import" className="outline-none">
-                                    <ImportApplications />
+                                    <ImportApplications applications={applications} onShortlist={bulkShortlist} />
                                 </TabsContent>
                             </>
                         )}

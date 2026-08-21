@@ -3,8 +3,16 @@ import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { UploadCloud, CheckCircle, Trash2, Save, FileSpreadsheet } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { UploadCloud, CheckCircle, Trash2, Save, FileSpreadsheet, ListChecks } from 'lucide-react';
 import { toast } from 'sonner';
+import { Application } from '@/types';
+import { canTransition } from '@/lib/fsm';
+
+interface ImportApplicationsProps {
+  applications?: Application[];
+  onShortlist?: (ids: string[]) => Promise<void>;
+}
 
 interface ParsedApplication {
   user_id: string;
@@ -32,11 +40,106 @@ const COLUMN_ALIASES: Record<keyof Omit<ParsedApplication, 'user_id' | 'status'>
   skills: ['skills', 'technical skills', 'your skills', 'tools', 'portfolio', 'github', 'linkedin', 'previous experience', 'could you attach your portfoliogithub profilelinkedin profile link below', 'have you had any previous experience related to the domain chosen above if yes briefly explain', 'linkedin profile link', 'github previous works personal website if applicable'],
 };
 
-export default function ImportApplications() {
+type ShortlistMatch = {
+  rollNumber: string;
+  app: Application | null;
+  eligible: boolean;
+  reason: string;
+};
+
+export default function ImportApplications({ applications = [], onShortlist }: ImportApplicationsProps) {
+  const [mode, setMode] = useState<'new' | 'shortlist'>('new');
   const [data, setData] = useState<ParsedApplication[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Shortlist-by-roll-number state ────────────────────────────────────
+  const [rollNumberText, setRollNumberText] = useState('');
+  const [matches, setMatches] = useState<ShortlistMatch[]>([]);
+  const [isShortlisting, setIsShortlisting] = useState(false);
+  const shortlistFileInputRef = useRef<HTMLInputElement>(null);
+
+  const parseRollNumbers = (raw: string): string[] => {
+    return Array.from(new Set(
+      raw
+        .split(/[\r\n,;]+/)
+        .map(s => s.trim().toUpperCase())
+        .filter(Boolean)
+    ));
+  };
+
+  const computeMatches = (rollNumbers: string[]) => {
+    const byRoll = new Map(applications.map(a => [a.rollNumber?.trim().toUpperCase(), a]));
+    const computed: ShortlistMatch[] = rollNumbers.map(rn => {
+      const app = byRoll.get(rn) || null;
+      if (!app) return { rollNumber: rn, app: null, eligible: false, reason: 'Not found in system' };
+      if (app.status === 'shortlisted') return { rollNumber: rn, app, eligible: false, reason: 'Already shortlisted' };
+      if (!canTransition(app.status, 'shortlisted')) {
+        return { rollNumber: rn, app, eligible: false, reason: `Already past this stage (${app.status})` };
+      }
+      return { rollNumber: rn, app, eligible: true, reason: 'Will be shortlisted' };
+    });
+    setMatches(computed);
+  };
+
+  const handleRollNumberFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const bytes = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(bytes, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '', header: 1 });
+        const rollAliases = ['roll number', 'roll no', 'registration number', 'reg no', 'reg number', 'register number', 'register no', 'registration no', 'university id'];
+        let values: string[] = [];
+
+        if (rows.length > 0) {
+          const header = (rows[0] as any[]).map(h => String(h).toLowerCase().trim());
+          const colIdx = header.findIndex(h => rollAliases.includes(h));
+          const dataRows = colIdx !== -1 ? rows.slice(1) : rows;
+          const useCol = colIdx !== -1 ? colIdx : 0;
+          values = dataRows.map((r: any[]) => String(r[useCol] ?? '').trim()).filter(Boolean);
+        }
+
+        if (values.length === 0) {
+          toast.error("Couldn't find any roll numbers in that file.");
+          return;
+        }
+        setRollNumberText(values.join('\n'));
+        computeMatches(parseRollNumbers(values.join('\n')));
+      } catch {
+        toast.error("Failed to parse the file. Please ensure it's a valid Excel or CSV file.");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleMatchRollNumbers = () => {
+    const rollNumbers = parseRollNumbers(rollNumberText);
+    if (rollNumbers.length === 0) {
+      toast.error('Paste or upload at least one register number.');
+      return;
+    }
+    computeMatches(rollNumbers);
+  };
+
+  const confirmShortlist = async () => {
+    if (!onShortlist) return;
+    const eligibleIds = matches.filter(m => m.eligible && m.app).map(m => m.app!.id);
+    if (eligibleIds.length === 0) return;
+    setIsShortlisting(true);
+    try {
+      await onShortlist(eligibleIds);
+      toast.success(`Shortlisted ${eligibleIds.length} candidate${eligibleIds.length === 1 ? '' : 's'}.`);
+      setMatches([]);
+      setRollNumberText('');
+    } catch (err: any) {
+      toast.error(`Shortlisting failed: ${err?.message || 'Unknown error'}`);
+    } finally {
+      setIsShortlisting(false);
+    }
+  };
 
   const normalizeKey = (key: string) => key.toLowerCase().trim().replace(/[^a-z0-9 ]/g, '');
 
@@ -192,6 +295,126 @@ export default function ImportApplications() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant={mode === 'new' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setMode('new')}
+          className={mode === 'new' ? 'bg-primary text-white' : 'text-muted-foreground'}
+        >
+          <FileSpreadsheet className="w-4 h-4 mr-2" /> Import New Applications
+        </Button>
+        <Button
+          variant={mode === 'shortlist' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setMode('shortlist')}
+          className={mode === 'shortlist' ? 'bg-primary text-white' : 'text-muted-foreground'}
+        >
+          <ListChecks className="w-4 h-4 mr-2" /> Shortlist by Register Number
+        </Button>
+      </div>
+
+      {mode === 'shortlist' ? (
+        <div className="space-y-6">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-xl font-black text-white uppercase tracking-widest flex items-center gap-2">
+              <ListChecks className="text-primary w-5 h-5" />
+              Shortlist by Register Number
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-2xl">
+              Paste or upload a list of register numbers (one per line, or a file with a "Register Number" column). Matching applicants still early in the pipeline will be moved to Shortlisted.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div
+              onClick={() => shortlistFileInputRef.current?.click()}
+              className="border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all border-white/10 hover:border-white/20 hover:bg-white/[0.02] bg-white/5"
+            >
+              <input
+                type="file"
+                className="hidden"
+                ref={shortlistFileInputRef}
+                accept=".xlsx, .xls, .csv"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    handleRollNumberFile(e.target.files[0]);
+                    e.target.value = '';
+                  }
+                }}
+              />
+              <UploadCloud className="w-10 h-10 mx-auto mb-3 text-white/20" />
+              <p className="text-sm font-bold text-white mb-1">Upload a file</p>
+              <p className="text-xs text-muted-foreground">.xlsx, .xls, or .csv with a register number column</p>
+            </div>
+
+            <div className="space-y-2">
+              <Textarea
+                value={rollNumberText}
+                onChange={(e) => setRollNumberText(e.target.value)}
+                placeholder={"Or paste register numbers here, one per line:\n24BMV1031\n24BPS1117\n..."}
+                className="min-h-[140px] bg-white/5 border-white/10 text-sm font-mono"
+              />
+              <Button onClick={handleMatchRollNumbers} size="sm" className="w-full bg-primary text-white hover:bg-primary/90">
+                Match Register Numbers
+              </Button>
+            </div>
+          </div>
+
+          {matches.length > 0 && (
+            <div className="space-y-4">
+              <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-2xl">
+                <div className="max-h-[50vh] overflow-auto scrollbar-thin scrollbar-thumb-primary/20">
+                  <Table>
+                    <TableHeader className="bg-black/40 sticky top-0 backdrop-blur-xl z-10">
+                      <TableRow className="border-white/10 hover:bg-transparent">
+                        <TableHead className="text-[10px] font-bold tracking-wider uppercase text-white py-4">Register No</TableHead>
+                        <TableHead className="text-[10px] font-bold tracking-wider uppercase text-white">Name</TableHead>
+                        <TableHead className="text-[10px] font-bold tracking-wider uppercase text-white">Dept</TableHead>
+                        <TableHead className="text-[10px] font-bold tracking-wider uppercase text-white">Result</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {matches.map((m, idx) => (
+                        <TableRow key={idx} className="border-white/5 hover:bg-white/5">
+                          <TableCell className="text-xs font-mono">{m.rollNumber}</TableCell>
+                          <TableCell className="font-medium text-sm text-white py-3">{m.app?.fullName || '—'}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{m.app?.primaryDept || '—'}</TableCell>
+                          <TableCell className="text-xs">
+                            {m.eligible ? (
+                              <span className="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400 font-semibold">{m.reason}</span>
+                            ) : (
+                              <span className="px-2 py-1 rounded bg-amber-500/10 text-amber-400">{m.reason}</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4">
+                <p className="text-sm text-muted-foreground">
+                  {matches.filter(m => m.eligible).length} of {matches.length} will be shortlisted.
+                </p>
+                <Button
+                  onClick={confirmShortlist}
+                  disabled={isShortlisting || matches.filter(m => m.eligible).length === 0 || !onShortlist}
+                  className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold tracking-wider"
+                >
+                  {isShortlisting ? (
+                    <span className="flex items-center gap-2"><div className="w-4 h-4 rounded-full border-2 border-white/20 border-t-white animate-spin" /> Shortlisting...</span>
+                  ) : (
+                    <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4" /> Shortlist {matches.filter(m => m.eligible).length} Candidate{matches.filter(m => m.eligible).length === 1 ? '' : 's'}</span>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+      <>
       <div className="flex flex-col gap-2">
         <h2 className="text-xl font-black text-white uppercase tracking-widest flex items-center gap-2">
           <FileSpreadsheet className="text-primary w-5 h-5" />
@@ -299,6 +522,8 @@ export default function ImportApplications() {
             </div>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );
