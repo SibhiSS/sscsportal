@@ -26,13 +26,23 @@ Netlify environment variables. It must match exactly.
 
 ## Step 2: The script
 
-Paste the entire contents of [`google_script_automation.js`](google_script_automation.js) into `Code.gs`
-as a single file. It contains both jobs the Apps Script project does — the `automationCheck`
-cron (interview reminders) and the `doPost` mail relay (booking links, "Notify Shortlisted",
-result emails). Keeping them in one tracked file is deliberate: `doPost` used to live only
-as a snippet in this doc, outside source control, and it was lost the last time the cron
-logic got trimmed down because nothing caught the deletion. Don't split them back into
-separate untracked files in the Apps Script editor.
+Paste the entire contents of [`google_script_mail_relay.js`](google_script_mail_relay.js)
+into the **mail relay project's** `Code.gs`.
+
+> **There are two Apps Script projects and they are not interchangeable.** Both define a
+> `doPost`, and each is wired to a different URL:
+>
+> | File | Project | URL | Handles |
+> | --- | --- | --- | --- |
+> | `google_script_mail_relay.js` | mail relay | `VITE_GOOGLE_SCRIPT_URL` | admin-triggered email |
+> | `google_script_automation.js` | automation | `VITE_GOOGLE_SHEETS_API_URL` | registration intake + reminder cron |
+>
+> Pasting the relay into the automation project replaces the registration handler, and
+> `/register` answers `unauthorized` to every applicant. Keep them apart.
+
+Both files are tracked in git. The relay used to exist only as a snippet in this document
+— untracked — which is how it went missing for two days in Aug 2026 without anything
+catching it. Edit the file, then deploy; don't hand-edit the live project.
 
 ## Step 3: Deploy
 
@@ -41,6 +51,29 @@ separate untracked files in the Apps Script editor.
 3. **Who has access**: `Anyone` — required, since the browser calls it unauthenticated.
    The token and allowlist above are what make this safe, not the access setting.
 4. **Deploy**, then **Review permissions → Advanced → Go to … (unsafe) → Allow**.
+
+> **Redeploying after an edit.** A `Version N` web app deployment is a frozen snapshot —
+> pasting new code into the editor does **not** change what the live URL serves. Use
+> **Deploy → Manage deployments → ✏️ → Version: "New version" → Deploy**. The URL stays
+> the same, so no `.env` change. Skipping this step is why a redeploy once appeared to
+> do nothing for two days straight.
+
+## Step 3b: Authorize both mail services
+
+The relay calls `GmailApp` and falls back to `MailApp`. These need **different** OAuth
+scopes over the same daily quota — `https://mail.google.com/` and `script.send_mail`
+respectively — and a project can end up holding one but not the other. When that happens
+`GmailApp` throws on every send while `MailApp` would have worked fine.
+
+A successful send reports which one carried it:
+
+```json
+{"status":"success","sentVia":"MailApp","remainingQuota":91}
+```
+
+`sentVia: "MailApp"` means `GmailApp` is refusing and the fallback saved you. That is
+survivable, but grant the broader scope when you can — run any function once from the
+editor and accept the consent screen.
 
 ## Step 4: Wire it up
 
