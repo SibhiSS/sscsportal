@@ -606,8 +606,10 @@ const AdminSettings = () => {
                         <CardContent className="space-y-6">
                             <div className="bg-muted/50 p-6 rounded-lg border space-y-4">
                                 <div>
-                                    <Label className="text-base font-semibold mb-1 block">Analysis Engine Provider</Label>
-                                    <p className="text-xs text-muted-foreground mb-3">Cloud LLM used to analyze candidates. Requires an API key — nothing runs until one is set.</p>
+                                    <Label className="text-base font-semibold mb-1 block">Preferred Provider</Label>
+                                    <p className="text-xs text-muted-foreground mb-3">
+                                        Tried first for every analysis. If it fails (quota exhausted, rate-limited, outage) and the other provider below has a key set, the Copilot automatically retries with that one instead of just erroring out.
+                                    </p>
                                     <Select
                                         value={settings.aiSettings?.provider}
                                         onValueChange={(val: any) => setSettings({
@@ -629,24 +631,37 @@ const AdminSettings = () => {
                                     </Select>
                                 </div>
 
-                                {settings.aiSettings?.provider && (
+                                <div className="grid sm:grid-cols-2 gap-4">
                                     <div>
-                                        <Label className="text-sm font-medium mb-1 block">API Key ({settings.aiSettings.provider.toUpperCase()})</Label>
+                                        <Label className="text-sm font-medium mb-1 block text-purple-300">Gemini API Key</Label>
                                         <Input
                                             type="password"
-                                            placeholder={`Enter ${settings.aiSettings.provider} API Key...`}
-                                            value={settings.aiSettings?.apiKey || ''}
+                                            placeholder="Enter Gemini API Key..."
+                                            value={settings.aiSettings?.geminiApiKey || ''}
                                             onChange={(e) => setSettings({
                                                 ...settings,
-                                                aiSettings: { ...settings.aiSettings, apiKey: e.target.value }
+                                                aiSettings: { ...settings.aiSettings, geminiApiKey: e.target.value }
                                             })}
                                             className="bg-background font-mono text-xs"
                                         />
-                                        <p className="text-[11px] text-muted-foreground mt-1">
-                                            If left blank, the system falls back to the VITE_GEMINI_API_KEY / VITE_OPENAI_API_KEY env var. If neither is set, the AI Copilot panel shows a "not configured" error instead of analyzing candidates.
-                                        </p>
                                     </div>
-                                )}
+                                    <div>
+                                        <Label className="text-sm font-medium mb-1 block text-blue-300">OpenAI API Key</Label>
+                                        <Input
+                                            type="password"
+                                            placeholder="Enter OpenAI API Key..."
+                                            value={settings.aiSettings?.openaiApiKey || ''}
+                                            onChange={(e) => setSettings({
+                                                ...settings,
+                                                aiSettings: { ...settings.aiSettings, openaiApiKey: e.target.value }
+                                            })}
+                                            className="bg-background font-mono text-xs"
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-[11px] text-muted-foreground">
+                                    Setting both keys enables automatic cross-provider fallback. Any key left blank falls back to the VITE_GEMINI_API_KEY / VITE_OPENAI_API_KEY env var. If a call fails with HTTP 429, the panel now shows whether it's a real quota/billing limit (check the provider's usage dashboard) or a transient rate-limit (which retries automatically on its own).
+                                </p>
                             </div>
 
                             <div className="pt-2 flex justify-end">

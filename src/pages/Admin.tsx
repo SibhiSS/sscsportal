@@ -25,6 +25,7 @@ import { Application, RecruitmentPhase } from '@/types';
 import AdminStats from '@/components/admin/AdminStats';
 import AdminToolbar from '@/components/admin/AdminToolbar';
 import ApplicationModal from '@/components/admin/ApplicationModal';
+import AutoShortlistDialog from '@/components/admin/AutoShortlistDialog';
 import AdminSettings from '@/components/admin/AdminSettings';
 import InterviewScheduler from '@/components/admin/InterviewScheduler';
 import KanbanBoard from '@/components/admin/KanbanBoard';
@@ -80,6 +81,8 @@ const Admin = () => {
     const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
     const [publishConfirm1, setPublishConfirm1] = useState('');
     const [publishConfirm2, setPublishConfirm2] = useState('');
+
+    const [isAutoShortlistOpen, setIsAutoShortlistOpen] = useState(false);
 
 
 
@@ -162,6 +165,9 @@ const Admin = () => {
                     decidedAt: doc.decided_at,
                     // Post-Selection Position
                     assignedPosition: doc.assigned_position,
+                    // AI Copilot cache
+                    aiAnalysis: doc.ai_analysis || undefined,
+                    aiAnalyzedAt: doc.ai_analyzed_at || undefined,
                 };
             });
 
@@ -223,6 +229,23 @@ const Admin = () => {
 
     const updateTaskScore = async (id: string, score: number) => {
         await updateApplication(id, { taskScore: score });
+    };
+
+    // AI Copilot writes its own cache row directly (aiService.saveAnalysisToDb) —
+    // this just mirrors that into local state so the UI doesn't need a refetch.
+    // Deliberately bypasses updateApplication: that path also fires an audit log
+    // entry per call, and batch auto-shortlist can trigger dozens of these back to
+    // back, which would flood the audit trail with AI payloads.
+    const applyLocalAiAnalysis = (id: string, analysis: Application['aiAnalysis']) => {
+        const aiAnalyzedAt = new Date().toISOString();
+        setApplications(prev => prev.map(app => app.id === id ? { ...app, aiAnalysis: analysis, aiAnalyzedAt } : app));
+        setSelectedApp(prev => prev && prev.id === id ? { ...prev, aiAnalysis: analysis, aiAnalyzedAt } : prev);
+    };
+
+    const bulkShortlist = async (ids: string[]) => {
+        for (const id of ids) {
+            await updateApplication(id, { status: 'shortlisted' });
+        }
     };
 
     const deleteApplication = async (id: string) => {
@@ -436,6 +459,17 @@ const Admin = () => {
         });
     }, [filteredApps, sortConfig]);
 
+    // ── Modal Next/Prev navigation ──────────────────────────────────────────
+    // Walks through whatever list is currently on screen (respects active
+    // filters/sort/search) so "Next" always matches what the admin was browsing.
+    const selectedIndex = selectedApp ? sortedApps.findIndex(a => a.id === selectedApp.id) : -1;
+    const goToNextApp = () => {
+        if (selectedIndex >= 0 && selectedIndex < sortedApps.length - 1) setSelectedApp(sortedApps[selectedIndex + 1]);
+    };
+    const goToPrevApp = () => {
+        if (selectedIndex > 0) setSelectedApp(sortedApps[selectedIndex - 1]);
+    };
+
     const requestSort = (key: keyof Application) => {
         let direction: 'asc' | 'desc' = 'asc';
         if (sortConfig?.key === key && sortConfig.direction === 'asc') direction = 'desc';
@@ -612,6 +646,8 @@ const Admin = () => {
                                         onExport={downloadExcel}
                                         currentPhase={currentPhase}
                                         canPublish={isSuperAdmin}
+                                        onAutoShortlist={() => setIsAutoShortlistOpen(true)}
+                                        canAutoShortlist={isSuperAdmin}
                                     />
 
                                     {/* View Toggle */}
@@ -839,8 +875,23 @@ const Admin = () => {
                         onClose={() => setSelectedApp(null)}
                         onUpdate={updateApplication}
                         currentPhase={currentPhase}
+                        onNext={goToNextApp}
+                        onPrev={goToPrevApp}
+                        hasNext={selectedIndex >= 0 && selectedIndex < sortedApps.length - 1}
+                        hasPrev={selectedIndex > 0}
+                        currentIndex={selectedIndex}
+                        totalCount={sortedApps.length}
+                        onAiAnalysisComplete={applyLocalAiAnalysis}
                     />
                 )}
+
+                <AutoShortlistDialog
+                    open={isAutoShortlistOpen}
+                    onClose={() => setIsAutoShortlistOpen(false)}
+                    applications={applications}
+                    onAnalysisCached={applyLocalAiAnalysis}
+                    onShortlist={bulkShortlist}
+                />
 
                 <Dialog open={isPublishDialogOpen} onOpenChange={setIsPublishDialogOpen}>
                     <DialogContent className="bg-black/90 border-white/10 backdrop-blur-2xl text-white">

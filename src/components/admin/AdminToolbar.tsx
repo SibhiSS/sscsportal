@@ -8,7 +8,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, Download, CheckCircle, X } from 'lucide-react';
+import { Search, Download, CheckCircle, X, Wand2 } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 import { Application } from '@/types';
 
@@ -28,6 +28,8 @@ interface AdminToolbarProps {
     onPublish: () => void;
     onExport: () => void;
     canPublish?: boolean;
+    onAutoShortlist?: () => void;
+    canAutoShortlist?: boolean;
 }
 
 const AdminToolbar: React.FC<AdminToolbarProps> = ({
@@ -45,7 +47,9 @@ const AdminToolbar: React.FC<AdminToolbarProps> = ({
     isPublishing,
     onPublish,
     onExport,
-    canPublish = false
+    canPublish = false,
+    onAutoShortlist,
+    canAutoShortlist = false
 }) => {
     // Extract unique values
     const uniqueDepts = Array.from(new Set(applications.map(app => app.primaryDept))).sort();
@@ -139,6 +143,17 @@ const AdminToolbar: React.FC<AdminToolbarProps> = ({
 
             {/* Actions Section */}
             <div className="flex items-center gap-4 w-full xl:w-auto pt-6 xl:pt-0 border-t xl:border-t-0 border-white/5 relative z-10">
+                {canAutoShortlist && (
+                    <Button
+                        onClick={onAutoShortlist}
+                        variant="outline"
+                        className="h-12 px-6 rounded-xl bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20 hover:border-purple-500/50 transition-all text-[10px] font-bold tracking-[0.15em] uppercase"
+                    >
+                        <Wand2 className="w-4 h-4 mr-2" />
+                        Auto-Shortlist
+                    </Button>
+                )}
+
                 {canPublish && (
                     <Button
                         onClick={onPublish}

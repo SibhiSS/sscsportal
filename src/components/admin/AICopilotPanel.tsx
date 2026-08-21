@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Application, AIAnalysisResult } from '@/types';
-import { analyzeCandidate } from '@/services/aiService';
-import { Sparkles, CheckCircle2, AlertTriangle, RefreshCw, Cpu, Award, Zap } from 'lucide-react';
+import { analyzeCandidate, saveAnalysisToDb } from '@/services/aiService';
+import { Sparkles, CheckCircle2, AlertTriangle, RefreshCw, Cpu, Award, Zap, ShieldQuestion, BrainCircuit, Flame } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
 interface AICopilotPanelProps {
     application: Application;
+    /** Called after a fresh (non-cached) analysis completes, so the parent can
+     * mirror the result into its own state — the panel itself only writes the
+     * DB row via saveAnalysisToDb. */
+    onAnalysisComplete?: (id: string, analysis: AIAnalysisResult) => void;
 }
 
 /**
@@ -30,13 +34,25 @@ function BoldMarkdown({ text }: { text: string }) {
     );
 }
 
-export default function AICopilotPanel({ application }: AICopilotPanelProps) {
-    const [analysis, setAnalysis] = useState<AIAnalysisResult | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
+export default function AICopilotPanel({ application, onAnalysisComplete }: AICopilotPanelProps) {
+    // Seed from the cached analysis on the application row so opening a candidate
+    // that's already been analyzed (e.g. via batch auto-shortlist, or a previous
+    // visit) never calls the LLM at all — this is the main fix for the AI Copilot
+    // tripping provider rate limits under normal admin browsing.
+    const [analysis, setAnalysis] = useState<AIAnalysisResult | null>(application.aiAnalysis || null);
+    const [loading, setLoading] = useState<boolean>(!application.aiAnalysis);
     const [refreshing, setRefreshing] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        // Cached result already covers this candidate — skip the API call.
+        if (application.aiAnalysis) {
+            setAnalysis(application.aiAnalysis);
+            setLoading(false);
+            setError(null);
+            return;
+        }
+
         let isMounted = true;
         setLoading(true);
         setError(null);
@@ -45,6 +61,8 @@ export default function AICopilotPanel({ application }: AICopilotPanelProps) {
                 setAnalysis(res);
                 setLoading(false);
             }
+            saveAnalysisToDb(application.id, res);
+            onAnalysisComplete?.(application.id, res);
         }).catch(err => {
             console.error("AI Copilot failed:", err);
             if (isMounted) {
@@ -53,7 +71,8 @@ export default function AICopilotPanel({ application }: AICopilotPanelProps) {
             }
         });
         return () => { isMounted = false; };
-    }, [application.id, application.skills, application.reason]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [application.id]);
 
     const handleRefresh = async () => {
         if (refreshing || loading) return;
@@ -62,6 +81,8 @@ export default function AICopilotPanel({ application }: AICopilotPanelProps) {
             const res = await analyzeCandidate(application);
             setAnalysis(res);
             setError(null);
+            await saveAnalysisToDb(application.id, res);
+            onAnalysisComplete?.(application.id, res);
         } catch (err: any) {
             console.error("Refresh AI Copilot failed:", err);
             setError(err?.message || 'AI Copilot failed to analyze this candidate.');
@@ -171,6 +192,41 @@ export default function AICopilotPanel({ application }: AICopilotPanelProps) {
                     </Button>
                 </div>
             </div>
+
+            {/* Signal Breakdown: Technical vs Engagement (creativity/activeness/eagerness) */}
+            <div className="grid grid-cols-2 gap-3 relative z-10">
+                <div className="bg-black/30 border border-white/5 rounded-xl p-3 space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-blue-300/90">
+                        <span className="flex items-center gap-1.5"><BrainCircuit className="w-3 h-3" /> Technical</span>
+                        <span className="tabular-nums">{analysis.technicalScore}</span>
+                    </div>
+                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-400/70 rounded-full transition-all" style={{ width: `${analysis.technicalScore}%` }} />
+                    </div>
+                </div>
+                <div className="bg-black/30 border border-white/5 rounded-xl p-3 space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-pink-300/90">
+                        <span className="flex items-center gap-1.5"><Flame className="w-3 h-3" /> Creativity &amp; Drive</span>
+                        <span className="tabular-nums">{analysis.engagementScore}</span>
+                    </div>
+                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-full bg-pink-400/70 rounded-full transition-all" style={{ width: `${analysis.engagementScore}%` }} />
+                    </div>
+                </div>
+            </div>
+
+            {/* Content Authenticity Flag — a review nudge, never an auto-reject */}
+            {analysis.aiGeneratedLikelihood >= 35 && (
+                <div className={`relative z-10 flex items-start gap-2.5 rounded-xl p-3 border text-xs ${analysis.aiGeneratedLikelihood >= 65 ? 'bg-red-950/20 border-red-500/30 text-red-200' : 'bg-amber-950/20 border-amber-500/30 text-amber-200'}`}>
+                    <ShieldQuestion className="w-4 h-4 shrink-0 mt-0.5" />
+                    <div>
+                        <span className="font-semibold">
+                            {analysis.aiGeneratedLikelihood >= 65 ? 'Possible AI-generated content' : 'Some AI-polish suspected'} ({analysis.aiGeneratedLikelihood}%)
+                        </span>
+                        <p className="opacity-80 mt-0.5">{analysis.aiGeneratedNotes} — this is a flag for manual review, not a scoring penalty.</p>
+                    </div>
+                </div>
+            )}
 
             {/* Executive Summary Bullets */}
             <div className="space-y-2.5 relative z-10">

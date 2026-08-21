@@ -46,6 +46,12 @@ export interface Application {
     finalScore?: number;      // weighted composite
     rankInDept?: number;      // auto-assigned rank within dept
 
+    // AI Copilot — cached so the panel doesn't re-call the LLM on every modal
+    // open (this was the main source of avoidable 429s), and so batch/auto-
+    // shortlist tooling can rank candidates without re-analyzing them.
+    aiAnalysis?: AIAnalysisResult;
+    aiAnalyzedAt?: string;
+
     // Timeline timestamps
     shortlistedAt?: string;
     interviewedAt?: string;
@@ -119,8 +125,15 @@ export interface AppSettings {
     opensAt?: string | null;
     closesAt?: string | null;
     aiSettings?: {
+        /** Preferred provider — tried first. The other provider is used as an
+         * automatic fallback when it has a key configured and the preferred
+         * provider fails (quota/rate-limit/outage). */
         provider?: 'gemini' | 'openai';
+        /** @deprecated legacy single-key field, kept for backward-compat reads.
+         * New writes go to geminiApiKey/openaiApiKey instead. */
         apiKey?: string;
+        geminiApiKey?: string;
+        openaiApiKey?: string;
     };
 }
 
@@ -205,12 +218,22 @@ export interface SkillFrequency {
 }
 
 export interface AIAnalysisResult {
-    matchScore: number;         // 0-100 percentage
+    matchScore: number;         // 0-100 percentage, weighted per buildPrompt's rubric
     summaryBullets: string[];   // 3 bullet points
     strengths: string[];        // Key matching competency tags
     gaps: string[];             // Potential gaps or missing domain skills
     recommendation: string;     // 1-sentence executive recommendation
     mode: 'gemini' | 'openai';
+
+    // Sub-scores behind matchScore, surfaced separately so admins can see *why*
+    // someone scored the way they did instead of just a single blended number.
+    technicalScore: number;     // 0-100, pure technical/domain competency
+    engagementScore: number;    // 0-100, blended creativity + activeness + eagerness
+
+    // Content-authenticity signal — a review flag for the admin, never an
+    // auto-reject. High likelihood just means "read this one's answers closely."
+    aiGeneratedLikelihood: number; // 0-100
+    aiGeneratedNotes: string;      // 1-sentence justification
 }
 
 export interface CandidateNote {

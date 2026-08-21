@@ -9,9 +9,9 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Star, CheckCircle, XCircle, MinusCircle, Calendar, Clock, Save, Github, Linkedin, FileText, ExternalLink, Users, Undo2 } from 'lucide-react';
+import { Star, CheckCircle, XCircle, MinusCircle, Calendar, Clock, Save, Github, Linkedin, FileText, ExternalLink, Users, Undo2, ChevronLeft, ChevronRight } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
-import { Application, ApplicationStatus, RecruitmentPhase } from '@/types';
+import { Application, ApplicationStatus, AIAnalysisResult, RecruitmentPhase } from '@/types';
 import { canTransition, canPerformAction } from '@/lib/fsm';
 import { useAuth } from '@/contexts/AuthContext';
 import CandidateTimeline from '@/components/admin/CandidateTimeline';
@@ -25,6 +25,13 @@ interface ApplicationModalProps {
     onClose: () => void;
     onUpdate: (id: string, updates: Partial<Application>) => Promise<void>;
     currentPhase?: RecruitmentPhase;
+    onNext?: () => void;
+    onPrev?: () => void;
+    hasNext?: boolean;
+    hasPrev?: boolean;
+    currentIndex?: number;
+    totalCount?: number;
+    onAiAnalysisComplete?: (id: string, analysis: AIAnalysisResult) => void;
 }
 
 const ApplicationModal: React.FC<ApplicationModalProps> = ({
@@ -32,7 +39,14 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
     open,
     onClose,
     onUpdate,
-    currentPhase = 'APPLICATIONS_OPEN'
+    currentPhase = 'APPLICATIONS_OPEN',
+    onNext,
+    onPrev,
+    hasNext = false,
+    hasPrev = false,
+    currentIndex,
+    totalCount,
+    onAiAnalysisComplete
 }) => {
     const { user } = useAuth();
     // Role comes from the `admins` table via AuthContext; RLS enforces the same rule
@@ -91,6 +105,34 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                         </Badge>
                     </div>
                 </DialogHeader>
+
+                {(onNext || onPrev) && (
+                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={onPrev}
+                            disabled={!hasPrev}
+                            className="text-muted-foreground hover:text-white disabled:opacity-30"
+                        >
+                            <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+                        </Button>
+                        {typeof currentIndex === 'number' && typeof totalCount === 'number' && totalCount > 0 && (
+                            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                                Candidate {currentIndex + 1} of {totalCount}
+                            </span>
+                        )}
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={onNext}
+                            disabled={!hasNext}
+                            className="text-muted-foreground hover:text-white disabled:opacity-30"
+                        >
+                            Next <ChevronRight className="w-4 h-4 ml-1" />
+                        </Button>
+                    </div>
+                )}
 
                 <div className="space-y-8 mt-4">
                     {/* Actions Bar */}
@@ -213,7 +255,7 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                     </div>
 
                     {/* AI Copilot Panel */}
-                    <AICopilotPanel application={application} />
+                    <AICopilotPanel application={application} onAnalysisComplete={onAiAnalysisComplete} />
 
                     <div className="grid md:grid-cols-2 gap-8">
                         {/* Personal Info */}
