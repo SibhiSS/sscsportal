@@ -175,12 +175,26 @@ const Admin = () => {
 
     const updateApplication = async (id: string, updates: Partial<Application>) => {
         try {
-            setApplications(prev => prev.map(app => app.id === id ? { ...app, ...updates } : app));
+            // Walking a candidate back below 'shortlisted' un-shortlists them: the
+            // booking email is revoked so the applicant stops seeing "Book Interview
+            // Slot", and re-shortlisting later will send a fresh mail rather than
+            // silently re-granting access.
+            //
+            // 'shortlisted' itself is NOT in this list on purpose. Moving someone from
+            // interview_scheduled back to shortlisted means "let them pick a different
+            // time" — clearing the flag there would lock them out until an admin
+            // re-sent the mail.
+            const REVOKES_BOOKING_ACCESS = ['applied', 'under_review', 'waitlisted', 'rejected', 'rejected_pending'];
+            const revokeAccess = !!updates.status && REVOKES_BOOKING_ACCESS.includes(updates.status);
+
+            const localUpdates = revokeAccess ? { ...updates, shortlistNotified: false } : updates;
+            setApplications(prev => prev.map(app => app.id === id ? { ...app, ...localUpdates } : app));
             if (selectedApp?.id === id) {
-                setSelectedApp(prev => prev ? { ...prev, ...updates } : null);
+                setSelectedApp(prev => prev ? { ...prev, ...localUpdates } : null);
             }
 
             const dbUpdates: any = {};
+            if (revokeAccess) dbUpdates.shortlist_notified = false;
             if (updates.status !== undefined) dbUpdates.status = updates.status;
             if (updates.rating !== undefined) dbUpdates.rating = updates.rating;
             if (updates.notes !== undefined) dbUpdates.notes = updates.notes;

@@ -1,21 +1,28 @@
 import { useState, useMemo } from 'react';
 import { format, parseISO, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Clock, Calendar, Users, Flame } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Calendar, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
-interface SlotData {
-    id: string;
+/**
+ * One row per distinct start time, as returned by the `available_slot_times()`
+ * RPC. Panels are collapsed server-side: a 9:00 time backed by four panels
+ * arrives here as a single entry, and disappears entirely once all four are
+ * taken. `panel_id` is never sent to the browser.
+ *
+ * `seatsRemaining` is carried for completeness but is deliberately NOT rendered —
+ * applicants see the time and nothing that hints at how many panels are running.
+ */
+export interface SlotTime {
     start_time: string;
-    end_time?: string;
-    panel_id: number;
-    is_booked: boolean;
+    end_time?: string | null;
+    seats_remaining?: number;
 }
 
 interface SlotCalendarProps {
-    slots: SlotData[];
-    /** Receives slotId, slotTime, panelId — triggers confirmation modal upstream */
-    onSelectSlot: (slotId: string, slotTime: string, panelId: number) => void;
+    slots: SlotTime[];
+    /** Receives the ISO start time. The server picks which panel to assign. */
+    onSelectSlot: (startTime: string) => void;
     isLoading?: boolean;
 }
 
@@ -23,19 +30,24 @@ export default function SlotCalendar({ slots, onSelectSlot }: SlotCalendarProps)
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-    // Only show future available slots in the calendar
+    // The RPC already excludes booked and past slots; this guards against a stale
+    // list sitting on screen between the 30s refreshes.
     const availableSlots = useMemo(() => {
         const now = new Date();
-        return slots.filter(s => !s.is_booked && parseISO(s.start_time) > now);
+        return slots.filter(s => parseISO(s.start_time) > now);
     }, [slots]);
 
-    // Group by date key for fast lookup
+    // Group by date. Each entry within a date is already a distinct time, so
+    // `.length` is a count of times — not of panel rows.
     const slotsByDate = useMemo(() => {
-        const map: Record<string, SlotData[]> = {};
+        const map: Record<string, SlotTime[]> = {};
         for (const slot of availableSlots) {
             const key = format(parseISO(slot.start_time), 'yyyy-MM-dd');
             if (!map[key]) map[key] = [];
             map[key].push(slot);
+        }
+        for (const key of Object.keys(map)) {
+            map[key].sort((a, b) => a.start_time.localeCompare(b.start_time));
         }
         return map;
     }, [availableSlots]);
@@ -48,26 +60,9 @@ export default function SlotCalendar({ slots, onSelectSlot }: SlotCalendarProps)
 
     const startDayOfWeek = getDay(startOfMonth(currentMonth));
 
-    const totalBooked = slots.filter(s => s.is_booked).length;
-    const bookedPct = slots.length > 0 ? Math.round((totalBooked / slots.length) * 100) : 0;
-
     const slotsForSelectedDate = selectedDate
         ? slotsByDate[format(selectedDate, 'yyyy-MM-dd')] || []
         : [];
-
-    // Group by time — user never sees panels. Show one entry per time, pick first available panel.
-    const slotsByTime = useMemo(() => {
-        const map: Record<string, SlotData[]> = {};
-        for (const slot of slotsForSelectedDate) {
-            const key = format(parseISO(slot.start_time), 'HH:mm');
-            if (!map[key]) map[key] = [];
-            map[key].push(slot);
-        }
-        // Sort by time key
-        return Object.entries(map)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([, slots]) => slots); // array of slot groups
-    }, [slotsForSelectedDate]);
 
     const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -162,12 +157,6 @@ export default function SlotCalendar({ slots, onSelectSlot }: SlotCalendarProps)
                         <div className="w-3 h-3 rounded bg-gradient-to-br from-purple-600 to-pink-600" />
                         <span>Selected</span>
                     </div>
-                    {bookedPct > 50 && (
-                        <div className="ml-auto flex items-center gap-1 text-amber-400">
-                            <Flame className="w-3 h-3" />
-                            <span>{bookedPct}% booked</span>
-                        </div>
-                    )}
                 </div>
             </div>
 
@@ -182,8 +171,10 @@ export default function SlotCalendar({ slots, onSelectSlot }: SlotCalendarProps)
                         <h3 className="text-sm font-bold text-white">
                             {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select a Date'}
                         </h3>
-                        {selectedDate && slotsByTime.length > 0 && (
-                            <p className="text-[10px] text-muted-foreground">{slotsByTime.length} time{slotsByTime.length !== 1 ? 's' : ''} available</p>
+                        {selectedDate && slotsForSelectedDate.length > 0 && (
+                            <p className="text-[10px] text-muted-foreground">
+                                {slotsForSelectedDate.length} time{slotsForSelectedDate.length !== 1 ? 's' : ''} available
+                            </p>
                         )}
                     </div>
                 </div>
@@ -196,7 +187,7 @@ export default function SlotCalendar({ slots, onSelectSlot }: SlotCalendarProps)
                                 Click a highlighted date<br />to view available slots
                             </p>
                         </div>
-                    ) : slotsByTime.length === 0 ? (
+                    ) : slotsForSelectedDate.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full min-h-[180px] text-center">
                             <Clock className="w-10 h-10 text-muted-foreground/20 mb-3" />
                             <p className="text-sm text-muted-foreground/60">All slots taken for this date</p>
@@ -211,18 +202,16 @@ export default function SlotCalendar({ slots, onSelectSlot }: SlotCalendarProps)
                                 transition={{ duration: 0.2 }}
                                 className="space-y-2"
                             >
-                                {slotsByTime.map(group => {
-                                    // Pick first available slot from this time group
-                                    const slot = group[0];
+                                {slotsForSelectedDate.map(slot => {
                                     const timeStr = format(parseISO(slot.start_time), 'h:mm a');
                                     return (
                                         <motion.button
-                                            key={slot.id}
+                                            key={slot.start_time}
                                             whileHover={{ scale: 1.02 }}
                                             whileTap={{ scale: 0.98 }}
-                                            onClick={() => onSelectSlot(slot.id, slot.start_time, slot.panel_id)}
+                                            onClick={() => onSelectSlot(slot.start_time)}
                                             className="w-full flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all group cursor-pointer"
-                                            id={`slot-${slot.id}`}
+                                            id={`slot-${slot.start_time}`}
                                         >
                                             <div className="text-left">
                                                 <div className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors font-mono">
@@ -246,12 +235,12 @@ export default function SlotCalendar({ slots, onSelectSlot }: SlotCalendarProps)
                     )}
                 </div>
 
-                {/* Slot count footer */}
+                {/* Time count footer */}
                 {availableSlots.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-[10px] text-muted-foreground">
                         <div className="flex items-center gap-1">
                             <Users className="w-3 h-3" />
-                            <span>{availableSlots.length} slots remaining</span>
+                            <span>{availableSlots.length} time{availableSlots.length !== 1 ? 's' : ''} remaining</span>
                         </div>
                         <span>First come, first served</span>
                     </div>

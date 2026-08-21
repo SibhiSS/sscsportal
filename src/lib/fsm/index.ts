@@ -14,10 +14,13 @@ export const VALID_TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> =
     'neutral':             ['under_review', 'shortlisted', 'rejected_pending'],
 
     // ── Stage 3: Shortlisted (cleared resume + review) ──────────────────
-    'shortlisted':         ['interview_scheduled', 'waitlisted', 'rejected'],
+    // 'under_review' is the un-shortlist path: it walks the candidate back a
+    // stage, which also clears shortlist_notified and frees any booked slot.
+    'shortlisted':         ['interview_scheduled', 'waitlisted', 'rejected', 'under_review'],
 
     // ── Stage 4: Interview Scheduled (slot booked) ───────────────────────
-    'interview_scheduled': ['interviewed', 'shortlisted', 'waitlisted', 'rejected'],
+    // Also reachable by un-shortlist, for pulling back someone who already booked.
+    'interview_scheduled': ['interviewed', 'shortlisted', 'waitlisted', 'rejected', 'under_review'],
 
     // ── Stage 5: Interviewed (evaluation complete) ────────────────────────
     'interviewed':         ['selected_pending', 'waitlisted', 'rejected'],

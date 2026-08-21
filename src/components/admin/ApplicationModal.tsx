@@ -9,7 +9,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Star, CheckCircle, XCircle, MinusCircle, Calendar, Clock, Save, Github, Linkedin, FileText, ExternalLink, Users } from 'lucide-react';
+import { Star, CheckCircle, XCircle, MinusCircle, Calendar, Clock, Save, Github, Linkedin, FileText, ExternalLink, Users, Undo2 } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 import { Application, ApplicationStatus, RecruitmentPhase } from '@/types';
 import { canTransition, canPerformAction } from '@/lib/fsm';
@@ -123,6 +123,33 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                                     <CheckCircle className="w-4 h-4 mr-2" />
                                     {application.status === 'shortlisted' ? 'Shortlisted' : 'Shortlist'}
                                 </Button>
+
+                                {/* Un-shortlist. Walks the candidate back to Under Review, which
+                                    also clears shortlist_notified and frees any slot they booked,
+                                    so the "Book Interview Slot" option disappears on their side.
+                                    Enabled during INTERVIEWS_ONGOING as well (canReview is false in
+                                    that phase) — pulling back someone who already booked is
+                                    precisely a mid-interview-phase action. */}
+                                {['shortlisted', 'interview_scheduled'].includes(application.status) && (
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                            const warning = application.status === 'interview_scheduled'
+                                                ? `${application.fullName} has already booked an interview slot.\n\nUn-shortlisting will release that slot back to the pool and revoke their booking access. Continue?`
+                                                : `Un-shortlist ${application.fullName}?\n\nThey will move back to Under Review and lose access to slot booking. If they were already emailed a booking link, that link stops working.`;
+                                            if (confirm(warning)) onUpdate(application.id, { status: 'under_review' });
+                                        }}
+                                        disabled={
+                                            !canTransition(application.status, 'under_review')
+                                            || !(canPerformAction(currentPhase, 'canReview') || canPerformAction(currentPhase, 'canInterview'))
+                                        }
+                                        className="border-zinc-500/50 text-zinc-300 hover:bg-zinc-500/10 hover:border-zinc-400"
+                                    >
+                                        <Undo2 className="w-4 h-4 mr-2" />
+                                        Un-shortlist
+                                    </Button>
+                                )}
                             </div>
                         )}
                         

@@ -127,7 +127,21 @@ const InterviewScheduler = () => {
     // --- Actions ---
 
     const generateSlots = async () => {
-        if (!confirm(`Generate ${genConfig.duration}min slots for ${genConfig.panels} panels from ${genConfig.startTime} to ${genConfig.endTime}? This will add to existing slots.`)) return;
+        // The Panel Count / Duration inputs are free-text number fields, so parseInt
+        // yields NaN when cleared. Without this the generate loop silently produces
+        // zero slots and reports success.
+        const panels = Number(genConfig.panels);
+        const duration = Number(genConfig.duration);
+        if (!Number.isInteger(panels) || panels < 1) {
+            alert('Panel Count must be a whole number of at least 1.');
+            return;
+        }
+        if (!Number.isInteger(duration) || duration < 1) {
+            alert('Slot Duration must be a whole number of minutes, at least 1.');
+            return;
+        }
+
+        if (!confirm(`Generate ${duration}min slots for ${panels} panels from ${genConfig.startTime} to ${genConfig.endTime}? This will add to existing slots.`)) return;
 
         setIsGenerating(true);
         try {
@@ -136,9 +150,9 @@ const InterviewScheduler = () => {
             let currentTime = setMinutes(setHours(dateObj, parseInt(genConfig.startTime.split(':')[0])), parseInt(genConfig.startTime.split(':')[1]));
             const endTime = setMinutes(setHours(dateObj, parseInt(genConfig.endTime.split(':')[0])), parseInt(genConfig.endTime.split(':')[1]));
 
-            while (addMinutes(currentTime, genConfig.duration) <= endTime) {
-                const slotEnd = addMinutes(currentTime, genConfig.duration);
-                for (let p = 1; p <= genConfig.panels; p++) {
+            while (addMinutes(currentTime, duration) <= endTime) {
+                const slotEnd = addMinutes(currentTime, duration);
+                for (let p = 1; p <= panels; p++) {
                     newSlots.push({
                         panel_id: p,
                         start_time: currentTime.toISOString(),
@@ -149,10 +163,26 @@ const InterviewScheduler = () => {
                 currentTime = slotEnd;
             }
 
-            const { error } = await supabase.from('interview_slots').insert(newSlots);
+            // Upsert, not insert. The (panel_id, start_time) unique index added in
+            // migration_slot_booking_fixes.sql means a plain insert would fail on any
+            // re-run, and before that index existed a re-run silently DOUBLED every
+            // time's capacity. ignoreDuplicates keeps existing rows untouched, so
+            // already-booked slots are never clobbered and raising the panel count
+            // just tops up the new panels.
+            if (newSlots.length === 0) {
+                alert(`No slots generated — ${genConfig.startTime}–${genConfig.endTime} is not long enough to fit a single ${duration} minute slot.`);
+                return;
+            }
+
+            const { error } = await supabase
+                .from('interview_slots')
+                .upsert(newSlots, { onConflict: 'panel_id,start_time', ignoreDuplicates: true });
             if (error) throw error;
 
-            alert(`Successfully generated ${newSlots.length} slots!`);
+            alert(
+                `Generated slots for ${genConfig.date}: ${panels} panel(s) x ` +
+                `${newSlots.length / panels} time(s). Times that already existed were left as they were.`
+            );
             fetchSlots();
             if (user?.email) logAction(user.email, 'GENERATE_SLOTS', 'BATCH', { count: newSlots.length, date: genConfig.date });
 

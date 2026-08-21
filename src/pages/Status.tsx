@@ -314,9 +314,15 @@ const StatusPage = () => {
     }, [user]);
 
     const rawStatus: string = app?.status ?? '';
-    
+
+    // Shortlisting is an internal decision until the booking email actually goes
+    // out. `shortlist_notified` is set by the Scheduler only after a booking link
+    // is confirmed sent, so until then the applicant sees plain "Under Review" —
+    // no shortlisted badge, no stepper advance, no Book Interview Slot button.
+    const bookingUnlocked = rawStatus === 'shortlisted' && app?.shortlist_notified === true;
+
     // Mask final decisions until results are officially published
-    let status = rawStatus;
+    let status = rawStatus === 'shortlisted' && !bookingUnlocked ? 'under_review' : rawStatus;
     if (phase !== 'RESULTS_PUBLISHED') {
         if (['selected', 'waitlisted', 'active_member'].includes(rawStatus)) {
             status = 'interviewed';

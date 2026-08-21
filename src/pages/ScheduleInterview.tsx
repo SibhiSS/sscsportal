@@ -23,10 +23,13 @@ import { sendEmail } from '@/lib/email';
  */
 const ADMIN_ALERT_EMAIL = import.meta.env.VITE_ADMIN_ALERT_EMAIL || 'ieee.sscs.vitchennai@gmail.com';
 
+/**
+ * A slot the applicant has picked but not yet confirmed. Only the time is held —
+ * which panel they end up on is decided server-side by book_interview_slot(), so
+ * the panel number never exists in this page's state at all.
+ */
 interface PendingSlot {
-    id: string;
     start_time: string;
-    panel_id: number;
 }
 
 const ScheduleInterview = () => {
@@ -51,15 +54,28 @@ const ScheduleInterview = () => {
         }
     }, [user, authLoading, navigate]);
 
+    // Booking is unlocked by the shortlist EMAIL, not by the shortlist itself.
+    // shortlist_notified is written by the admin Scheduler only after a booking link
+    // is confirmed sent. Until then a shortlisted applicant sees the "not eligible"
+    // screen here, and no shortlist hint anywhere else in the portal.
+    const canBook = existingApp?.status === 'shortlisted' && existingApp?.shortlist_notified === true;
+
+    // available_slot_times() returns one row per distinct start time with the panels
+    // already collapsed server-side, so panel_id is never sent to the browser. A time
+    // whose panels are all taken produces no row and simply vanishes from the list.
     const fetchSlots = useCallback(async () => {
         setSlotsLoading(true);
-        const { data } = await supabase
-            .from('interview_slots')
-            .select('*')
-            .eq('is_booked', false)
-            .gte('start_time', new Date().toISOString())
-            .order('start_time', { ascending: true });
-        if (data) setSlots(data);
+        const { data, error } = await supabase.rpc('available_slot_times');
+        if (error) {
+            console.error('[Schedule] Could not load slot times:', error.message);
+            setBookingError(
+                error.message?.includes('available_slot_times')
+                    ? 'Slot booking is not set up yet. Please contact the SSCS team.'
+                    : 'Could not load available slots. Please refresh and try again.'
+            );
+        } else {
+            setSlots(data || []);
+        }
         setSlotsLoading(false);
     }, []);
 
@@ -75,7 +91,7 @@ const ScheduleInterview = () => {
             if (data && data.length > 0) {
                 const app = data[0];
                 setExistingApp(app);
-                if (app.status === 'shortlisted') {
+                if (app.status === 'shortlisted' && app.shortlist_notified === true) {
                     fetchSlots();
                 }
             }
@@ -88,7 +104,7 @@ const ScheduleInterview = () => {
 
     // Real-time slot refresh every 30s
     useEffect(() => {
-        if (!existingApp || existingApp.status !== 'shortlisted') return;
+        if (!canBook) return;
         const interval = setInterval(fetchSlots, 30000);
         const handleFocus = () => fetchSlots();
         window.addEventListener('focus', handleFocus);
@@ -96,12 +112,12 @@ const ScheduleInterview = () => {
             clearInterval(interval);
             window.removeEventListener('focus', handleFocus);
         };
-    }, [existingApp, fetchSlots]);
+    }, [canBook, fetchSlots]);
 
-    // Called when user picks a slot in the calendar — opens confirmation modal
-    const handlePreviewSlot = (slotId: string, slotTime: string, panelId: number) => {
+    // Called when user picks a time in the calendar — opens confirmation modal
+    const handlePreviewSlot = (slotTime: string) => {
         setBookingError(null);
-        setPendingSlot({ id: slotId, start_time: slotTime, panel_id: panelId });
+        setPendingSlot({ start_time: slotTime });
     };
 
     // Called when user confirms in the modal
@@ -119,34 +135,33 @@ const ScheduleInterview = () => {
         }
 
         try {
-            // Check if candidate already has a slot booked
-            const { data: existingBooking } = await supabase
-                .from('interview_slots')
-                .select('id')
-                .eq('booked_by', existingApp.id)
-                .limit(1);
+            // One server-side call does everything in a single transaction: verify
+            // eligibility, verify they have no slot already, pick a free panel for
+            // this time with FOR UPDATE SKIP LOCKED, claim it, and move the
+            // application to interview_scheduled.
+            //
+            // Doing it this way removes three problems the old two-write client
+            // flow had: two people could pass the "already booked?" check at the
+            // same time and end up with a slot each; two people picking the same
+            // time collided on the same panel even when others were free; and if
+            // the status write failed after the slot write, the slot was consumed
+            // with nobody scheduled against it.
+            const { data: bookingResult, error: bookingRpcError } = await supabase
+                .rpc('book_interview_slot', { p_start_time: pendingSlot.start_time });
 
-            if (existingBooking && existingBooking.length > 0) {
-                setBookingError("You have already booked an interview slot.");
-                setIsBooking(false);
+            const booked = Array.isArray(bookingResult) ? bookingResult[0] : bookingResult;
+
+            if (bookingRpcError) {
+                // Messages come from RAISE EXCEPTION in book_interview_slot() and are
+                // already written for the applicant to read.
                 setPendingSlot(null);
+                setBookingError(
+                    bookingRpcError.message?.includes('book_interview_slot')
+                        ? 'Slot booking is not set up yet. Please contact the SSCS team.'
+                        : (bookingRpcError.message || 'Booking failed. Please try again.')
+                );
                 fetchSlots();
-                return;
-            }
-
-            const { data: bookingResult } = await supabase
-                .from('interview_slots')
-                .update({ is_booked: true, booked_by: existingApp.id })
-                .eq('id', pendingSlot.id)
-                .eq('is_booked', false)
-                .select();
-
-            if (bookingResult && bookingResult.length > 0) {
-                await supabase
-                    .from('applications')
-                    .update({ status: 'interview_scheduled', shortlisted_at: new Date().toISOString() })
-                    .eq('id', existingApp.id);
-
+            } else if (booked) {
                 // Send confirmation email to candidate
                 const startTime2 = parseISO(pendingSlot.start_time);
                 const dateStr2 = format(startTime2, 'EEEE, MMMM d, yyyy');
@@ -175,7 +190,7 @@ const ScheduleInterview = () => {
                     const { data: assignments } = await supabase
                         .from('panel_assignments')
                         .select('interviewer_email, meeting_link')
-                        .eq('panel_id', pendingSlot.panel_id)
+                        .eq('panel_id', booked.panel_id)
                         .eq('date', dateStr);
 
                     const hasLink = assignments?.some(a => a.meeting_link?.trim());
@@ -190,7 +205,7 @@ const ScheduleInterview = () => {
                             sendEmail(
                                 alertEmail,
                                 'URGENT: Last Minute Interview Booking - IEEE SSCS',
-                                `<p>Candidate <strong>${existingApp.full_name}</strong> just booked Panel ${pendingSlot.panel_id} at ${format(startTime, 'h:mm a')} (${Math.round(diffMins)} min away).</p><p>No meeting link has been set. Please add one immediately.</p>`
+                                `<p>Candidate <strong>${existingApp.full_name}</strong> just booked Panel ${booked.panel_id} at ${format(startTime, 'h:mm a')} (${Math.round(diffMins)} min away).</p><p>No meeting link has been set. Please add one immediately.</p>`
                             ).catch(err => console.warn('[Schedule] Urgent alert email failed:', err));
                         }
                     }
@@ -203,8 +218,10 @@ const ScheduleInterview = () => {
                     setExistingApp((prev: any) => ({ ...prev, status: 'interview_scheduled' }));
                 }, 1800);
             } else {
+                // No error and no row: every panel at this time was claimed between
+                // the list refreshing and the confirm click.
                 setPendingSlot(null);
-                setBookingError('This slot was just taken! Please pick another one.');
+                setBookingError('That time was just filled. Please pick another one.');
                 fetchSlots();
             }
         } catch {
@@ -300,7 +317,10 @@ const ScheduleInterview = () => {
     }
 
     // ── Not eligible yet ──────────────────────────────────────────────────────
-    if (existingApp.status !== 'shortlisted') {
+    // Covers both "not shortlisted" and "shortlisted but the booking email has not
+    // gone out yet" — deliberately the same screen, so a shortlisted applicant who
+    // guesses this URL early cannot tell the difference.
+    if (!canBook) {
         return (
             <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 relative overflow-hidden">
                 <TechGridBackground />
@@ -315,7 +335,9 @@ const ScheduleInterview = () => {
                         </div>
                         <h1 className="text-2xl font-heading font-bold text-white mb-3">Not Yet Eligible</h1>
                         <p className="text-muted-foreground mb-8 leading-relaxed">
-                            You can only book an interview slot once your application is shortlisted by our team.
+                            Interview slots open once our team emails you a booking link.
+                            If you have already received one, make sure you are signed in with
+                            the same email address you applied with.
                         </p>
                         <Button onClick={() => navigate('/apply')} variant="outline" className="w-full h-12 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10">
                             Check My Status
@@ -353,6 +375,22 @@ const ScheduleInterview = () => {
     }
 
     // ── Main Booking UI ───────────────────────────────────────────────────────
+
+    // Plain consts, not useMemo — this sits below the early returns above, and a
+    // hook here would not run on every render path.
+    const uniqueDateCount = new Set(
+        slots.map(s => format(parseISO(s.start_time), 'yyyy-MM-dd'))
+    ).size;
+
+    // Read off the real generated slots rather than hardcoding, since the admin
+    // picks the duration when generating.
+    const firstWithEnd = slots.find(s => s.end_time);
+    const slotDurationLabel = firstWithEnd
+        ? `${Math.round(
+            (parseISO(firstWithEnd.end_time).getTime() - parseISO(firstWithEnd.start_time).getTime()) / 60000
+          )} min`
+        : '—';
+
     return (
         <div className="min-h-screen relative text-foreground bg-[#050505] overflow-hidden">
             <TechGridBackground />
@@ -413,10 +451,13 @@ const ScheduleInterview = () => {
                         transition={{ delay: 0.15 }}
                         className="grid grid-cols-3 gap-3 mb-8"
                     >
+                        {/* No panel count here — that would give away how many interviews
+                            run in parallel. `slots` is one row per distinct time, so its
+                            length is a count of times, not of panel seats. */}
                         {[
-                            { label: 'Available Slots', value: slots.length, icon: Calendar, color: 'text-purple-400' },
-                            { label: 'Interview Panels', value: [...new Set(slots.map(s => s.panel_id))].length, icon: Users, color: 'text-pink-400' },
-                            { label: 'Slot Duration', value: '15 min', icon: Clock, color: 'text-cyan-400' },
+                            { label: 'Times Available', value: slots.length, icon: Calendar, color: 'text-purple-400' },
+                            { label: 'Dates Open', value: uniqueDateCount, icon: Users, color: 'text-pink-400' },
+                            { label: 'Slot Duration', value: slotDurationLabel, icon: Clock, color: 'text-cyan-400' },
                         ].map((stat) => (
                             <div key={stat.label} className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 text-center backdrop-blur-xl">
                                 <stat.icon className={`w-5 h-5 mx-auto mb-2 ${stat.color}`} />
@@ -534,11 +575,8 @@ const ScheduleInterview = () => {
                                                     {format(parseISO(pendingSlot.start_time), 'h:mm a')}
                                                 </span>
                                             </div>
-                                            <div className="h-px bg-white/5" />
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs text-muted-foreground uppercase tracking-widest">Panel</span>
-                                                <span className="text-white font-medium">Panel {pendingSlot.panel_id}</span>
-                                            </div>
+                                            {/* No Panel row: applicants see the time only. Which panel
+                                                they are assigned is chosen server-side at booking time. */}
                                         </div>
 
                                         {/* Actions */}

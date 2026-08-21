@@ -755,7 +755,10 @@ const Apply = () => {
                                     Thank you for your interest in IEEE SSCS. Due to the high volume of applications, we are unfortunately unable to offer you a position at this time.
                                 </p>
                             </>
-                        ) : existingApp.status === 'shortlisted' ? (
+                        ) : existingApp.status === 'shortlisted' && existingApp.shortlist_notified ? (
+                            /* Shortlisting stays invisible until the Scheduler confirms the booking
+                               email was sent (shortlist_notified). Until then this falls through to
+                               the "Under Review" branch below — the applicant sees no change. */
                             <div className="text-center animate-in fade-in duration-500">
 
                                 <h2 className="text-3xl font-heading font-bold mb-2 text-white">Application Shortlisted!</h2>
