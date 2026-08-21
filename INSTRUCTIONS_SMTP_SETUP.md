@@ -26,107 +26,13 @@ Netlify environment variables. It must match exactly.
 
 ## Step 2: The script
 
-Paste this into `Code.gs`:
-
-```javascript
-/**
- * Allowed recipient domains and addresses.
- *
- * This is the control that survives token leakage. VITE_MAIL_RELAY_TOKEN is compiled
- * into the public bundle, so a determined attacker can extract it — but even holding
- * the token they can only send to VIT addresses and our own inboxes, never to an
- * arbitrary victim. Keep this list as narrow as the product allows.
- */
-var ALLOWED_DOMAINS = ['vitstudent.ac.in', 'vit.ac.in'];
-var ALLOWED_ADDRESSES = ['ieee.sscs.vitchennai@gmail.com'];
-
-/**
- * How long a dedupeId is remembered, in seconds (max 21600 for CacheService).
- *
- * The client sends one dedupeId per logical email. If the same id arrives again inside
- * this window we acknowledge it without sending, so a re-POST cannot become a second
- * copy in the candidate's inbox. This matters because the relay sends the mail and
- * *then* answers with a redirect: any client-side failure is reported after delivery,
- * so a retry on the client is always a duplicate, never a recovery.
- */
-var DEDUPE_WINDOW_SECONDS = 900;
-
-function isAllowedRecipient(email) {
-  if (!email || email.indexOf('@') === -1) return false;
-  var addr = email.trim().toLowerCase();
-  if (ALLOWED_ADDRESSES.indexOf(addr) !== -1) return true;
-  var domain = addr.split('@').pop();
-  return ALLOWED_DOMAINS.indexOf(domain) !== -1;
-}
-
-function doPost(e) {
-  var lock = LockService.getScriptLock();
-  try {
-    var props = PropertiesService.getScriptProperties();
-    var expectedToken = props.getProperty('MAIL_RELAY_TOKEN');
-    var data = JSON.parse(e.postData.contents);
-
-    // 1. Reject anything without the shared secret.
-    if (!expectedToken || data.token !== expectedToken) {
-      console.warn('Rejected relay request: bad or missing token.');
-      return jsonOut({ status: 'error', message: 'unauthorized' });
-    }
-
-    // 2. Reject recipients outside the allowlist.
-    if (!isAllowedRecipient(data.email)) {
-      console.warn('Rejected relay request: recipient not allowed.');
-      return jsonOut({ status: 'error', message: 'recipient not allowed' });
-    }
-
-    // 3. Cheap circuit breaker so a leaked token cannot drain the daily quota in
-    //    one burst. MailApp.getRemainingDailyQuota() is the real backstop.
-    if (MailApp.getRemainingDailyQuota() < 20) {
-      console.warn('Rejected relay request: daily quota nearly exhausted.');
-      return jsonOut({ status: 'error', message: 'quota exhausted' });
-    }
-
-    // 4. Idempotency. The lock serialises concurrent duplicates; the cache entry is
-    //    written *before* sending so a crash mid-send cannot be replayed by a client
-    //    retry, and is cleared again only if the send itself threw.
-    var cache = CacheService.getScriptCache();
-    var dedupeKey = data.dedupeId ? 'mail:' + data.dedupeId : null;
-
-    if (dedupeKey) {
-      lock.waitLock(10000);
-      if (cache.get(dedupeKey)) {
-        console.log('Ignored duplicate send for dedupeId ' + data.dedupeId);
-        return jsonOut({ status: 'duplicate', message: 'already sent' });
-      }
-      cache.put(dedupeKey, '1', DEDUPE_WINDOW_SECONDS);
-      lock.releaseLock();
-    }
-
-    try {
-      GmailApp.sendEmail(data.email, data.subject, data.message, {
-        htmlBody: data.message,
-        name: props.getProperty('SENDER_NAME') || 'IEEE SSCS Team'
-      });
-    } catch (sendError) {
-      // Nothing was delivered, so let the id be used again.
-      if (dedupeKey) cache.remove(dedupeKey);
-      throw sendError;
-    }
-
-    return jsonOut({ status: 'success' });
-
-  } catch (error) {
-    console.error(error.toString());
-    return jsonOut({ status: 'error', message: 'send failed' });
-  } finally {
-    try { lock.releaseLock(); } catch (ignored) {}
-  }
-}
-
-function jsonOut(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-```
+Paste the entire contents of [`google_script_automation.js`](google_script_automation.js) into `Code.gs`
+as a single file. It contains both jobs the Apps Script project does — the `automationCheck`
+cron (interview reminders) and the `doPost` mail relay (booking links, "Notify Shortlisted",
+result emails). Keeping them in one tracked file is deliberate: `doPost` used to live only
+as a snippet in this doc, outside source control, and it was lost the last time the cron
+logic got trimmed down because nothing caught the deletion. Don't split them back into
+separate untracked files in the Apps Script editor.
 
 ## Step 3: Deploy
 
