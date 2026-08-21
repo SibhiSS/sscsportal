@@ -80,9 +80,13 @@ function isCoreEceEeeBranch(dept: string): boolean {
 // automatic fallback when both keys are configured (see resolveKeys below).
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Best-available Gemini model first, falling back to the stable model only if the
-// preview model errors out (e.g. not yet enabled on a given API key).
-const GEMINI_MODELS = ['gemini-3-pro-preview', 'gemini-2.5-flash'] as const;
+// Google retires/renames model IDs over time — 'gemini-3-pro-preview' and
+// 'gemini-2.5-flash' both went dead (HTTP 404 "no longer available to new
+// users"). 'gemini-3.6-flash' is the current replacement per Google's own
+// error response. Keep this list to models actually confirmed live — every
+// dead entry tried before the working one still counts as a failed request
+// against the key's quota.
+const GEMINI_MODELS = ['gemini-3.6-flash'] as const;
 
 function buildPrompt(application: Application): string {
     const primaryDept = application.primaryDept || application.department || 'General';
