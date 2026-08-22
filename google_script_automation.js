@@ -81,8 +81,21 @@ function automationCheck() {
         const slotStart = new Date(slot.start_time);
         const timeDiffMinutes = (slotStart - now) / (1000 * 60);
 
-        const slotDate = slot.start_time.split('T')[0];
-        const assignedInterviewers = assignments.filter(a => a.panel_id === slot.panel_id && a.date === slotDate);
+        // panel_assignments.date is written by the admin's browser as a LOCAL
+        // (Asia/Kolkata) yyyy-MM-dd. slot.start_time.split('T')[0] is the UTC date,
+        // which only matches the local one for slots at or after 05:30 IST. A slot
+        // booked earlier than that — e.g. 02:00 IST, which is still "the 21st" to the
+        // admin but "the 20th" in UTC — silently matched zero assignment rows, so
+        // meetingLink stayed null and the T-10 reminder went out with no link.
+        // Match on the IST date first, and fall back to the UTC date only if that
+        // finds nothing, mirroring my_interview_details() in
+        // migration_applicant_meeting_link.sql so the cron and the portal agree.
+        const istDate = Utilities.formatDate(slotStart, 'Asia/Kolkata', 'yyyy-MM-dd');
+        const utcDate = slot.start_time.split('T')[0];
+        let assignedInterviewers = assignments.filter(a => a.panel_id === slot.panel_id && a.date === istDate);
+        if (assignedInterviewers.length === 0 && utcDate !== istDate) {
+            assignedInterviewers = assignments.filter(a => a.panel_id === slot.panel_id && a.date === utcDate);
+        }
         const meetingLink = slot.meeting_link || (assignedInterviewers.length > 0 ? assignedInterviewers[0].meeting_link : null);
 
         // --- LOGIC 1: Staff alerts (T-60 mins Window: 50 to 60 mins before) ---
