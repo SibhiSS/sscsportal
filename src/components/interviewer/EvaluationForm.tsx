@@ -4,7 +4,7 @@ import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Cpu, Zap, Crown, Users, Star, Check, HelpCircle, X } from 'lucide-react';
+import { MessageSquare, Cpu, Zap, Crown, Users, Star, Check, HelpCircle, X, Phone } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -314,6 +314,18 @@ export default function EvaluationForm({
           {/* Metadata row */}
           <div className="flex items-center gap-3 mt-1.5 flex-wrap">
             <span className="text-xs text-white/40 font-mono">{application.rollNumber}</span>
+            {application.phone && (
+              <>
+                <span className="w-1 h-1 rounded-full bg-white/20" />
+                <a
+                  href={`tel:${application.phone}`}
+                  className="inline-flex items-center gap-1 text-xs text-white/50 font-mono hover:text-white/80 transition-colors"
+                >
+                  <Phone size={10} />
+                  {application.phone}
+                </a>
+              </>
+            )}
             <span className="w-1 h-1 rounded-full bg-white/20" />
             <span className="text-xs text-white/50">{application.programName || application.department || 'Unknown'} • {application.batch ? `Batch ${application.batch}` : `Year ${application.admissionYear || application.year || 'Unknown'}`}</span>
             <span className="w-1 h-1 rounded-full bg-white/20" />
