@@ -55,6 +55,11 @@ function getConfig() {
         SUPABASE_KEY:       props.getProperty('SUPABASE_KEY'),
         ADMIN_ALERT_EMAIL:  props.getProperty('ADMIN_ALERT_EMAIL'),
         SENDER_NAME:        props.getProperty('SENDER_NAME') || 'IEEE SSCS HR Team',
+        // The applicant-facing WhatsApp group. Only ever mailed to someone who
+        // already holds a booked slot — the reminder below is the only send here
+        // that reaches a candidate at all. Set WHATSAPP_GROUP_URL in Script
+        // Properties to rotate the invite without editing this file.
+        WHATSAPP_GROUP_URL: props.getProperty('WHATSAPP_GROUP_URL') || '',
     };
 }
 
@@ -191,11 +196,20 @@ function sendApplicantReminder(email, slot, meetingLink) {
            <p><b>Meeting link:</b> <a href="${meetingLink}">${meetingLink}</a></p>`
         : `<p>Your interviewer is finalising the meeting link and will share it in a moment. Please stay available.</p>`;
 
+    const groupUrl = getConfig().WHATSAPP_GROUP_URL;
+    const groupHtml = groupUrl
+        ? `<p style="margin: 16px 0; padding: 12px; border-left: 4px solid #25D366; background: #e8f5e9;">
+             All communication happens only in our WhatsApp group —
+             <a href="${groupUrl}">join it here</a> if you have not already.
+           </p>`
+        : '';
+
     const body = `
     <h3>Your IEEE SSCS interview starts in 10 minutes</h3>
     <p>Hi ${slot.applications.full_name},</p>
     <p><b>Time:</b> ${new Date(slot.start_time).toLocaleTimeString()}</p>
     ${linkHtml}
+    ${groupHtml}
     <p>Please join on time, and keep your camera on if you can.</p>
     <p>Best regards,<br/>IEEE SSCS Team</p>
   `;

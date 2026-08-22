@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Send, CheckCircle2, GraduationCap, Building, Link as LinkIcon, User, Code, Phone, ArrowRight, ChevronLeft, LogIn, Trophy, Clock, XOctagon, Calendar as CalendarIcon, Video, Sparkles, Target, Zap, Briefcase } from 'lucide-react';
+import { ArrowLeft, Send, CheckCircle2, GraduationCap, Building, Link as LinkIcon, User, Code, Phone, ArrowRight, ChevronLeft, LogIn, Trophy, Clock, XOctagon, Calendar as CalendarIcon, Video, Sparkles, Target, Zap, Briefcase, CalendarClock } from 'lucide-react';
 import LogoSpinner from '@/components/ui/LogoSpinner';
+import WhatsAppGroupCard from '@/components/ui/WhatsAppGroupCard';
 import { format, parseISO } from 'date-fns';
 import { Link } from 'react-router-dom';
 import CircuitBoardBackground from '@/components/ui/CircuitBoardBackground';
@@ -70,6 +71,11 @@ const DEPT_DESCRIPTIONS: Record<string, string> = {
 const WEEKLY_HOURS = ['2–3', '4–6', '6–8', '8+'];
 const YEARS_OF_STUDY = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
 
+/** Mirrors slot_change_limit() in migration_slot_reschedule.sql. */
+const SLOT_CHANGE_LIMIT = 1;
+/** Mirrors c_lead_time in reschedule_interview_slot(). */
+const SLOT_CHANGE_LEAD_TIME_MS = 60 * 60 * 1000;
+
 // ── Interview Scheduled Status Component ──────────────────────────────────────
 const InterviewScheduledStatus = ({ app }: { app: any }) => {
     const [slotInfo, setSlotInfo] = useState<{ start_time: string; panel_id: number } | null>(null);
@@ -101,6 +107,14 @@ const InterviewScheduledStatus = ({ app }: { app: any }) => {
         fetchSlotInfo();
     }, [app.id]);
 
+    // Mirrors slot_change_limit() and c_lead_time in migration_slot_reschedule.sql.
+    // reschedule_interview_slot() re-checks both; this only decides what to offer.
+    const changesLeft = SLOT_CHANGE_LIMIT - (app.slot_changes_used ?? 0);
+    const canChangeSlot =
+        changesLeft > 0 &&
+        !!slotInfo &&
+        parseISO(slotInfo.start_time).getTime() > Date.now() + SLOT_CHANGE_LEAD_TIME_MS;
+
     return (
         <>
 
@@ -129,7 +143,7 @@ const InterviewScheduledStatus = ({ app }: { app: any }) => {
                 </div>
             </div>
             {meetingLink ? (
-                <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl mb-6 max-w-sm mx-auto">
+                <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl mb-5 max-w-sm mx-auto">
                     <div className="text-[10px] text-green-400 uppercase tracking-widest mb-2 font-bold">Meeting Link Ready</div>
                     <a
                         href={meetingLink}
@@ -142,8 +156,28 @@ const InterviewScheduledStatus = ({ app }: { app: any }) => {
                     </a>
                 </div>
             ) : (
-                <p className="text-sm text-muted-foreground mb-6">
+                <p className="text-sm text-muted-foreground mb-5">
                     Your meeting link will appear here and be emailed to you once assigned.
+                </p>
+            )}
+
+            {/* Reaching this component already means the applicant holds a slot,
+                which is the only condition under which the invite may be shown. */}
+            <WhatsAppGroupCard className="mb-5 max-w-sm mx-auto" />
+
+            {canChangeSlot ? (
+                <Link
+                    to="/schedule"
+                    className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-lg border border-purple-500/30 text-purple-300 hover:bg-purple-500/10 text-sm font-bold transition-colors mb-6 max-w-sm w-full mx-auto"
+                >
+                    <CalendarClock className="w-4 h-4" />
+                    Change My Slot (once)
+                </Link>
+            ) : (
+                <p className="text-[11px] text-muted-foreground mb-6 max-w-sm mx-auto">
+                    {changesLeft <= 0
+                        ? 'You have already used your one slot change, so this time is final.'
+                        : 'Your interview is too close to be moved. Contact the SSCS team if you cannot attend.'}
                 </p>
             )}
         </>

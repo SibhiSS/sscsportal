@@ -42,6 +42,9 @@ The IEEE SSCS Portal is a centralized recruitment engine designed to streamline 
    VITE_SUPABASE_URL=https://your-project.supabase.co
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    VITE_GOOGLE_SCRIPT_URL=https://script.google.com/macros/s/.../exec
+   # Optional. Shown to, and mailed to, applicants who hold an interview slot.
+   # Falls back to the invite hardcoded in src/lib/community.ts.
+   VITE_WHATSAPP_GROUP_URL=https://chat.whatsapp.com/...
    ```
 
 4. Start the development server:

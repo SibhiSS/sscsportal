@@ -2,13 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft, LogIn, Clock, XOctagon, CalendarDays,
-    Video, ChevronRight, Zap, CheckCircle2
+    Video, ChevronRight, Zap, CheckCircle2, CalendarClock
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import TechGridBackground from '@/components/ui/TechGridBackground';
 import HolographicCard from '@/components/ui/HolographicCard';
 import LogoSpinner from '@/components/ui/LogoSpinner';
+import WhatsAppGroupCard from '@/components/ui/WhatsAppGroupCard';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -230,8 +231,13 @@ const SelectedCard = ({ app }: { app: any }) => {
     );
 };
 
+/** Mirrors slot_change_limit() in migration_slot_reschedule.sql. */
+const SLOT_CHANGE_LIMIT = 1;
+/** Mirrors c_lead_time in reschedule_interview_slot(). */
+const SLOT_CHANGE_LEAD_TIME_MS = 60 * 60 * 1000;
+
 // ─── Interview slot sub-component ─────────────────────────────────────────────
-const SlotDetails = ({ appId }: { appId: string }) => {
+const SlotDetails = ({ appId, slotChangesUsed }: { appId: string; slotChangesUsed: number }) => {
     const [slot, setSlot] = useState<{ start_time: string; panel_id: number } | null>(null);
     const [meetingLink, setMeetingLink] = useState<string | null>(null);
 
@@ -259,6 +265,12 @@ const SlotDetails = ({ appId }: { appId: string }) => {
 
     if (!slot) return null;
 
+    // Mirrors the checks in reschedule_interview_slot(); the server re-runs both.
+    const changesLeft = SLOT_CHANGE_LIMIT - slotChangesUsed;
+    const canChangeSlot =
+        changesLeft > 0 &&
+        parseISO(slot.start_time).getTime() > Date.now() + SLOT_CHANGE_LEAD_TIME_MS;
+
     return (
         <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/10 space-y-3 text-left">
             <div>
@@ -281,6 +293,24 @@ const SlotDetails = ({ appId }: { appId: string }) => {
                 </>
             ) : (
                 <p className="text-xs text-muted-foreground">Meeting link will appear here once assigned.</p>
+            )}
+
+            {/* A slot row exists, so this applicant is booked — the only state in
+                which the group invite may be shown. */}
+            <WhatsAppGroupCard />
+
+            {canChangeSlot ? (
+                <Link to="/schedule"
+                      className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg border border-purple-500/30 text-purple-300 hover:bg-purple-500/10 font-bold text-sm transition-colors w-full">
+                    <CalendarClock className="w-4 h-4" />
+                    Change My Slot (once)
+                </Link>
+            ) : (
+                <p className="text-[11px] text-muted-foreground">
+                    {changesLeft <= 0
+                        ? 'You have already used your one slot change, so this time is final.'
+                        : 'Your interview is too close to be moved. Contact the SSCS team if you cannot attend.'}
+                </p>
             )}
         </div>
     );
@@ -504,7 +534,7 @@ const StatusPage = () => {
                                         </>
                                     )}
                                     {status === 'interview_scheduled' && (
-                                        <SlotDetails appId={app.id} />
+                                        <SlotDetails appId={app.id} slotChangesUsed={app.slot_changes_used ?? 0} />
                                     )}
                                     {['applied', 'under_review', 'pending', 'neutral', 'interviewed'].includes(status) && (
                                         <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
