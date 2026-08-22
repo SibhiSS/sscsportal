@@ -78,33 +78,36 @@ const SLOT_CHANGE_LEAD_TIME_MS = 60 * 60 * 1000;
 
 // ── Interview Scheduled Status Component ──────────────────────────────────────
 const InterviewScheduledStatus = ({ app }: { app: any }) => {
-    const [slotInfo, setSlotInfo] = useState<{ start_time: string; panel_id: number } | null>(null);
+    const [slotInfo, setSlotInfo] = useState<{ start_time: string } | null>(null);
     const [meetingLink, setMeetingLink] = useState<string | null>(null);
 
+    // One RPC for both. panel_assignments is admin-only under RLS, so the old
+    // two-step read of that table returned nothing to an applicant and the link
+    // never appeared here — my_interview_details() is SECURITY DEFINER and hands
+    // back the caller's own slot and link without exposing the interviewer roster.
     useEffect(() => {
-        const fetchSlotInfo = async () => {
-            const { data: slot } = await supabase
-                .from('interview_slots')
-                .select('start_time, panel_id')
-                .eq('booked_by', app.id)
-                .single();
-            if (slot) {
-                setSlotInfo(slot);
-                const dateStr = format(parseISO(slot.start_time), 'yyyy-MM-dd');
-                const { data: assignment } = await supabase
-                    .from('panel_assignments')
-                    .select('meeting_link')
-                    .eq('panel_id', slot.panel_id)
-                    .eq('date', dateStr)
-                    .not('meeting_link', 'is', null)
-                    .limit(1)
-                    .single();
-                if (assignment?.meeting_link?.trim()) {
-                    setMeetingLink(assignment.meeting_link.trim());
-                }
-            }
+        let cancelled = false;
+
+        const load = async () => {
+            const { data, error } = await supabase.rpc('my_interview_details');
+            if (cancelled || error) return;
+            const row = Array.isArray(data) ? data[0] : data;
+            if (!row) return;
+            setSlotInfo({ start_time: row.start_time });
+            setMeetingLink(row.meeting_link?.trim() || null);
         };
-        fetchSlotInfo();
+
+        load();
+        // Admins often paste the link minutes before the interview, with the
+        // candidate already sitting on this page. Poll so it turns up on its own.
+        const interval = setInterval(load, 60000);
+        const onFocus = () => load();
+        window.addEventListener('focus', onFocus);
+        return () => {
+            cancelled = true;
+            clearInterval(interval);
+            window.removeEventListener('focus', onFocus);
+        };
     }, [app.id]);
 
     // Mirrors slot_change_limit() and c_lead_time in migration_slot_reschedule.sql.

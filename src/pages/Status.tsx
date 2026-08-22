@@ -238,29 +238,36 @@ const SLOT_CHANGE_LEAD_TIME_MS = 60 * 60 * 1000;
 
 // ─── Interview slot sub-component ─────────────────────────────────────────────
 const SlotDetails = ({ appId, slotChangesUsed }: { appId: string; slotChangesUsed: number }) => {
-    const [slot, setSlot] = useState<{ start_time: string; panel_id: number } | null>(null);
+    const [slot, setSlot] = useState<{ start_time: string } | null>(null);
     const [meetingLink, setMeetingLink] = useState<string | null>(null);
 
+    // One RPC for both. panel_assignments is admin-only under RLS, so the old
+    // two-step read of that table returned nothing to an applicant and the link
+    // never appeared here — my_interview_details() is SECURITY DEFINER and hands
+    // back the caller's own slot and link without exposing the interviewer roster.
     useEffect(() => {
-        (async () => {
-            const { data: slotData } = await supabase
-                .from('interview_slots')
-                .select('start_time, panel_id')
-                .eq('booked_by', appId)
-                .single();
-            if (!slotData) return;
-            setSlot(slotData);
-            const dateStr = format(parseISO(slotData.start_time), 'yyyy-MM-dd');
-            const { data: assign } = await supabase
-                .from('panel_assignments')
-                .select('meeting_link')
-                .eq('panel_id', slotData.panel_id)
-                .eq('date', dateStr)
-                .not('meeting_link', 'is', null)
-                .limit(1)
-                .single();
-            if (assign?.meeting_link?.trim()) setMeetingLink(assign.meeting_link.trim());
-        })();
+        let cancelled = false;
+
+        const load = async () => {
+            const { data, error } = await supabase.rpc('my_interview_details');
+            if (cancelled || error) return;
+            const row = Array.isArray(data) ? data[0] : data;
+            if (!row) return;
+            setSlot({ start_time: row.start_time });
+            setMeetingLink(row.meeting_link?.trim() || null);
+        };
+
+        load();
+        // Admins often paste the link minutes before the interview, with the
+        // candidate already sitting on this page. Poll so it turns up on its own.
+        const interval = setInterval(load, 60000);
+        const onFocus = () => load();
+        window.addEventListener('focus', onFocus);
+        return () => {
+            cancelled = true;
+            clearInterval(interval);
+            window.removeEventListener('focus', onFocus);
+        };
     }, [appId]);
 
     if (!slot) return null;
