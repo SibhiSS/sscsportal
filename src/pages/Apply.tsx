@@ -321,6 +321,10 @@ const Apply = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [existingApp, setExistingApp] = useState<any>(null);
+    // A lookup that ERRORED is not the same as "no application". Without this the
+    // catch below left existingApp null and a signed-in applicant with a perfectly
+    // good application was shown the closed-recruitment screen.
+    const [statusCheckFailed, setStatusCheckFailed] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
 
@@ -434,7 +438,6 @@ const Apply = () => {
             if (data && data.length > 0) {
                 const app = data[0];
                 setExistingApp(app);
-
                 setFormData({
                     fullName: app.full_name || '',
                     rollNumber: app.roll_number || '',
@@ -458,11 +461,14 @@ const Apply = () => {
                     setRegValidation(validation);
                 }
                 setShowWelcome(false); // Skip welcome if already applied
+                setStatusCheckFailed(false);
             } else {
                 setExistingApp(null);
+                setStatusCheckFailed(false);
             }
         } catch (error) {
             console.error("Error checking application status:", error);
+            setStatusCheckFailed(true);
         } finally {
             setCheckingStatus(false);
         }
@@ -725,7 +731,60 @@ const Apply = () => {
         );
     }
 
-    if (!existingApp && !recruitmentOpen) {
+    // Sign-in comes BEFORE the closed-window screen below.
+    //
+    // A signed-out visitor always has existingApp === null, so while this sat
+    // *after* the closed screen every signed-out visitor was told "Recruitments
+    // are closed" with no way to sign in — including shortlisted candidates
+    // opening their booking link on a phone that does not carry the session.
+    // Whether someone already has an application is unknowable until they are
+    // signed in, so the closed screen must not be the thing that answers it.
+    if (!user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center relative text-foreground bg-[#050505] overflow-hidden">
+                <CircuitBoardBackground />
+                <div className="container mx-auto px-6 py-12 relative z-10">
+                    <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-all mb-8 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl group">
+                        <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
+                        Back to Home
+                    </Link>
+                    <div className="max-w-lg mx-auto mt-20">
+                        <div className="relative p-10 text-center border border-white/10 bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl">
+
+                            <h2 className="text-2xl  font-bold mb-4 text-white">Authentication Required</h2>
+                            <p className="text-muted-foreground mb-8">
+                                To apply for IEEE SSCS, you must sign in with your VIT Student email address (@vitstudent.ac.in).
+                            </p>
+                            <Button
+                                onClick={() => signInWithGoogle()}
+                                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 font-bold rounded-lg"
+                            >
+                                <LogIn className="w-4 h-4 mr-2" />
+                                Sign In with Google
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+
+    // The stored message is meant to be closed-screen copy, but databases seeded
+    // before migration_recruitment_window.sql still carry schema.sql's placeholder
+    // "Recruitment is currently open." — which rendered *under* the "Recruitments
+    // are closed" heading and read as a contradiction. Ignore anything that talks
+    // about being open; migration_fix_stale_recruitment_message.sql clears it at
+    // the source, and this keeps the screen honest on a database that has not run
+    // the migration yet.
+    const closedNotice =
+        closedMessage && !/\bopen\b/i.test(closedMessage)
+            ? closedMessage
+            : 'Applications are closed for this cycle. If you have already applied, sign in to see your status and your interview slot.';
+
+    // `statusCheckFailed` routes here too, so a broken lookup reads as "we could
+    // not check" rather than as a closed window the applicant cannot argue with.
+    if (!existingApp && (!recruitmentOpen || statusCheckFailed)) {
         return (
             <div className="min-h-screen flex items-center justify-center relative overflow-hidden text-foreground bg-[#050505]">
                 <CircuitBoardBackground />
@@ -737,12 +796,12 @@ const Apply = () => {
                     <div className="relative p-12 md:p-16 max-w-xl mx-auto border border-white/10 bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl">
 
                         <h2 className="text-4xl font-heading font-bold mb-6 text-white tracking-tight">
-                            {windowUnavailable ? 'Unable to verify status' : 'Recruitments are closed'}
+                            {windowUnavailable || statusCheckFailed ? 'Unable to verify status' : 'Recruitments are closed'}
                         </h2>
                         <p className="text-muted-foreground/80 mb-10 leading-relaxed text-lg font-medium">
-                            {windowUnavailable
-                                ? 'We could not reach the server to check whether applications are open. Please try again in a moment.'
-                                : closedMessage || 'We are not accepting applications right now. Catch us next time!'}
+                            {windowUnavailable || statusCheckFailed
+                                ? 'We could not reach the server to check your application. Please reload, or sign out and back in. If you have been shortlisted, your interview booking link still works once this clears.'
+                                : closedNotice}
                         </p>
                         <Button asChild variant="outline" className="w-full h-14 rounded-2xl border-white/10 hover:bg-white/10 font-bold">
                             <Link to="/">Return to Home</Link>
@@ -901,36 +960,6 @@ const Apply = () => {
                         <Clock className="w-4 h-4 mr-2" />
                         Check Status
                     </Button>
-                </div>
-            </div>
-        );
-    }
-
-    if (!user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center relative text-foreground bg-[#050505] overflow-hidden">
-                <CircuitBoardBackground />
-                <div className="container mx-auto px-6 py-12 relative z-10">
-                    <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-all mb-8 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl group">
-                        <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
-                        Back to Home
-                    </Link>
-                    <div className="max-w-lg mx-auto mt-20">
-                        <div className="relative p-10 text-center border border-white/10 bg-black/40 backdrop-blur-xl rounded-3xl shadow-2xl">
-
-                            <h2 className="text-2xl  font-bold mb-4 text-white">Authentication Required</h2>
-                            <p className="text-muted-foreground mb-8">
-                                To apply for IEEE SSCS, you must sign in with your VIT Student email address (@vitstudent.ac.in).
-                            </p>
-                            <Button
-                                onClick={() => signInWithGoogle()}
-                                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12 font-bold rounded-lg"
-                            >
-                                <LogIn className="w-4 h-4 mr-2" />
-                                Sign In with Google
-                            </Button>
-                        </div>
-                    </div>
                 </div>
             </div>
         );
