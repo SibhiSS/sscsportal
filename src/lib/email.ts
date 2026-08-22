@@ -4,22 +4,7 @@
  * idempotency, and rate-limiting protection.
  */
 
-const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
-
-/**
- * Shared secret checked by the Apps Script `doPost` before it will send anything.
- *
- * This is NOT authentication — like every VITE_* value it is compiled into the public
- * bundle, so anyone willing to read the JS can extract it. It exists to stop drive-by
- * abuse of what was otherwise a completely open relay: the endpoint URL alone was
- * enough to send arbitrary mail from the club Gmail account, which burns the ~100/day
- * send quota and silently kills real interview and result emails.
- *
- * The durable fix is to move sending behind a Supabase Edge Function that validates
- * the caller's JWT and holds this token server-side. Until then, rotate the token in
- * Script Properties whenever it is abused.
- */
-const MAIL_TOKEN = import.meta.env.VITE_MAIL_RELAY_TOKEN;
+import { supabase } from '@/lib/supabase';
 
 /**
  * FIX #14 — Masks an email address for safe logging.
@@ -34,11 +19,10 @@ function maskEmail(email: string): string {
 /**
  * Per-send idempotency key.
  *
- * The relay records it in CacheService and ignores a repeat within the dedupe window,
- * so a re-POST — from a browser retry, an admin double-click, or a re-run of a batch —
- * can never become a second copy of the same email. The same value is embedded in the
- * body as the hidden Ref ID, so a duplicate in someone's inbox can be traced back to
- * either one send that got through twice or two genuinely separate sends.
+ * Sent to the send-email Edge Function as dedupeId. The function's `send`
+ * action inserts into mail_queue with this as the (unique) dedupe_id before
+ * attempting delivery, so a browser retry of the same logical email is
+ * recognised and answered from the existing row rather than sent twice.
  */
 function newDedupeId(): string {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -48,48 +32,48 @@ function newDedupeId(): string {
 }
 
 /**
- * Send a single email via Google Apps Script.
+ * Optional hook that ties a send to a bounded server-side side effect —
+ * e.g. flipping applications.shortlist_notified — applied by a Postgres
+ * trigger the MOMENT the send-email function confirms the ESP accepted the
+ * message, never before. See migration_mail_queue.sql section 3. Omit it for
+ * mail that has nothing to flip.
+ */
+export interface MailSideEffect {
+    purpose: 'shortlist_notify' | 'publish_selected' | 'publish_rejected' | 'committee_offer' | 'position_offer';
+    targetApplicationId: string;
+    /** Only read by purpose = 'committee_offer'. */
+    assignedPosition?: string;
+}
+
+/**
+ * Send a single email via the send-email Supabase Edge Function.
  *
- * Note: Uses `mode: 'no-cors'` because Google Apps Script does not support
- * CORS preflight (OPTIONS) requests. This means we cannot read the response
- * to verify delivery. Check Google Apps Script execution logs for failures.
+ * This replaced a Google Apps Script relay called with `mode: 'no-cors'`,
+ * which meant the return value here used to mean "the browser didn't throw
+ * before the request left" — never "delivered". supabase.functions.invoke()
+ * is a same-origin-authenticated, readable HTTP call: the Edge Function
+ * actually talks to the configured ESP (Resend/Brevo/SES — see
+ * supabase/functions/send-email) and this returns its REAL answer. Code that
+ * gates a database write on this return value (shortlist_notified, publish
+ * results, committee/position offers) is now gating it on an email that
+ * genuinely sent, not on an unread response.
  *
- * We use `Content-Type: text/plain` instead of `application/json` because
- * `no-cors` mode downgrades non-simple headers. By explicitly setting
- * `text/plain`, we avoid the silent header stripping by the browser.
- * The JSON body is still parsed correctly server-side via JSON.parse().
- *
- * ── Why there is no retry here ──────────────────────────────────────────────
- * `doPost` sends the mail and *then* answers with a 302 to
- * script.googleusercontent.com. An opaque `no-cors` response tells us nothing, and a
- * rejection tells us even less: the throw can happen after Gmail has already accepted
- * the message. Retrying on failure therefore does not recover a lost email, it just
- * sends a second one.
- *
- * That is exactly what happened once `connect-src` was tightened without listing
- * script.googleusercontent.com: the browser refused to follow the relay's redirect,
- * `fetch` rejected on every single send, and the old two-attempt loop mailed every
- * applicant twice — identical subject and body, so Gmail threaded the pair and hid the
- * second copy behind "quoted text". Keep that host in the CSP (netlify.toml and
- * vercel.json) or this call starts failing again.
- *
- * The return value means "handed to the relay", never "delivered". Callers that use it
- * to flip a `notified` flag should treat it as best-effort.
+ * The caller's own Supabase session is what authenticates this call — no
+ * shared secret compiled into the JS bundle anymore. The Edge Function's
+ * allowlist (mirroring the old relay's ALLOWED_DOMAINS/ALLOWED_ADDRESSES) is
+ * what stops an authenticated session being used to mail an arbitrary
+ * third party.
  */
 export async function sendEmail(
     email: string,
     subject: string,
-    message: string
+    message: string,
+    sideEffect?: MailSideEffect
 ): Promise<boolean> {
-    if (!GOOGLE_SCRIPT_URL) {
-        // FIX #14: Don't log the email address here — it would expose PII in the console.
-        console.warn('[Email] VITE_GOOGLE_SCRIPT_URL is not configured. Email send skipped.');
-        return false;
-    }
-
     const dedupeId = newDedupeId();
 
-    // Clean up HTML whitespace & append the hidden ref tag so Gmail never collapses the body into quoted text
+    // Clean up HTML whitespace & append the hidden ref tag so Gmail-side
+    // clients never collapse the body into quoted text on a resend.
     const cleanedMessage = message
         .split('\n')
         .map(line => line.trim())
@@ -106,48 +90,106 @@ export async function sendEmail(
     `.trim();
 
     try {
-        await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-            body: JSON.stringify({ token: MAIL_TOKEN, dedupeId, email, subject, message: formattedBody }),
+        const { data, error } = await supabase.functions.invoke('send-email', {
+            body: {
+                action: 'send',
+                to: email,
+                subject,
+                html: formattedBody,
+                dedupeId,
+                purpose: sideEffect?.purpose,
+                targetApplicationId: sideEffect?.targetApplicationId,
+                assignedPosition: sideEffect?.assignedPosition,
+            },
         });
-        // FIX #14: Use masked email in logs — never log raw PII to the console.
+
+        if (error) {
+            console.error(`[Email] ✗ send-email invocation failed for ${maskEmail(email)} — "${subject}": ${error.message}`);
+            return false;
+        }
+
+        if (data?.success !== true) {
+            console.warn(`[Email] ✗ Not delivered to ${maskEmail(email)} — "${subject}": ${data?.error ?? 'unknown reason'}`);
+            return false;
+        }
+
         console.log(`[Email] ✓ Dispatched to ${maskEmail(email)} — "${subject}"`);
         return true;
     } catch (error) {
-        // Almost always this means the request never left the browser — a CSP block, an
-        // offline tab, an extension. It can also fire after the relay already accepted
-        // the message, which is exactly why this is reported as a failure but never
-        // retried: see the note above.
-        console.error(`[Email] ✗ Dispatch blocked before sending for ${maskEmail(email)} — "${subject}"`);
+        console.error(`[Email] ✗ Dispatch blocked before sending for ${maskEmail(email)} — "${subject}"`, error);
         return false;
     }
 }
 
+export interface BatchEmailItem {
+    email: string;
+    subject: string;
+    message: string;
+    sideEffect?: MailSideEffect;
+}
+
+export interface BatchEmailResult {
+    /** How many were newly queued for sending. */
+    queued: number;
+    /** How many were already queued/sent from an earlier call with the same purpose+target (or dedupeId) — not an error. */
+    skippedDuplicates: number;
+}
+
 /**
- * Send emails to multiple recipients with a delay between each send
- * to avoid Google Apps Script rate limiting.
+ * Enqueues many emails in a single admin-authenticated call instead of
+ * looping sendEmail() in the browser.
  *
- * @param delayMs - milliseconds to wait between each send (default 600ms)
+ * The old shape — a client-side `for` loop awaiting sendEmail() one at a
+ * time with a fixed delay — depended on the admin's tab staying open for the
+ * full length of a blast, and a closed laptop mid-send just stopped: whatever
+ * hadn't been reached yet never went out, with no record of where it left
+ * off. This call returns almost immediately; sending itself happens on the
+ * Edge Function, in the background, and (via the pg_cron sweep set up by
+ * migration_mail_queue_cron.sql) keeps draining even if nothing in the
+ * browser is running anymore.
+ *
+ * Requires the caller to be signed in as an admin (checked server-side via
+ * is_any_admin() — this function is not a way around that check, only a way
+ * to skip re-implementing it in every call site).
  */
-export async function sendEmailBatch(
-    emails: Array<{ email: string; subject: string; message: string }>,
-    delayMs: number = 600
-): Promise<{ sent: number; failed: number }> {
-    let sent = 0;
-    let failed = 0;
+export async function enqueueMailBatch(
+    items: BatchEmailItem[],
+    batchLabel?: string
+): Promise<BatchEmailResult> {
+    if (items.length === 0) return { queued: 0, skippedDuplicates: 0 };
 
-    for (let i = 0; i < emails.length; i++) {
-        const success = await sendEmail(emails[i].email, emails[i].subject, emails[i].message);
-        if (success) sent++;
-        else failed++;
+    const emails = items.map(item => {
+        const cleaned = item.message
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .join('\n');
+        const html = `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #18181b; font-size: 14px; line-height: 1.6; max-width: 600px;">
+                ${cleaned}
+            </div>
+        `.trim();
 
-        // Rate-limit: wait between sends (skip after last)
-        if (i < emails.length - 1) {
-            await new Promise(r => setTimeout(r, delayMs));
-        }
+        return {
+            to: item.email,
+            subject: item.subject,
+            html,
+            purpose: item.sideEffect?.purpose,
+            targetApplicationId: item.sideEffect?.targetApplicationId,
+            assignedPosition: item.sideEffect?.assignedPosition,
+        };
+    });
+
+    const { data, error } = await supabase.functions.invoke('send-email', {
+        body: { action: 'enqueue', emails, batchLabel },
+    });
+
+    if (error) {
+        throw new Error(`Could not queue the batch: ${error.message}`);
+    }
+    if (data?.error) {
+        throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error));
     }
 
-    return { sent, failed };
+    return { queued: data.queued ?? 0, skippedDuplicates: data.skippedDuplicates ?? 0 };
 }
