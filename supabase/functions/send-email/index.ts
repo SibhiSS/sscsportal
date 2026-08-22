@@ -15,7 +15,10 @@
 //   SB_SERVICE_ROLE_KEY   Project Settings → API → service_role key. Never the
 //                         anon key — this function writes mail_queue directly,
 //                         which RLS otherwise reserves for admins to read only.
-//   MAIL_PROVIDER         "resend" | "brevo" | "ses"
+//   MAIL_PROVIDER         "resend" | "brevo" | "ses" — optional, defaults to "brevo"
+//                         (easiest to configure: no domain strictly required,
+//                         just a verified sender + an API key). Switching later
+//                         is only ever this one secret plus that provider's key.
 //   MAIL_FROM_EMAIL       the verified sending address on a domain you control
 //   MAIL_FROM_NAME        optional, defaults to "IEEE SSCS Team"
 //   RESEND_API_KEY        when MAIL_PROVIDER=resend
@@ -66,7 +69,10 @@ function readEnv(): ProviderEnv & {
   cronSecret: string | undefined;
 } {
   return {
-    provider: Deno.env.get('MAIL_PROVIDER'),
+    // Defaults to Brevo — no MAIL_PROVIDER secret needs to be set for the
+    // common case, just BREVO_API_KEY and MAIL_FROM_EMAIL. Set MAIL_PROVIDER
+    // explicitly to switch to "resend" or "ses".
+    provider: Deno.env.get('MAIL_PROVIDER') || 'brevo',
     resendApiKey: Deno.env.get('RESEND_API_KEY'),
     brevoApiKey: Deno.env.get('BREVO_API_KEY'),
     sesAccessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID'),
