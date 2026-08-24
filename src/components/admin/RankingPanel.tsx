@@ -10,9 +10,17 @@ import {
 import { aggregateFeedbacks } from '@/services/interviewService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, RefreshCw, Edit2, Check } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Trophy, RefreshCw, Edit2, Check, ChevronRight, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import HolographicCard from '@/components/ui/HolographicCard';
+import MultiInterviewerPanel from '@/components/admin/MultiInterviewerPanel';
 import { InterviewFeedback } from '@/types';
 
 interface RankingPanelProps {
@@ -121,6 +129,7 @@ export default function RankingPanel({ applications, onUpdateTaskScore, userEmai
   const [recalculating, setRecalculating] = useState(false);
   const [persisting, setPersisting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detail, setDetail] = useState<RankedApplication | null>(null);
 
   // Unique departments from applications
   const departments = useMemo(() => {
@@ -247,6 +256,19 @@ export default function RankingPanel({ applications, onUpdateTaskScore, userEmai
     return rankedMap.get(selectedDept) ?? rankedMap.get('All') ?? [];
   }, [rankedMap, selectedDept]);
 
+  // ── Detail dialog derived data ────────────────────────────────
+  const detailWeights = useMemo(() => {
+    if (!detail) return null;
+    const dept = detail.app.primaryDept || detail.app.department || 'Unknown';
+    return weights.find(w => w.department === dept) ?? weights[0] ?? null;
+  }, [detail, weights]);
+
+  const detailRecMeta = useMemo(() => {
+    if (!detail) return null;
+    const rec = getTopRecommendation(feedbackMap.get(detail.app.id));
+    return rec ? RECOMMENDATION_META[rec] : null;
+  }, [detail, feedbackMap]);
+
   // ── Render ──────────────────────────────────────────────────────────────
   return (
     <div className="space-y-5">
@@ -258,6 +280,7 @@ export default function RankingPanel({ applications, onUpdateTaskScore, userEmai
           {displayedRanked.length > 0 && (
             <span className="text-xs text-white/30 ml-1">
               {displayedRanked.length} candidate{displayedRanked.length !== 1 ? 's' : ''}
+              <span className="text-white/20"> · click a row for full evaluation</span>
             </span>
           )}
         </div>
@@ -348,7 +371,17 @@ export default function RankingPanel({ applications, onUpdateTaskScore, userEmai
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.25, delay: idx * 0.03 }}
-                        className="border-b border-white/5 hover:bg-white/[0.03] transition-colors group"
+                        onClick={() => setDetail(ranked)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setDetail(ranked);
+                          }
+                        }}
+                        tabIndex={0}
+                        role="button"
+                        title="View evaluation details"
+                        className="border-b border-white/5 hover:bg-white/[0.03] focus:bg-white/[0.05] focus:outline-none transition-colors group cursor-pointer"
                       >
                         {/* Rank */}
                         <td className="px-4 py-3">
@@ -379,8 +412,12 @@ export default function RankingPanel({ applications, onUpdateTaskScore, userEmai
                           </span>
                         </td>
 
-                        {/* Task score — editable */}
-                        <td className="px-4 py-3 text-right">
+                        {/* Task score — editable (clicks stay in the cell) */}
+                        <td
+                          className="px-4 py-3 text-right"
+                          onClick={e => e.stopPropagation()}
+                          onKeyDown={e => e.stopPropagation()}
+                        >
                           <TaskScoreEditor
                             applicationId={ranked.app.id}
                             currentScore={ranked.taskScore}
@@ -404,15 +441,21 @@ export default function RankingPanel({ applications, onUpdateTaskScore, userEmai
                           </span>
                         </td>
 
-                        {/* Recommendation */}
+                        {/* Recommendation + drill-in affordance */}
                         <td className="px-4 py-3">
-                          {recMeta ? (
-                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${recMeta.className}`}>
-                              {recMeta.label}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-white/20">Not evaluated</span>
-                          )}
+                          <div className="flex items-center justify-between gap-2">
+                            {recMeta ? (
+                              <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${recMeta.className}`}>
+                                {recMeta.label}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-white/20">Not evaluated</span>
+                            )}
+                            <ChevronRight
+                              size={14}
+                              className="text-white/20 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                            />
+                          </div>
                         </td>
                       </motion.tr>
                     );
@@ -430,6 +473,104 @@ export default function RankingPanel({ applications, onUpdateTaskScore, userEmai
           Scores computed from task · interview weights. Last operator: {userEmail}
         </p>
       )}
+
+      {/* Evaluation detail dialog */}
+      <Dialog open={!!detail} onOpenChange={open => { if (!open) setDetail(null); }}>
+        <DialogContent className="max-w-3xl bg-black/90 border-white/10 text-foreground backdrop-blur-xl max-h-[90vh] overflow-y-auto">
+          {detail && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold flex items-center gap-3 flex-wrap">
+                  <span>{detail.app.fullName}</span>
+                  <Badge variant="outline" className="text-base font-normal">{detail.app.rollNumber}</Badge>
+                  <Badge className="bg-primary/20 text-primary border border-primary/30">#{detail.rank}</Badge>
+                </DialogTitle>
+                <DialogDescription className="text-muted-foreground mt-1">
+                  {detail.app.email} · {detail.app.year} · {detail.app.department || '—'}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-5 mt-2">
+                {/* Score breakdown */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { label: 'Task', value: detail.taskScore, weight: detailWeights?.weight_task },
+                    { label: 'Interview', value: detail.interviewScore, weight: detailWeights?.weight_interview },
+                  ].map(({ label, value, weight }) => (
+                    <div key={label} className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
+                      <p className="text-[10px] uppercase tracking-widest text-white/40">{label}</p>
+                      <p className={`text-lg font-bold tabular-nums ${value > 0 ? scoreColor(value) : 'text-white/25'}`}>
+                        {value > 0 ? value.toFixed(1) : '—'}
+                      </p>
+                      {weight != null && (
+                        <p className="text-[10px] text-white/25 mt-0.5">weight {Math.round(weight * 100)}%</p>
+                      )}
+                    </div>
+                  ))}
+                  <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
+                    <p className="text-[10px] uppercase tracking-widest text-white/40">Final</p>
+                    <p className={`text-lg font-bold tabular-nums ${scoreColor(detail.finalScore)}`}>
+                      {detail.finalScore.toFixed(2)}
+                    </p>
+                    <p className="text-[10px] text-white/25 mt-0.5">rank #{detail.rank}</p>
+                  </div>
+                  <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5">
+                    <p className="text-[10px] uppercase tracking-widest text-white/40">Verdict</p>
+                    {detailRecMeta ? (
+                      <span className={`inline-block mt-1 text-xs font-medium px-2.5 py-1 rounded-full ${detailRecMeta.className}`}>
+                        {detailRecMeta.label}
+                      </span>
+                    ) : (
+                      <p className="text-xs text-white/25 mt-1.5">Not evaluated</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Department preferences */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1.5">
+                    <p className="text-[10px] uppercase tracking-widest text-white/40">Primary Choice</p>
+                    <p className="text-sm text-white font-medium">{detail.app.primaryDept || '—'}</p>
+                    {detail.app.domains?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
+                        {detail.app.domains.map(d => (
+                          <span key={d} className="text-[10px] text-white/60 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">{d}</span>
+                        ))}
+                      </div>
+                    )}
+                    {detail.app.skills && (
+                      <p className="text-xs text-white/50 leading-relaxed pt-1">{detail.app.skills}</p>
+                    )}
+                  </div>
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1.5">
+                    <p className="text-[10px] uppercase tracking-widest text-white/40">Secondary Choice</p>
+                    <p className="text-sm text-white font-medium">{detail.app.secondaryDept || '—'}</p>
+                    {detail.app.secondaryDomains?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
+                        {detail.app.secondaryDomains.map(d => (
+                          <span key={d} className="text-[10px] text-white/60 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">{d}</span>
+                        ))}
+                      </div>
+                    )}
+                    {detail.app.secondarySkills && (
+                      <p className="text-xs text-white/50 leading-relaxed pt-1">{detail.app.secondarySkills}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Full interview evaluations: per-metric scores, recommended dept, remarks */}
+                <div className="border-t border-dashed border-white/10 pt-5">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <Users className="w-3.5 h-3.5" />
+                    Interview Evaluations
+                  </h4>
+                  <MultiInterviewerPanel applicationId={detail.app.id} />
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
