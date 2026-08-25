@@ -129,7 +129,7 @@ const AICommitteeAllocationDialog: React.FC<AICommitteeAllocationDialogProps> = 
                         AI Committee Allocation
                     </DialogTitle>
                     <DialogDescription>
-                        Gemini/ChatGPT judge each candidate's department fit using ONLY their marks and interviewer feedback — no resume or application text is sent. The AI can never pick a department a candidate didn't apply to or wasn't recommended for; seats are still filled strictly by merit, and nothing is placed until you review and apply below.
+                        Gemini/ChatGPT judge each candidate's department fit using ONLY their marks and interviewer feedback — no resume or application text is sent. The AI can never pick a department a candidate didn't apply to or wasn't recommended for. Placement here is AI-only: a candidate the AI didn't judge (analysis failed, wasn't run, or you unchecked them) is never placed via any fallback — they stay in the reserve pool. Seats are filled strictly by merit, and nothing is placed until you review and apply below.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -173,11 +173,11 @@ const AICommitteeAllocationDialog: React.FC<AICommitteeAllocationDialogProps> = 
                         {failures.length > 0 && (
                             <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-xs text-amber-200 flex items-start gap-2">
                                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                                <span>{failures.length} candidate{failures.length === 1 ? '' : 's'} could not be analyzed (e.g. {failures[0].name}: {failures[0].error}) — they'll fall back to plain preference order when you apply, same as Auto-Fill.</span>
+                                <span>{failures.length} candidate{failures.length === 1 ? '' : 's'} could not be analyzed (e.g. {failures[0].name}: {failures[0].error}) — placement here is AI-only, so they will NOT be placed on Apply. They stay in the reserve pool; place them by hand or with plain Auto-Fill, or re-run this once the AI provider is working again.</span>
                             </div>
                         )}
                         <p className="text-xs text-muted-foreground">
-                            {selectedIds.size} of {previewRows.length} accepted. Uncheck any you disagree with — those fall back to plain preference order instead of the AI's pick.
+                            {selectedIds.size} of {previewRows.length} accepted. Uncheck any you disagree with — those are left in the reserve pool on Apply, not placed via any fallback.
                         </p>
                         <div className="max-h-[45vh] overflow-y-auto space-y-1.5 pr-1">
                             {previewRows.map(({ candidate, result }) => (

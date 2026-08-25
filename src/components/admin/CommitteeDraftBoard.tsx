@@ -340,20 +340,31 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
         setDraftMap({});
     };
 
-    // Applies the AI dialog's per-candidate department judgments. The AI never
-    // supplies a department outside eligibleDeptsFor(c) — parseCommitteeFitJson
-    // in aiService.ts already discards an invalid answer server-side — but this
-    // re-checks that guarantee at the point of use rather than trusting a single
-    // validation layer, since "never place someone somewhere they didn't apply
-    // to" is the exact bug this whole feature exists to prevent. Seats are then
-    // filled by the same merit-order allocator Auto-Fill uses; the AI only ever
-    // reorders a candidate's OWN eligible list, it never adds to it.
+    // Applies the AI dialog's per-candidate department judgments — and ONLY
+    // those. A candidate with no AI result (analysis failed, was never run, or
+    // was unchecked in the preview) is left in the reserve pool rather than
+    // silently placed via plain preference order. That fallback used to exist
+    // here, and with 208/208 candidates failing on a quota-exhausted key, it
+    // meant an "AI Allocation" that actually placed nobody by AI judgment at
+    // all — every single placement came from the fallback. If the AI didn't
+    // decide, this board doesn't place them; re-run once you have working
+    // quota, or place them by hand / with plain Auto-Fill instead.
+    //
+    // The AI's exact department, and only that department, is offered — never
+    // a different (even if otherwise-eligible) department it didn't choose.
+    // parseCommitteeFitBatchJson in aiService.ts already discards an answer
+    // outside eligibleDeptsFor(c) server-side; this re-checks that guarantee
+    // at the point of use rather than trusting a single validation layer,
+    // since "never place someone somewhere they didn't apply to" is the exact
+    // bug this whole feature exists to prevent. If that single seat is full
+    // by the time this candidate's turn comes up in merit order, they go to
+    // the reserve pool too — not a different department the AI never endorsed.
     const handleApplyAiAllocation = (results: Map<string, CommitteeFitResult>) => {
         const priorityListFor = (c: Application): string[] => {
-            const base = eligibleDeptsFor(c);
             const ai = results.get(c.id);
-            if (!ai || !base.includes(ai.department)) return base;
-            return [ai.department, ...base.filter(d => d !== ai.department)];
+            if (!ai) return [];
+            const base = eligibleDeptsFor(c);
+            return base.includes(ai.department) ? [ai.department] : [];
         };
 
         const { newDraft, placedBefore, added, unplaced } = allocateBySeatPriority(eligibleCandidates, priorityListFor, draftMap);
@@ -361,13 +372,13 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
         setIsAiDialogOpen(false);
 
         const aiDecided = Array.from(results.values()).filter(r => r.reasoning !== 'Only eligible department').length;
-        const noEligible = unplaced.filter(c => eligibleDeptsFor(c).length === 0).length;
-        const seatsFull = unplaced.length - noEligible;
+        const noResult = unplaced.filter(c => !results.has(c.id)).length;
+        const seatFull = unplaced.length - noResult;
 
         const parts = [`✅ AI Allocation applied — ${added} member${added === 1 ? '' : 's'} placed${aiDecided > 0 ? `, ${aiDecided} by AI judgment on marks + feedback` : ''}.`];
         if (placedBefore > 0) parts.push(`Kept your ${placedBefore} existing placement${placedBefore === 1 ? '' : 's'}.`);
-        if (seatsFull > 0) parts.push(`${seatsFull} left in the reserve pool: their eligible departments are full.`);
-        if (noEligible > 0) parts.push(`${noEligible} could not be placed: no preference and no interviewer recommendation.`);
+        if (seatFull > 0) parts.push(`${seatFull} left in the reserve pool: the AI's chosen department was already full.`);
+        if (noResult > 0) parts.push(`${noResult} left in the reserve pool: no AI judgment for them (analysis failed, not run, or unchecked) — not placed by fallback.`);
 
         setSuccessMsg(parts.join(' '));
         setTimeout(() => setSuccessMsg(null), 10000);

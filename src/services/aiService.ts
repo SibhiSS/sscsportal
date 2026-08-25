@@ -436,13 +436,14 @@ export interface CommitteeFitResult {
 }
 
 // One request judges up to this many candidates at once, instead of one request
-// per candidate. This exists because Gemini's free tier caps at 20 requests per
-// DAY (not per minute) — a chapter with 200+ interviewed candidates blew through
-// that in the first few seconds of a one-candidate-per-call run, and OpenAI
-// billing quota is just as finite. Batching a 200-candidate pool into ~14 calls
-// of 15 each is the difference between this feature being usable at all under a
-// free-tier key and not.
-export const COMMITTEE_FIT_BATCH_SIZE = 15;
+// per candidate. Google's own error names the metric as a "free tier requests"
+// quota with a short (~10-25s) retry-after, which reads more like a per-minute
+// cap than a per-day one — either way, fewer total requests is strictly safer,
+// so batch as large as a sane prompt size allows rather than trying to pin down
+// the exact limit. 25 keeps each request's candidate list small enough that the
+// model doesn't lose track of who's who, while cutting a 200-candidate pool
+// from ~204 one-per-candidate requests down to ~8.
+export const COMMITTEE_FIT_BATCH_SIZE = 25;
 
 function chunk<T>(items: T[], size: number): T[][] {
     const out: T[][] = [];
@@ -566,7 +567,12 @@ export async function analyzeCommitteeFitBatch(
     inputs: CommitteeFitInput[],
     options: { concurrency?: number; onProgress?: (p: CommitteeFitProgress) => void; onResult?: (id: string, result: CommitteeFitResult | null, error?: string) => void } = {}
 ): Promise<Map<string, CommitteeFitResult>> {
-    const { concurrency = 2, onProgress, onResult } = options;
+    // Serial by default: firing several chunk requests at once risks tripping a
+    // requests-PER-MINUTE cap even when the total request count is well inside
+    // any daily/total budget. One request out at a time, with a pause between
+    // them, is the conservative choice for a feature that runs against
+    // free-tier keys.
+    const { concurrency = 1, onProgress, onResult } = options;
     const results = new Map<string, CommitteeFitResult>();
     const total = inputs.length;
     let completed = 0;
@@ -594,10 +600,18 @@ export async function analyzeCommitteeFitBatch(
     const chunks = chunk(needsAi, COMMITTEE_FIT_BATCH_SIZE);
     let chunkIndex = 0;
 
+    // Space consecutive requests out rather than firing the next one the
+    // instant the last one returns — a deliberate pause between requests,
+    // independent of concurrency, is what actually protects against a
+    // per-minute cap; concurrency=1 alone only prevents requests overlapping,
+    // not clustering back-to-back.
+    const CHUNK_STAGGER_MS = 1500;
+
     const worker = async () => {
         for (; ;) {
             const i = chunkIndex++;
             if (i >= chunks.length) return;
+            if (i > 0) await sleep(CHUNK_STAGGER_MS);
             const group = chunks[i];
             try {
                 const chunkResults = await analyzeCommitteeFitChunk(group);
