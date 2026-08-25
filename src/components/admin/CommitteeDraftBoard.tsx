@@ -109,11 +109,24 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                 .select('department, seats');
 
             if (error) {
-                // Most likely cause: migration_committee_quotas.sql hasn't been run.
                 // Fall back to the defaults rather than blocking the whole board, but
                 // say so — edits won't stick and the admin needs to know that.
-                console.error('[CommitteeDraftBoard] Could not load seat quotas:', error.message);
-                setQuotaError('Seat quotas could not be loaded — showing defaults. Changes will not be saved until migration_committee_quotas.sql has been run.');
+                //
+                // Report what actually went wrong instead of always blaming the
+                // migration: "run the migration" is useless advice to someone who
+                // just ran it, and these three cases need three different fixes.
+                console.error('[CommitteeDraftBoard] Could not load seat quotas:', error.code, error.message);
+
+                const diagnosis =
+                    error.code === 'PGRST205'
+                        ? "the table isn't in Supabase's API schema cache yet. Run  NOTIFY pgrst, 'reload schema';  in the SQL Editor, or wait about a minute and reload."
+                    : error.code === '42501'
+                        ? 'the database refused the read for this account. Your email is probably missing from the admins table, or stored with different casing.'
+                    : error.code === '42P01'
+                        ? "the committee_quotas table doesn't exist. If you ran the migration, it likely rolled back — re-run migration_committee_quotas.sql."
+                        : `${error.message} (code ${error.code || 'unknown'}).`;
+
+                setQuotaError(`Seat quotas could not be loaded — showing defaults, and changes won't be saved. Reason: ${diagnosis}`);
                 return;
             }
 
