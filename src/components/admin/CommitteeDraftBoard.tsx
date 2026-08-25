@@ -6,8 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Users, CheckCircle, RefreshCw, Trash2, Plus, UserCheck, GripVertical, AlertTriangle } from 'lucide-react';
+import { Users, CheckCircle, RefreshCw, Trash2, Plus, UserCheck, GripVertical, AlertTriangle, Bot, FileDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CommitteeFitResult } from '@/services/aiService';
+import AICommitteeAllocationDialog, { CommitteeAiCandidate } from './AICommitteeAllocationDialog';
+import { exportCommitteeRosterPdf } from '@/lib/committeeRosterPdf';
 
 const DEPARTMENTS = [
     'Technical',
@@ -56,7 +59,11 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
     const [draftMap, setDraftMap] = useState<Record<string, string>>({});
     // Feedback map: candidateId -> array of recommended_dept strings from interviewers
     const [feedbackMap, setFeedbackMap] = useState<Record<string, string[]>>({});
+    // Feedback TEXT map: candidateId -> array of raw comment/remarks strings, one
+    // per interviewer. Only consumer is the AI committee-fit analysis.
+    const [feedbackTextMap, setFeedbackTextMap] = useState<Record<string, string[]>>({});
     const [isLoadingFeedbacks, setIsLoadingFeedbacks] = useState(true);
+    const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
     const [isDrafting, setIsDrafting] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -81,21 +88,35 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                 .select('application_id, recommended_dept, recommends_committee, comments, interviewer_remarks');
             
             const map: Record<string, string[]> = {};
+            // Raw comment/remarks text per candidate, one entry per interviewer who
+            // left one — feeds the AI committee-fit analysis below, which is asked
+            // to judge marks + this feedback text only, nothing else.
+            const textMap: Record<string, string[]> = {};
             if (data && !error) {
                 data.forEach((row: any) => {
                     const appId = row.application_id;
                     if (!map[appId]) map[appId] = [];
                     let dept = row.recommended_dept || row.recommends_for || '';
-                    if (!dept && typeof row.interviewer_remarks === 'string' && row.interviewer_remarks.startsWith('[Dept: ')) {
-                        const m = row.interviewer_remarks.match(/^\[Dept:\s*([^\]]+)\]/);
-                        if (m) dept = m[1].trim();
+                    let remarks = typeof row.interviewer_remarks === 'string' ? row.interviewer_remarks : '';
+                    if (!dept && remarks.startsWith('[Dept: ')) {
+                        const m = remarks.match(/^\[Dept:\s*([^\]]+)\]\s*(.*)$/s);
+                        if (m) {
+                            dept = m[1].trim();
+                            remarks = m[2].trim();
+                        }
                     }
                     if (dept && !map[appId].includes(dept)) {
                         map[appId].push(dept);
                     }
+                    const comment = (remarks || row.comments || '').trim();
+                    if (comment) {
+                        if (!textMap[appId]) textMap[appId] = [];
+                        textMap[appId].push(comment);
+                    }
                 });
             }
             setFeedbackMap(map);
+            setFeedbackTextMap(textMap);
             setIsLoadingFeedbacks(false);
         };
         fetchRecommendations();
@@ -201,66 +222,99 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
         return ordered;
     };
 
+    // Marks only, formatted for the AI committee-fit prompt — deliberately
+    // excludes skills/reason/links, which is the whole point of this analysis
+    // being different from the pre-interview resume-fit AI Copilot.
+    const marksSummaryFor = (c: Application): string => {
+        const parts: string[] = [];
+        if (c.taskScore != null) parts.push(`Task Score: ${Number(c.taskScore).toFixed(1)}/10`);
+        if (c.interviewScore != null) parts.push(`Interview Score: ${Number(c.interviewScore).toFixed(1)}/10`);
+        if (c.finalScore != null) parts.push(`Final Score: ${Number(c.finalScore).toFixed(1)}`);
+        if (c.rating != null) parts.push(`Star Rating: ${c.rating}/5`);
+        return parts.length ? parts.join(', ') : 'No scores recorded.';
+    };
+
+    // Pool handed to the AI dialog: unassigned candidates only, matching
+    // Auto-Fill's own merge behaviour — this never re-judges someone already
+    // placed (by hand or by a previous AI run) without an explicit Clear Draft.
+    const aiCandidatePool: CommitteeAiCandidate[] = useMemo(() => {
+        return unassignedCandidates.map(c => ({
+            app: c,
+            eligibleDepts: eligibleDeptsFor(c),
+            marksSummary: marksSummaryFor(c),
+            feedbackText: (feedbackTextMap[c.id] || []).join(' | '),
+        }));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [unassignedCandidates, feedbackMap, feedbackTextMap]);
+
+    // Seat-safe allocator shared by plain Auto-Fill and the AI-assisted dialog.
+    // Candidates are processed strictly by marks, highest first, and each takes
+    // the first department in ITS OWN priority list that still has a seat. This
+    // is what guarantees the two properties that matter here:
+    //
+    //   1. Nobody is ever placed outside the departments the priority function
+    //      hands back for them — both callers build that list from eligibleDeptsFor,
+    //      so it is always a subset of what they applied to or were recommended
+    //      for, never anything else.
+    //   2. A higher-scoring candidate is never displaced by a lower-scoring one
+    //      for a seat they both wanted, because seats are claimed in merit order.
+    //
+    // The two callers differ only in ORDER WITHIN a candidate's own eligible set:
+    // plain Auto-Fill uses eligibleDeptsFor's fixed order (recommendation > 1st >
+    // 2nd); the AI dialog reorders that same set to put the AI's judgment call
+    // first. Neither caller can ever add a department the other wouldn't allow.
+    const allocateBySeatPriority = (
+        candidates: Application[],
+        priorityListFor: (c: Application) => string[],
+        existingDraft: Record<string, string>
+    ): { newDraft: Record<string, string>; placedBefore: number; added: number; unplaced: Application[] } => {
+        const newDraft: Record<string, string> = { ...existingDraft };
+
+        const fillCount: Record<string, number> = {};
+        DEPARTMENTS.forEach(d => { fillCount[d] = 0; });
+        Object.values(newDraft).forEach(dept => {
+            if (fillCount[dept] !== undefined) fillCount[dept] += 1;
+        });
+
+        const draftedIds = new Set<string>(Object.keys(newDraft));
+        const placedBefore = draftedIds.size;
+
+        const byMerit = [...candidates]
+            .filter(c => !draftedIds.has(c.id))
+            .sort((a, b) => {
+                const diff = meritScore(b) - meritScore(a);
+                return diff !== 0 ? diff : (a.fullName || '').localeCompare(b.fullName || '');
+            });
+
+        const unplaced: Application[] = [];
+
+        for (const c of byMerit) {
+            const choices = priorityListFor(c);
+            const dept = choices.find(d => fillCount[d] < quotaFor(d));
+
+            if (!dept) {
+                unplaced.push(c);
+                continue;
+            }
+
+            newDraft[c.id] = dept;
+            draftedIds.add(c.id);
+            fillCount[dept] += 1;
+        }
+
+        return { newDraft, placedBefore, added: draftedIds.size - placedBefore, unplaced };
+    };
+
     // Auto-Fill MERGES: it keeps everyone already placed by hand and only fills the
     // seats still empty. Use Clear Draft if you want to start over.
-    //
-    // Allocation is a merit-ranked serial dictatorship: candidates are sorted by
-    // marks, highest first, and each in turn takes the best department that still
-    // has a seat. Two guarantees follow, neither of which the previous version
-    // gave:
-    //
-    //   1. Nobody is ever placed in a department they did not apply to and were
-    //      not recommended for. The old scorer built a match for every candidate
-    //      against every department — an unrelated pairing still scored the
-    //      candidate's base performance — so once the genuine matches ran out the
-    //      greedy loop filled the remaining seats with whoever was left over.
-    //   2. A higher-scoring candidate is never displaced by a lower-scoring one
-    //      for a seat they both wanted. The old global sort ranked (candidate,
-    //      department) pairs, so a weak recommended candidate outranked a strong
-    //      first-preference one.
     //
     // A candidate whose eligible departments are all full stays in the reserve
     // pool rather than being parked somewhere arbitrary.
     const handleRunAutoDraft = () => {
         setIsDrafting(true);
         setTimeout(() => {
-            const newDraft: Record<string, string> = { ...draftMap };
+            const { newDraft, placedBefore, added, unplaced } = allocateBySeatPriority(eligibleCandidates, eligibleDeptsFor, draftMap);
 
-            // Seats already taken by existing (manual or previously saved) placements
-            const fillCount: Record<string, number> = {};
-            DEPARTMENTS.forEach(d => { fillCount[d] = 0; });
-            Object.values(newDraft).forEach(dept => {
-                if (fillCount[dept] !== undefined) fillCount[dept] += 1;
-            });
-
-            const draftedIds = new Set<string>(Object.keys(newDraft));
-            const placedBefore = draftedIds.size;
-
-            // Strict merit order. Ties broken by name so a re-run is deterministic.
-            const byMerit = [...eligibleCandidates]
-                .filter(c => !draftedIds.has(c.id))
-                .sort((a, b) => {
-                    const diff = meritScore(b) - meritScore(a);
-                    return diff !== 0 ? diff : (a.fullName || '').localeCompare(b.fullName || '');
-                });
-
-            const unplaced: Application[] = [];
-
-            for (const c of byMerit) {
-                const choices = eligibleDeptsFor(c);
-                const dept = choices.find(d => fillCount[d] < quotaFor(d));
-
-                if (!dept) {
-                    unplaced.push(c);
-                    continue;
-                }
-
-                newDraft[c.id] = dept;
-                draftedIds.add(c.id);
-                fillCount[dept] += 1;
-            }
-
-            const added = draftedIds.size - placedBefore;
             setDraftMap(newDraft);
             setIsDrafting(false);
 
@@ -281,6 +335,54 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
         if (Object.keys(draftMap).length === 0) return;
         if (!confirm('Clear every placement from the current draft? Saved rosters are not affected until you press Save Roster.')) return;
         setDraftMap({});
+    };
+
+    // Applies the AI dialog's per-candidate department judgments. The AI never
+    // supplies a department outside eligibleDeptsFor(c) — parseCommitteeFitJson
+    // in aiService.ts already discards an invalid answer server-side — but this
+    // re-checks that guarantee at the point of use rather than trusting a single
+    // validation layer, since "never place someone somewhere they didn't apply
+    // to" is the exact bug this whole feature exists to prevent. Seats are then
+    // filled by the same merit-order allocator Auto-Fill uses; the AI only ever
+    // reorders a candidate's OWN eligible list, it never adds to it.
+    const handleApplyAiAllocation = (results: Map<string, CommitteeFitResult>) => {
+        const priorityListFor = (c: Application): string[] => {
+            const base = eligibleDeptsFor(c);
+            const ai = results.get(c.id);
+            if (!ai || !base.includes(ai.department)) return base;
+            return [ai.department, ...base.filter(d => d !== ai.department)];
+        };
+
+        const { newDraft, placedBefore, added, unplaced } = allocateBySeatPriority(eligibleCandidates, priorityListFor, draftMap);
+        setDraftMap(newDraft);
+        setIsAiDialogOpen(false);
+
+        const aiDecided = Array.from(results.values()).filter(r => r.reasoning !== 'Only eligible department').length;
+        const noEligible = unplaced.filter(c => eligibleDeptsFor(c).length === 0).length;
+        const seatsFull = unplaced.length - noEligible;
+
+        const parts = [`✅ AI Allocation applied — ${added} member${added === 1 ? '' : 's'} placed${aiDecided > 0 ? `, ${aiDecided} by AI judgment on marks + feedback` : ''}.`];
+        if (placedBefore > 0) parts.push(`Kept your ${placedBefore} existing placement${placedBefore === 1 ? '' : 's'}.`);
+        if (seatsFull > 0) parts.push(`${seatsFull} left in the reserve pool: their eligible departments are full.`);
+        if (noEligible > 0) parts.push(`${noEligible} could not be placed: no preference and no interviewer recommendation.`);
+
+        setSuccessMsg(parts.join(' '));
+        setTimeout(() => setSuccessMsg(null), 10000);
+    };
+
+    // The PDF always reads from `applications` (the saved roster), never the
+    // in-memory draft — so a member moved in the draft but not yet saved would
+    // silently export under their OLD department. Warn rather than let that
+    // surprise whoever downloads it.
+    const hasUnsavedDraftChanges = useMemo(() => {
+        const draftIds = Object.keys(draftMap);
+        if (draftIds.some(id => applications.find(a => a.id === id)?.assignedPosition !== draftMap[id])) return true;
+        return applications.some(a => a.assignedPosition && !draftMap[a.id]);
+    }, [draftMap, applications]);
+
+    const handleExportPdf = () => {
+        if (hasUnsavedDraftChanges && !confirm('You have unsaved draft changes. The PDF will reflect the last SAVED roster, not the current draft. Export anyway?')) return;
+        exportCommitteeRosterPdf(applications);
     };
 
     // ── 4. Manual Assignment Helpers ──────────────────────────────────────────
@@ -529,6 +631,15 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                             {isDrafting ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
                             🔄 Auto-Fill Committees
                         </Button>
+                        <Button
+                            onClick={() => setIsAiDialogOpen(true)}
+                            disabled={isLoadingFeedbacks}
+                            variant="outline"
+                            className="h-10 px-6 rounded-xl border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 font-bold text-xs uppercase tracking-wider"
+                        >
+                            <Bot className="w-3.5 h-3.5 mr-1.5" />
+                            AI Allocate (marks + feedback)
+                        </Button>
                         <div className="grid grid-cols-2 gap-2">
                             <Button
                                 onClick={handleSaveRoster}
@@ -548,9 +659,24 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                                 Clear Draft
                             </Button>
                         </div>
+                        <Button
+                            onClick={handleExportPdf}
+                            variant="outline"
+                            className="h-10 px-6 rounded-xl border-white/15 bg-white/5 hover:bg-white/10 text-zinc-300 font-bold text-xs uppercase tracking-wider"
+                        >
+                            <FileDown className="w-3.5 h-3.5 mr-1.5" />
+                            Export Roster PDF
+                        </Button>
                     </div>
                 </div>
             </div>
+
+            <AICommitteeAllocationDialog
+                open={isAiDialogOpen}
+                onClose={() => setIsAiDialogOpen(false)}
+                candidates={aiCandidatePool}
+                onApply={handleApplyAiAllocation}
+            />
 
             {/* Mismatched-placement audit. Every member the board shows should be in a
                 department they applied to or were recommended for; anything else is

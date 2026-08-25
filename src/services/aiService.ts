@@ -218,7 +218,11 @@ async function fetchWithRetry(provider: 'Gemini' | 'OpenAI', doFetch: () => Prom
     }
 }
 
-async function runGeminiAnalysis(prompt: string, apiKey: string): Promise<AIAnalysisResult> {
+// Raw text call, one per provider — shared by the resume-fit analysis
+// (parseLLMJson) and the committee-fit analysis (parseCommitteeFitJson) below,
+// which need the same HTTP/retry/model-fallback plumbing but parse a different
+// response shape.
+async function callGeminiRaw(prompt: string, apiKey: string): Promise<string> {
     let lastError: unknown;
     for (const model of GEMINI_MODELS) {
         try {
@@ -234,7 +238,7 @@ async function runGeminiAnalysis(prompt: string, apiKey: string): Promise<AIAnal
             const data = await response.json();
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
             if (!text) throw new Error(`Empty response from Gemini (${model})`);
-            return parseLLMJson(text, 'gemini');
+            return text;
         } catch (err) {
             lastError = err;
             console.warn(`[AI Copilot] Gemini model "${model}" failed, trying next fallback if available.`, err);
@@ -243,7 +247,7 @@ async function runGeminiAnalysis(prompt: string, apiKey: string): Promise<AIAnal
     throw lastError instanceof Error ? lastError : new Error('All Gemini models failed');
 }
 
-async function runOpenAIAnalysis(prompt: string, apiKey: string): Promise<AIAnalysisResult> {
+async function callOpenAIRaw(prompt: string, apiKey: string): Promise<string> {
     const response = await fetchWithRetry('OpenAI', () => fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -260,7 +264,15 @@ async function runOpenAIAnalysis(prompt: string, apiKey: string): Promise<AIAnal
     const data = await response.json();
     const text = data.choices?.[0]?.message?.content;
     if (!text) throw new Error('Empty response from OpenAI');
-    return parseLLMJson(text, 'openai');
+    return text;
+}
+
+async function runGeminiAnalysis(prompt: string, apiKey: string): Promise<AIAnalysisResult> {
+    return parseLLMJson(await callGeminiRaw(prompt, apiKey), 'gemini');
+}
+
+async function runOpenAIAnalysis(prompt: string, apiKey: string): Promise<AIAnalysisResult> {
+    return parseLLMJson(await callOpenAIRaw(prompt, apiKey), 'openai');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -380,5 +392,178 @@ export async function analyzeCandidatesBatch(
     };
 
     await Promise.all(Array.from({ length: Math.min(concurrency, targets.length) }, worker));
+    return results;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Committee-Fit Analysis — a SEPARATE prompt from buildPrompt() above.
+//
+// buildPrompt() (resume-fit) reads skills/reason/links: it is asking "does this
+// person look qualified on paper for their chosen department?" and runs before
+// anyone has been interviewed.
+//
+// This one runs AFTER interviews. It is asking a narrower question: "of the
+// departments this candidate is actually eligible for — what they applied to,
+// or what an interviewer recommended — which one does the marks + interviewer
+// feedback best support?" It deliberately never sees skills/reason/links, and
+// it is never allowed to answer with a department outside the eligible list
+// it's given: this exists specifically so a candidate is never allocated
+// somewhere they have no stated connection to. See CommitteeDraftBoard.tsx,
+// which enforces the eligible-list restriction again on the client side by
+// discarding any answer outside what it asked for.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CommitteeFitInput {
+    id: string;
+    fullName: string;
+    /** Formatted "Task Score: 7.5/10, Interview Score: 8.2/10, ..." — marks only. */
+    marksSummary: string;
+    /** Concatenated interviewer comments/remarks. Empty string if none were left. */
+    feedbackText: string;
+    /** The ONLY departments the AI may choose between. Never empty when this is called. */
+    eligibleDepts: string[];
+}
+
+export interface CommitteeFitResult {
+    department: string;
+    confidence: number; // 0-100
+    reasoning: string;
+    mode: 'gemini' | 'openai';
+    /** True if the provider's answer wasn't one of eligibleDepts and had to be
+     *  discarded in favour of the first eligible option — surfaced so the UI can
+     *  flag a low-trust result instead of silently presenting it as a real pick. */
+    corrected: boolean;
+}
+
+function buildCommitteeFitPrompt(input: CommitteeFitInput): string {
+    const choices = input.eligibleDepts.map((d, i) => `${i + 1}. ${d}`).join('\n');
+    return `You are helping an IEEE Solid-State Circuits Society (SSCS) student chapter decide which committee department a candidate should be placed in, now that their interview is complete.
+
+Candidate: ${input.fullName}
+
+Marks (this is the ONLY performance signal you have — there is no resume or application text):
+${input.marksSummary}
+
+Interviewer feedback:
+${input.feedbackText || '(No written feedback was left by the interviewer.)'}
+
+The candidate may ONLY be placed in one of the following departments — each is either a department they applied for, or a department an interviewer explicitly recommended them for. Do not suggest any department outside this list, even if the feedback mentions other skills:
+${choices}
+
+Pick the single best department from that numbered list, based only on the marks and the interviewer feedback above. Return ONLY a valid JSON object, no markdown, no code fences:
+{
+  "department": "the exact text of one department from the numbered list above",
+  "confidence": number 0-100, how confident you are this is the right call given the evidence,
+  "reasoning": "1-2 sentences citing the specific marks or feedback that justify this department over the other eligible option(s)"
+}`;
+}
+
+function parseCommitteeFitJson(text: string, mode: 'gemini' | 'openai', eligibleDepts: string[]): Omit<CommitteeFitResult, 'mode'> & { mode: typeof mode } {
+    const cleaned = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
+    const parsed = JSON.parse(cleaned);
+
+    const rawDept = typeof parsed.department === 'string' ? parsed.department.trim() : '';
+    // Exact match first, then case-insensitive — models occasionally alter casing
+    // even when told to return exact text.
+    const matched = eligibleDepts.find(d => d === rawDept)
+        || eligibleDepts.find(d => d.toLowerCase() === rawDept.toLowerCase());
+
+    const confidence = Number(parsed.confidence);
+    return {
+        department: matched || eligibleDepts[0],
+        confidence: Number.isFinite(confidence) ? Math.max(0, Math.min(100, Math.round(confidence))) : 50,
+        reasoning: typeof parsed.reasoning === 'string' && parsed.reasoning.trim() ? parsed.reasoning.trim() : 'No reasoning provided.',
+        mode,
+        corrected: !matched,
+    };
+}
+
+/**
+ * Analyzes one candidate's committee-department fit using marks + interviewer
+ * feedback only. Mirrors analyzeCandidate()'s primary-provider-with-fallback
+ * shape above (kept as its own small copy rather than a shared helper, since
+ * the two now return different result types and analyzeCandidate() is on the
+ * hot path for the existing, already-relied-upon resume-fit feature — not
+ * worth the regression risk of routing it through a new generic).
+ */
+export async function analyzeCommitteeFit(input: CommitteeFitInput): Promise<CommitteeFitResult> {
+    if (input.eligibleDepts.length === 0) {
+        throw new Error(`${input.fullName} has no eligible department (no preference and no interviewer recommendation) — nothing for the AI to choose between.`);
+    }
+    if (input.eligibleDepts.length === 1) {
+        // Nothing to decide — nowhere else they could go.
+        return { department: input.eligibleDepts[0], confidence: 100, reasoning: 'Only eligible department.', mode: 'gemini', corrected: false };
+    }
+
+    const { primary, geminiKey, openaiKey } = await resolveKeys();
+    if (!primary) {
+        throw new Error('AI Copilot is not configured. Add a Gemini and/or OpenAI API key under Admin → System Configuration → AI Copilot.');
+    }
+
+    const prompt = buildCommitteeFitPrompt(input);
+    const secondary = primary === 'gemini' ? 'openai' : 'gemini';
+    const secondaryKey = secondary === 'gemini' ? geminiKey : openaiKey;
+
+    const call = async (provider: 'gemini' | 'openai', key: string): Promise<CommitteeFitResult> => {
+        const text = provider === 'gemini' ? await callGeminiRaw(prompt, key) : await callOpenAIRaw(prompt, key);
+        return parseCommitteeFitJson(text, provider, input.eligibleDepts);
+    };
+
+    try {
+        return await call(primary, (primary === 'gemini' ? geminiKey : openaiKey)!);
+    } catch (primaryErr) {
+        if (!secondaryKey) throw primaryErr;
+        console.warn(`[AI Copilot] Committee-fit: primary provider "${primary}" failed, falling back to "${secondary}".`, primaryErr);
+        try {
+            return await call(secondary, secondaryKey);
+        } catch (secondaryErr) {
+            const primaryMsg = primaryErr instanceof Error ? primaryErr.message : String(primaryErr);
+            const secondaryMsg = secondaryErr instanceof Error ? secondaryErr.message : String(secondaryErr);
+            throw new Error(`Both providers failed.\n${primary}: ${primaryMsg}\n${secondary}: ${secondaryMsg}`);
+        }
+    }
+}
+
+export interface CommitteeFitProgress {
+    completed: number;
+    total: number;
+    current?: string;
+}
+
+/**
+ * Batch version of analyzeCommitteeFit, same bounded-concurrency shape as
+ * analyzeCandidatesBatch(). Does not persist anything to the DB — the caller
+ * (CommitteeDraftBoard) treats these as a draft suggestion, not a fact, until
+ * an admin reviews and applies them.
+ */
+export async function analyzeCommitteeFitBatch(
+    inputs: CommitteeFitInput[],
+    options: { concurrency?: number; onProgress?: (p: CommitteeFitProgress) => void; onResult?: (id: string, result: CommitteeFitResult | null, error?: string) => void } = {}
+): Promise<Map<string, CommitteeFitResult>> {
+    const { concurrency = 3, onProgress, onResult } = options;
+    const results = new Map<string, CommitteeFitResult>();
+    let completed = 0;
+    let index = 0;
+
+    const worker = async () => {
+        for (; ;) {
+            const i = index++;
+            if (i >= inputs.length) return;
+            const input = inputs[i];
+            try {
+                const result = await analyzeCommitteeFit(input);
+                results.set(input.id, result);
+                onResult?.(input.id, result);
+            } catch (err) {
+                console.error(`[AI Copilot] Committee-fit batch failed for ${input.fullName}:`, err);
+                onResult?.(input.id, null, err instanceof Error ? err.message : String(err));
+            } finally {
+                completed++;
+                onProgress?.({ completed, total: inputs.length, current: input.fullName });
+            }
+        }
+    };
+
+    await Promise.all(Array.from({ length: Math.min(concurrency, inputs.length) }, worker));
     return results;
 }
