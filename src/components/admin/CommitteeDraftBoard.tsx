@@ -1,14 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Application } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Sparkles, Users, CheckCircle, XCircle, RefreshCw, Send, Mail, Trash2, Plus, UserCheck, GripVertical, Lock } from 'lucide-react';
-import { sendEmail } from '@/lib/email';
+import { Users, CheckCircle, RefreshCw, Trash2, Plus, UserCheck, GripVertical, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const DEPARTMENTS = [
@@ -26,16 +24,33 @@ interface CommitteeDraftBoardProps {
     onViewCandidate?: (app: Application) => void;
 }
 
+// Fallback seat counts, used only until committee_quotas loads (or if that table
+// is missing because migration_committee_quotas.sql hasn't been run yet).
+const DEFAULT_QUOTAS: Record<string, number> = {
+    Technical: 15,
+    Management: 12,
+    'Event Operations': 12,
+    Creative: 10,
+    'Outreach & Partnerships': 10,
+    'Human Resources': 10
+};
+
+const MIN_SEATS = 1;
+const MAX_SEATS = 99;
+
+// Only candidates who have actually been through an interview may be drafted.
+// The old filter was "not rejected and not withdrawn" — and 'withdrawn' is not
+// even a real status, so in practice untouched 'applied' rows were draftable.
+const DRAFT_ELIGIBLE_STATUSES = ['interviewed', 'selected_pending', 'selected', 'active_member'];
+
 export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applications, onUpdate, onViewCandidate }) => {
-    // Quotas per department
-    const [quotas, setQuotas] = useState<Record<string, number>>({
-        Technical: 15,
-        Management: 12,
-        'Event Operations': 12,
-        Creative: 10,
-        'Outreach & Partnerships': 10,
-        'Human Resources': 10
-    });
+    // Seat quotas per department, persisted in public.committee_quotas so every
+    // admin sees the same numbers.
+    const [quotas, setQuotas] = useState<Record<string, number>>(DEFAULT_QUOTAS);
+    // Raw text of each seat input while it is being typed. Kept separate from
+    // `quotas` so clearing the field to type "20" doesn't momentarily clamp to 1.
+    const [seatDrafts, setSeatDrafts] = useState<Record<string, string>>({});
+    const [quotaError, setQuotaError] = useState<string | null>(null);
 
     // Local draft map: candidateId -> department string (e.g., 'Technical')
     const [draftMap, setDraftMap] = useState<Record<string, string>>({});
@@ -53,11 +68,6 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
     // Quick Preview Candidate State
     const [previewCandidate, setPreviewCandidate] = useState<Application | null>(null);
 
-    // Email sending dialog state
-    const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
-    const [confirmText, setConfirmText] = useState('');
-    const [isSending, setIsSending] = useState(false);
-    const [sendResult, setSendResult] = useState<{ sent: number; failed: number } | null>(null);
 
     // ── 1. Fetch interviewer recommendations on mount ─────────────────────────
     useEffect(() => {
@@ -91,8 +101,41 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
         fetchRecommendations();
     }, []);
 
-    // ── 2. Initialize local draft map from DB applications ──────────────────
+    // ── 1b. Load persisted seat quotas ────────────────────────────────────────
     useEffect(() => {
+        const fetchQuotas = async () => {
+            const { data, error } = await supabase
+                .from('committee_quotas')
+                .select('department, seats');
+
+            if (error) {
+                // Most likely cause: migration_committee_quotas.sql hasn't been run.
+                // Fall back to the defaults rather than blocking the whole board, but
+                // say so — edits won't stick and the admin needs to know that.
+                console.error('[CommitteeDraftBoard] Could not load seat quotas:', error.message);
+                setQuotaError('Seat quotas could not be loaded — showing defaults. Changes will not be saved until migration_committee_quotas.sql has been run.');
+                return;
+            }
+
+            if (data && data.length > 0) {
+                const loaded: Record<string, number> = { ...DEFAULT_QUOTAS };
+                data.forEach((row: { department: string; seats: number }) => { loaded[row.department] = row.seats; });
+                setQuotas(loaded);
+            }
+        };
+        fetchQuotas();
+    }, []);
+
+    // ── 2. Initialize local draft map from DB applications ──────────────────
+    // This effect re-runs on every new `applications` array identity, which
+    // includes background refetches. It used to overwrite draftMap each time,
+    // so an unrelated refetch silently threw away unsaved placements. It now
+    // seeds once and then leaves the draft alone until it's explicitly saved.
+    const hasSeededDraft = useRef(false);
+
+    useEffect(() => {
+        if (hasSeededDraft.current || applications.length === 0) return;
+
         const initialMap: Record<string, string> = {};
         applications.forEach(app => {
             if (app.assignedPosition && DEPARTMENTS.includes(app.assignedPosition)) {
@@ -104,12 +147,13 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
             }
         });
         setDraftMap(initialMap);
+        hasSeededDraft.current = true;
     }, [applications]);
 
-    // Eligible candidates for drafting (anyone not rejected or withdrawn)
+    // Eligible candidates for drafting — interviewed and beyond only.
     const eligibleCandidates = useMemo(() => {
-        return applications.filter(app => 
-            !['rejected', 'withdrawn'].includes(app.status)
+        return applications.filter(app =>
+            DRAFT_ELIGIBLE_STATUSES.includes(app.status)
         ).sort((a, b) => {
             const scoreA = Number(a.finalScore || a.interviewScore || a.rating * 2) || 0;
             const scoreB = Number(b.finalScore || b.interviewScore || b.rating * 2) || 0;
@@ -123,14 +167,21 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
     }, [eligibleCandidates, draftMap]);
 
     // ── 3. ⚡ SMART AUTO-DRAFT ALGORITHM (COMMITTEE MEMBERS ONLY) ─────────────
+    // Auto-Fill MERGES: it keeps everyone already placed by hand and only fills the
+    // seats still empty. Wiping manual work silently (what this used to do) made
+    // the button unusable once you'd started fine-tuning. Use Clear Draft first if
+    // you genuinely want to start over.
     const handleRunAutoDraft = () => {
         setIsDrafting(true);
         setTimeout(() => {
-            const newDraft: Record<string, string> = {};
+            const newDraft: Record<string, string> = { ...draftMap };
 
-            // Track current fill count per department
+            // Seats already taken by existing (manual or previously saved) placements
             const fillCount: Record<string, number> = {};
             DEPARTMENTS.forEach(d => { fillCount[d] = 0; });
+            Object.values(newDraft).forEach(dept => {
+                if (fillCount[dept] !== undefined) fillCount[dept] += 1;
+            });
 
             // Score each candidate against each department
             interface MatchScore {
@@ -160,28 +211,59 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
             // Sort all potential matches descending by score
             matches.sort((a, b) => b.score - a.score);
 
-            const draftedIds = new Set<string>();
+            // Anyone already placed keeps their seat and is skipped below.
+            const draftedIds = new Set<string>(Object.keys(newDraft));
+            const placedBefore = draftedIds.size;
 
             // Greedy allocation up to quota
             for (const match of matches) {
                 if (draftedIds.has(match.candidateId)) continue;
-                if ((fillCount[match.dept] || 0) < (quotas[match.dept] || 15)) {
+                if ((fillCount[match.dept] || 0) < (quotas[match.dept] ?? DEFAULT_QUOTAS[match.dept] ?? 15)) {
                     newDraft[match.candidateId] = match.dept;
                     draftedIds.add(match.candidateId);
                     fillCount[match.dept] = (fillCount[match.dept] || 0) + 1;
                 }
             }
 
+            const added = draftedIds.size - placedBefore;
             setDraftMap(newDraft);
             setIsDrafting(false);
-            setSuccessMsg('✅ Auto-Fill Complete! Core committee members distributed based on interviewer verdicts, 1st/2nd preferences, and interview scores.');
-            setTimeout(() => setSuccessMsg(null), 5000);
+            setSuccessMsg(
+                placedBefore > 0
+                    ? `✅ Auto-Fill Complete! Added ${added} member${added === 1 ? '' : 's'} to the remaining seats and kept your ${placedBefore} existing placement${placedBefore === 1 ? '' : 's'}.`
+                    : `✅ Auto-Fill Complete! ${added} committee member${added === 1 ? '' : 's'} distributed based on interviewer verdicts, 1st/2nd preferences, and interview scores.`
+            );
+            setTimeout(() => setSuccessMsg(null), 6000);
         }, 600);
     };
 
+    const handleClearDraft = () => {
+        if (Object.keys(draftMap).length === 0) return;
+        if (!confirm('Clear every placement from the current draft? Saved rosters are not affected until you press Save Roster.')) return;
+        setDraftMap({});
+    };
+
     // ── 4. Manual Assignment Helpers ──────────────────────────────────────────
+    const seatsUsed = (dept: string, map: Record<string, string> = draftMap) =>
+        Object.values(map).filter(d => d === dept).length;
+
+    const quotaFor = (dept: string) => quotas[dept] ?? DEFAULT_QUOTAS[dept] ?? 15;
+
+    // A department is full when its seats are all taken. Enforced on EVERY add
+    // path — drag-drop, the dropdown and Save — not just on Auto-Fill.
+    const isDeptFull = (dept: string) => seatsUsed(dept) >= quotaFor(dept);
+
     const assignCandidateToDept = (candidateId: string, dept: string) => {
         if (candidateId === 'none') return;
+        // Moving someone already in this department is a no-op, not a new seat.
+        if (draftMap[candidateId] === dept) return;
+
+        if (isDeptFull(dept)) {
+            setQuotaError(`${dept} is full (${seatsUsed(dept)}/${quotaFor(dept)} seats). Raise the seat count or remove a member first.`);
+            setTimeout(() => setQuotaError(null), 5000);
+            return;
+        }
+
         setDraftMap(prev => ({
             ...prev,
             [candidateId]: dept
@@ -210,13 +292,71 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
         return targetDept === p1 || (!!p2 && targetDept === p2);
     };
 
+    // ── 4b. Seat Quota Editing ────────────────────────────────────────────────
+    // Commits whatever is in the seat box: clamped to the number of members
+    // already placed (so a quota can never be set below a real roster) and to
+    // 1..99, then persisted. A blank or non-numeric box reverts to the last
+    // saved value rather than wiping the quota.
+    const commitSeats = async (dept: string, raw: string) => {
+        setSeatDrafts(prev => {
+            const next = { ...prev };
+            delete next[dept];
+            return next;
+        });
+
+        const parsed = parseInt(raw, 10);
+        if (isNaN(parsed)) return;
+
+        const floor = Math.max(MIN_SEATS, seatsUsed(dept));
+        const clamped = Math.min(MAX_SEATS, Math.max(floor, parsed));
+
+        if (parsed < floor) {
+            setQuotaError(`${dept} already has ${seatsUsed(dept)} members assigned — seats can't go below that. Remove members first.`);
+            setTimeout(() => setQuotaError(null), 5000);
+        }
+
+        if (clamped === quotaFor(dept)) return;
+
+        const previous = quotaFor(dept);
+        setQuotas(prev => ({ ...prev, [dept]: clamped }));
+
+        const { error } = await supabase
+            .from('committee_quotas')
+            .upsert({ department: dept, seats: clamped, updated_at: new Date().toISOString() }, { onConflict: 'department' });
+
+        if (error) {
+            // Roll the number back so the UI never shows a quota the DB rejected.
+            console.error('[CommitteeDraftBoard] Could not save seat quota:', error.message);
+            setQuotas(prev => ({ ...prev, [dept]: previous }));
+            setQuotaError(`Could not save the seat count for ${dept}: ${error.message}`);
+            setTimeout(() => setQuotaError(null), 6000);
+        }
+    };
+
+    const nudgeSeats = (dept: string, delta: number) => {
+        commitSeats(dept, String(quotaFor(dept) + delta));
+    };
+
     // ── 5. Save & Apply Roster to Database ────────────────────────────────────
+    // Note on error handling: Admin.updateApplication() deliberately swallows its
+    // errors (it logs and refetches) because several call sites fire it without
+    // awaiting. That means Promise.all below resolves even when writes failed, so
+    // this reads the affected rows back and compares them against the draft before
+    // claiming success — a green toast over a half-written roster is worse than
+    // no toast at all.
     const handleSaveRoster = async () => {
         setIsSaving(true);
         try {
+            const overfilled = DEPARTMENTS.filter(d => seatsUsed(d) > quotaFor(d));
+            if (overfilled.length > 0) {
+                setQuotaError(`Over seat limit: ${overfilled.map(d => `${d} (${seatsUsed(d)}/${quotaFor(d)})`).join(', ')}. Raise the seat count or remove members before saving.`);
+                setTimeout(() => setQuotaError(null), 7000);
+                return;
+            }
+
             const updatePromises: Promise<any>[] = [];
 
-            // 1. Update all drafted candidates to 'selected' with their assigned committee department
+            // 1. Drafted candidates -> 'selected' with their committee department.
             Object.entries(draftMap).forEach(([id, dept]) => {
                 const app = applications.find(a => a.id === id);
                 if (app && (app.assignedPosition !== dept || app.status !== 'selected')) {
@@ -224,74 +364,59 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                 }
             });
 
-            // 2. Anyone previously selected/assigned who is now removed from draft -> revert to 'interviewed'
+            // 2. Anyone dropped from the draft loses their assignment and goes back
+            //    to 'interviewed'. Members already promoted to active_member are left
+            //    alone: they have been told they are in, and silently demoting them
+            //    here would contradict that.
             applications.forEach(app => {
-                if (app.assignedPosition && !draftMap[app.id]) {
+                if (app.assignedPosition && !draftMap[app.id] && app.status !== 'active_member') {
                     updatePromises.push(onUpdate(app.id, { assignedPosition: null as any, status: 'interviewed' }));
                 }
             });
 
             await Promise.all(updatePromises);
-            setSuccessMsg('✅ Committee Roster Saved! All member allocations have been synced to the database.');
+
+            // Read back and confirm the roster actually landed.
+            const draftedIds = Object.keys(draftMap);
+            if (draftedIds.length > 0) {
+                const { data, error } = await supabase
+                    .from('applications')
+                    .select('id, assigned_position, status')
+                    .in('id', draftedIds);
+
+                if (error) {
+                    setQuotaError(`Roster was submitted but could not be verified: ${error.message}. Reload before relying on it.`);
+                    setTimeout(() => setQuotaError(null), 8000);
+                    return;
+                }
+
+                const byId = new Map(
+                    (data || []).map((r: { id: string; assigned_position: string | null }) => [r.id, r])
+                );
+                const mismatched = draftedIds.filter(id => {
+                    const row = byId.get(id);
+                    return !row || row.assigned_position !== draftMap[id];
+                });
+
+                if (mismatched.length > 0) {
+                    const names = mismatched
+                        .map(id => applications.find(a => a.id === id)?.fullName || id)
+                        .slice(0, 5);
+                    setQuotaError(`${mismatched.length} member${mismatched.length === 1 ? '' : 's'} did not save: ${names.join(', ')}${mismatched.length > 5 ? '…' : ''}. Check your admin permissions and try again.`);
+                    setTimeout(() => setQuotaError(null), 10000);
+                    return;
+                }
+            }
+
+            setSuccessMsg(`✅ Committee Roster Saved! ${draftedIds.length} member${draftedIds.length === 1 ? '' : 's'} synced to the database.`);
             setTimeout(() => setSuccessMsg(null), 5000);
         } catch (err: any) {
             console.error('Failed to save roster:', err);
-            alert('Error saving roster: ' + err.message);
+            setQuotaError('Error saving roster: ' + (err?.message || 'unknown error'));
+            setTimeout(() => setQuotaError(null), 8000);
         } finally {
             setIsSaving(false);
         }
-    };
-
-    // ── 6. Send Official Offer Emails ─────────────────────────────────────────
-    const handleSendOfferMails = async () => {
-        if (confirmText.trim() !== 'CONFIRM' || isSending) return;
-        setIsSending(true);
-        setSendResult(null);
-
-        const draftedApps = applications.filter(app => !!draftMap[app.id]);
-        let sent = 0;
-        let failed = 0;
-
-        for (const app of draftedApps) {
-            const dept = draftMap[app.id];
-            if (!dept || !app.email) {
-                failed++;
-                continue;
-            }
-
-            try {
-                const portalUrl = window.location.origin;
-                const success = await sendEmail(
-                    app.email,
-                    `IEEE SSCS Results — Selected for ${dept} Committee!`,
-                    `<p>Dear <strong>${app.fullName}</strong>,</p>
-                    <p>The selection results for IEEE SSCS are officially out!</p>
-                    <p>We are pleased to offer you a position as a <strong>Core Committee Member in the ${dept} Department</strong> at IEEE SSCS for the tenure 2026-27!</p>
-                    <p style="margin: 20px 0;">
-                        <a href="${portalUrl}/status" style="background-color: #9333ea; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">View Onboarding & Status Portal</a>
-                    </p>
-                    <p>We expect helpful co-ordination and teamwork throughout this tenure, along with active participation in our upcoming flagship events.</p>
-                    <p>Congratulations and welcome aboard!</p>
-                    <p>Best regards,<br>IEEE SSCS Executive Committee</p>`
-                );
-
-                if (success) {
-                    await onUpdate(app.id, { status: 'active_member', assignedPosition: dept });
-                    sent++;
-                } else {
-                    const masked = app.email.replace(/(\w{2})\w+@/, '$1***@');
-                    console.warn(`[CommitteeDraftBoard] Offer mail failed for ${masked}`);
-                    failed++;
-                }
-            } catch (err) {
-                console.error('[CommitteeDraftBoard] Mail send error:', err);
-                failed++;
-            }
-            await new Promise(resolve => setTimeout(resolve, 800));
-        }
-
-        setSendResult({ sent, failed });
-        setIsSending(false);
     };
 
     const totalQuota = Object.values(quotas).reduce((a, b) => a + b, 0);
@@ -352,18 +477,33 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                                 Save Roster
                             </Button>
                             <Button
-                                onClick={() => { setConfirmText(''); setSendResult(null); setIsSendDialogOpen(true); }}
-                                disabled={totalDrafted === 0}
+                                onClick={handleClearDraft}
+                                disabled={isSaving || totalDrafted === 0}
                                 variant="outline"
-                                className="h-10 px-4 rounded-xl border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 font-bold text-xs uppercase tracking-wider"
+                                className="h-10 px-4 rounded-xl border-white/15 bg-white/5 hover:bg-white/10 text-zinc-300 font-bold text-xs uppercase tracking-wider"
                             >
-                                <Send className="w-3.5 h-3.5 mr-1.5" />
-                                Send Mails
+                                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                                Clear Draft
                             </Button>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Quota / save failure alert */}
+            <AnimatePresence>
+                {quotaError && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="p-4 rounded-2xl bg-red-500/15 border border-red-500/40 text-red-300 flex items-start gap-3 font-medium text-sm shadow-lg"
+                    >
+                        <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                        <span>{quotaError}</span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Success Message Alert */}
             <AnimatePresence>
@@ -397,13 +537,19 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                     {DEPARTMENTS.map(dept => {
                         const members = getMembersForDept(dept);
-                        const currentQuota = quotas[dept] || 15;
+                        const currentQuota = quotaFor(dept);
                         const fillRatio = members.length / currentQuota;
+                        const deptFull = members.length >= currentQuota;
                         const progressColor = fillRatio >= 1 ? 'bg-green-500' : fillRatio >= 0.7 ? 'bg-purple-500' : 'bg-blue-500';
 
                         // Drag & drop state for this specific department
                         const isDraggingAny = !!draggedCandidateId;
-                        const isAllowedTarget = isDraggingAny && isDeptAllowedForCandidate(draggedCandidateId, dept);
+                        // A full department is not a drop target: promising "Drop Allowed"
+                        // and then refusing the drop is worse than showing it closed.
+                        const draggedIsAlreadyHere = !!draggedCandidateId && draftMap[draggedCandidateId] === dept;
+                        const isAllowedTarget = isDraggingAny
+                            && isDeptAllowedForCandidate(draggedCandidateId, dept)
+                            && (draggedIsAlreadyHere || !deptFull);
                         const isHoveredTarget = dragOverDept === dept && isAllowedTarget;
 
                         let cardBgStyle = "bg-gradient-to-br from-white/[0.04] via-black/60 to-black/90 border-white/10";
@@ -444,8 +590,8 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                             >
                                 {/* Department Header & Quota Bar */}
                                 <div className="bg-white/[0.03] p-5 border-b border-white/10 space-y-3">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-2">
+                                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                                        <div className="flex items-center gap-2 min-w-0">
                                             <h4 className="text-base font-black tracking-wider uppercase text-white">{dept}</h4>
                                             {isDraggingAny && (
                                                 isAllowedTarget ? (
@@ -454,24 +600,57 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                                                     </Badge>
                                                 ) : (
                                                     <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30 text-[9px] font-bold">
-                                                        Not Preference
+                                                        {deptFull && isDeptAllowedForCandidate(draggedCandidateId, dept) ? 'Seats Full' : 'Not Preference'}
                                                     </Badge>
                                                 )
                                             )}
                                         </div>
-                                        <div className="flex items-center gap-1.5 bg-black/50 px-2.5 py-1 rounded-xl border border-white/10 text-xs font-mono">
+                                        {/* Seat quota editor. The old 16px +/- buttons were
+                                            below any usable touch target, which made the seat
+                                            count effectively uneditable on a phone — type the
+                                            number instead. */}
+                                        <div className="flex items-center gap-1.5 bg-black/50 pl-2.5 pr-1.5 py-1 rounded-xl border border-white/10 text-xs font-mono shrink-0">
                                             <span className={`font-bold ${fillRatio >= 1 ? 'text-green-400' : 'text-purple-300'}`}>
                                                 {members.length}
                                             </span>
-                                            <span className="text-muted-foreground">/ {currentQuota} Seats</span>
-                                            <div className="flex items-center gap-0.5 ml-1">
-                                                <button 
-                                                    onClick={() => setQuotas(prev => ({ ...prev, [dept]: Math.max(1, (prev[dept] || 15) - 1) }))}
-                                                    className="w-4 h-4 rounded bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-[10px] font-bold"
-                                                >-</button>
-                                                <button 
-                                                    onClick={() => setQuotas(prev => ({ ...prev, [dept]: (prev[dept] || 15) + 1 }))}
-                                                    className="w-4 h-4 rounded bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-[10px] font-bold"
+                                            <span className="text-muted-foreground">/</span>
+                                            <input
+                                                type="number"
+                                                inputMode="numeric"
+                                                min={Math.max(MIN_SEATS, members.length)}
+                                                max={MAX_SEATS}
+                                                aria-label={`Seats for ${dept}`}
+                                                value={seatDrafts[dept] ?? String(currentQuota)}
+                                                onChange={(e) => setSeatDrafts(prev => ({ ...prev, [dept]: e.target.value }))}
+                                                onFocus={(e) => e.currentTarget.select()}
+                                                onBlur={(e) => commitSeats(dept, e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') e.currentTarget.blur();
+                                                    if (e.key === 'Escape') {
+                                                        setSeatDrafts(prev => {
+                                                            const next = { ...prev };
+                                                            delete next[dept];
+                                                            return next;
+                                                        });
+                                                        e.currentTarget.blur();
+                                                    }
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="w-14 h-10 bg-white/[0.06] border border-white/15 rounded-lg text-center text-white font-bold text-sm focus:outline-none focus:border-purple-500 focus:bg-white/10 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            />
+                                            <span className="text-muted-foreground">Seats</span>
+                                            <div className="flex items-center gap-1 ml-0.5">
+                                                <button
+                                                    type="button"
+                                                    aria-label={`Decrease seats for ${dept}`}
+                                                    onClick={() => nudgeSeats(dept, -1)}
+                                                    className="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 active:bg-white/25 text-white flex items-center justify-center text-lg font-bold leading-none"
+                                                >−</button>
+                                                <button
+                                                    type="button"
+                                                    aria-label={`Increase seats for ${dept}`}
+                                                    onClick={() => nudgeSeats(dept, 1)}
+                                                    className="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 active:bg-white/25 text-white flex items-center justify-center text-lg font-bold leading-none"
                                                 >+</button>
                                             </div>
                                         </div>
@@ -557,25 +736,47 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
 
                                     {/* Quick Add Candidate to Committee */}
                                     <div className="pt-3 border-t border-white/10">
-                                        <Select 
-                                            value="none" 
+                                        <Select
+                                            value="none"
                                             onValueChange={(val) => {
                                                 if (val && val !== 'none') assignCandidateToDept(val, dept);
                                             }}
                                         >
-                                            <SelectTrigger className="w-full bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/20 text-purple-300 h-10 text-xs font-bold rounded-xl">
+                                            <SelectTrigger
+                                                disabled={deptFull}
+                                                className={`w-full h-11 text-xs font-bold rounded-xl ${deptFull
+                                                    ? 'bg-white/5 border-white/10 text-muted-foreground cursor-not-allowed'
+                                                    : 'bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/20 text-purple-300'}`}
+                                            >
                                                 <div className="flex items-center gap-2">
                                                     <Plus className="w-3.5 h-3.5" />
-                                                    <span>Add Member to {dept}...</span>
+                                                    <span>{deptFull ? `${dept} is full (${members.length}/${currentQuota})` : `Add Member to ${dept}...`}</span>
                                                 </div>
                                             </SelectTrigger>
                                             <SelectContent className="bg-zinc-950 border-zinc-800 max-h-60">
                                                 <SelectItem value="none" className="text-muted-foreground italic text-xs">Select from Unassigned Pool ({unassignedCandidates.length})...</SelectItem>
-                                                {unassignedCandidates.map(c => (
-                                                    <SelectItem key={c.id} value={c.id} className="text-xs">
-                                                        {c.fullName} ({c.primaryDept || 'General'}) — ⭐ {(Number(c.finalScore || c.interviewScore || c.rating * 2) || 0).toFixed(1)}
-                                                    </SelectItem>
-                                                ))}
+                                                {/* Preference matches first — drag-drop only accepts
+                                                    1st/2nd preference, so the dropdown flags the rest
+                                                    rather than silently allowing what a drag forbids. */}
+                                                {unassignedCandidates
+                                                    .filter(c => isDeptAllowedForCandidate(c.id, dept))
+                                                    .map(c => (
+                                                        <SelectItem key={c.id} value={c.id} className="text-xs">
+                                                            {c.fullName} ({c.primaryDept || 'General'}) — ⭐ {(Number(c.finalScore || c.interviewScore || c.rating * 2) || 0).toFixed(1)}
+                                                        </SelectItem>
+                                                    ))}
+                                                {unassignedCandidates.some(c => !isDeptAllowedForCandidate(c.id, dept)) && (
+                                                    <div className="px-2 py-1.5 mt-1 border-t border-white/10 text-[9px] font-bold uppercase tracking-widest text-amber-400/70">
+                                                        Outside their preferences
+                                                    </div>
+                                                )}
+                                                {unassignedCandidates
+                                                    .filter(c => !isDeptAllowedForCandidate(c.id, dept))
+                                                    .map(c => (
+                                                        <SelectItem key={c.id} value={c.id} className="text-xs opacity-60">
+                                                            {c.fullName} ({c.primaryDept || 'General'}) — ⭐ {(Number(c.finalScore || c.interviewScore || c.rating * 2) || 0).toFixed(1)}
+                                                        </SelectItem>
+                                                    ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -586,83 +787,6 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                 </div>
             </div>
 
-            {/* ── EMAIL DISPATCH CONFIRMATION DIALOG ─────────────────────────────── */}
-            <Dialog open={isSendDialogOpen} onOpenChange={setIsSendDialogOpen}>
-                <DialogContent className="bg-zinc-950 border-purple-500/30 text-white max-w-md rounded-3xl p-6">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-heading font-black text-white flex items-center gap-2">
-                            <Send className="w-5 h-5 text-purple-400" />
-                            Dispatch Official Committee Mails
-                        </DialogTitle>
-                        <DialogDescription className="text-zinc-400 text-xs leading-relaxed pt-1">
-                            You are about to send formal committee selection offer and congratulations emails to <strong className="text-white font-bold">{totalDrafted} drafted committee members</strong>.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    {sendResult !== null ? (
-                        <div className="py-6 text-center space-y-4">
-                            {sendResult.failed === 0 ? (
-                                <CheckCircle className="w-12 h-12 text-green-400 mx-auto animate-bounce" />
-                            ) : sendResult.sent === 0 ? (
-                                <XCircle className="w-12 h-12 text-red-400 mx-auto animate-bounce" />
-                            ) : (
-                                <div className="flex justify-center gap-3">
-                                    <CheckCircle className="w-10 h-10 text-green-400" />
-                                    <XCircle className="w-10 h-10 text-red-400" />
-                                </div>
-                            )}
-                            <h4 className="text-lg font-black text-white">
-                                {sendResult.failed === 0 ? 'All Committee Mails Dispatched Successfully!' :
-                                 sendResult.sent === 0 ? 'All Sends Failed' :
-                                 'Partially Dispatched'}
-                            </h4>
-                            <div className="flex justify-center gap-6 text-sm font-bold">
-                                <span className="text-green-400">{sendResult.sent} sent</span>
-                                {sendResult.failed > 0 && <span className="text-red-400">{sendResult.failed} failed</span>}
-                            </div>
-                            <Button onClick={() => setIsSendDialogOpen(false)} className="w-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs mt-4 rounded-xl h-10">
-                                Close
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="space-y-4 pt-3">
-                            <div className="bg-black/60 p-3.5 rounded-2xl border border-white/10 max-h-48 overflow-y-auto space-y-1.5 scrollbar-thin">
-                                <div className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-2">Drafted Recipients ({totalDrafted})</div>
-                                {applications.filter(a => !!draftMap[a.id]).map(c => (
-                                    <div key={c.id} className="flex justify-between items-center text-xs p-1.5 rounded-lg bg-white/[0.02]">
-                                        <span className="text-white font-semibold truncate">{c.fullName}</span>
-                                        <span className="text-purple-300 font-mono text-[10px] bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">{draftMap[c.id]}</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="space-y-2 pt-2">
-                                <label className="text-xs font-extrabold uppercase tracking-widest text-white/80 block">
-                                    Type <span className="text-purple-400 font-mono">CONFIRM</span> below to dispatch offer mails:
-                                </label>
-                                <Input 
-                                    value={confirmText}
-                                    onChange={(e) => setConfirmText(e.target.value)}
-                                    className="bg-black/50 border-white/15 font-mono tracking-widest uppercase h-11 text-center font-bold text-white rounded-xl focus:border-purple-500"
-                                    placeholder="CONFIRM"
-                                />
-                            </div>
-
-                            <div className="flex gap-3 pt-2">
-                                <Button variant="ghost" onClick={() => setIsSendDialogOpen(false)} className="flex-1 rounded-xl h-10 text-xs">Cancel</Button>
-                                <Button 
-                                    onClick={handleSendOfferMails}
-                                    disabled={confirmText.trim() !== 'CONFIRM' || isSending}
-                                    className="flex-1 rounded-xl h-10 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-extrabold text-xs tracking-wider shadow-lg shadow-purple-500/20"
-                                >
-                                    {isSending ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-                                    Dispatch Now
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
             {/* ── CANDIDATE QUICK MARKS & DETAILS DIALOG ───────────────────────── */}
             <Dialog open={!!previewCandidate} onOpenChange={(open) => !open && setPreviewCandidate(null)}>
                 <DialogContent className="bg-zinc-950 border-purple-500/30 text-white max-w-lg rounded-3xl p-6">
