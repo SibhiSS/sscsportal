@@ -21,12 +21,19 @@ const DEPARTMENTS = [
 // pre-publish state; 'active_member' is who has actually been told they're in.
 const CONFIRMED_STATUSES = ['selected', 'active_member'];
 
+// Mirrors CommitteeDraftBoard.tsx's meritScore — the same figure the
+// allocator placed people by, so the roster's row order ("who earned this
+// seat") matches the number printed next to their name.
+function meritScore(a: Application): number {
+    return Number(a.finalScore || a.interviewScore || (a.rating ? a.rating * 2 : 0)) || 0;
+}
+
 /**
  * Generates and downloads a per-department committee roster PDF: one table
- * per department, each row a member's name / roll number / year. Reads only
- * from `applications` (the saved, DB-backed roster) — never the in-memory
- * draft — so what gets handed to club members always matches what's actually
- * been committed with Save Roster.
+ * per department, each row a member ranked highest marks first, with the
+ * score that ranking is based on. Reads only from `applications` (the saved,
+ * DB-backed roster) — never the in-memory draft — so what gets handed to
+ * club members always matches what's actually been committed with Save Roster.
  */
 export function exportCommitteeRosterPdf(applications: Application[]): void {
     const confirmed = applications.filter(a =>
@@ -61,7 +68,10 @@ export function exportCommitteeRosterPdf(applications: Application[]): void {
     DEPARTMENTS.forEach(dept => {
         const members = confirmed
             .filter(a => a.assignedPosition === dept)
-            .sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+            .sort((a, b) => {
+                const diff = meritScore(b) - meritScore(a);
+                return diff !== 0 ? diff : (a.fullName || '').localeCompare(b.fullName || '');
+            });
         if (members.length === 0) return;
 
         // Section heading, with a page break first if the heading itself would
@@ -78,8 +88,8 @@ export function exportCommitteeRosterPdf(applications: Application[]): void {
         autoTable(doc, {
             startY: cursorY,
             margin: { left: marginX, right: marginX },
-            head: [['#', 'Name', 'Roll Number', 'Year']],
-            body: members.map((m, i) => [String(i + 1), m.fullName || '—', m.rollNumber || '—', m.year || '—']),
+            head: [['#', 'Name', 'Score', 'Roll Number', 'Year']],
+            body: members.map((m, i) => [String(i + 1), m.fullName || '—', meritScore(m).toFixed(1), m.rollNumber || '—', m.year || '—']),
             styles: { fontSize: 9, cellPadding: 5 },
             headStyles: { fillColor: [88, 28, 135], textColor: 255, fontStyle: 'bold' },
             alternateRowStyles: { fillColor: [245, 243, 255] },
