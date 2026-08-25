@@ -13,7 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Bot, AlertTriangle, CheckCircle2, Loader2, ShieldAlert } from 'lucide-react';
 import { Application } from '@/types';
-import { analyzeCommitteeFitBatch, CommitteeFitProgress, CommitteeFitResult } from '@/services/aiService';
+import { analyzeCommitteeFitBatch, CommitteeFitProgress, CommitteeFitResult, COMMITTEE_FIT_BATCH_SIZE } from '@/services/aiService';
 
 export interface CommitteeAiCandidate {
     app: Application;
@@ -138,7 +138,8 @@ const AICommitteeAllocationDialog: React.FC<AICommitteeAllocationDialogProps> = 
                         <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4 text-xs text-purple-200/90 flex items-start gap-2">
                             <Bot className="w-4 h-4 shrink-0 mt-0.5" />
                             <span>
-                                {multiChoice.length} candidate{multiChoice.length === 1 ? '' : 's'} have more than one eligible department — the AI will judge these.
+                                {multiChoice.length} candidate{multiChoice.length === 1 ? '' : 's'} have more than one eligible department — the AI will judge these,
+                                {' '}batched {COMMITTEE_FIT_BATCH_SIZE} at a time into {Math.max(1, Math.ceil(multiChoice.length / COMMITTEE_FIT_BATCH_SIZE))} request{Math.ceil(multiChoice.length / COMMITTEE_FIT_BATCH_SIZE) === 1 ? '' : 's'} total to stay well within a free-tier key's daily quota.
                                 {' '}{singleChoice.length} have exactly one eligible department (nothing to judge, placed as-is, no API call spent).
                             </span>
                         </div>

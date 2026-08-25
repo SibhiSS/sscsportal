@@ -416,7 +416,7 @@ export async function analyzeCandidatesBatch(
 export interface CommitteeFitInput {
     id: string;
     fullName: string;
-    /** Formatted "Task Score: 7.5/10, Interview Score: 8.2/10, ..." — marks only. */
+    /** Formatted "Interview Score: 8.2/10, ..." — marks only, no resume/application text. */
     marksSummary: string;
     /** Concatenated interviewer comments/remarks. Empty string if none were left. */
     feedbackText: string;
@@ -435,85 +435,108 @@ export interface CommitteeFitResult {
     corrected: boolean;
 }
 
-function buildCommitteeFitPrompt(input: CommitteeFitInput): string {
-    const choices = input.eligibleDepts.map((d, i) => `${i + 1}. ${d}`).join('\n');
-    return `You are helping an IEEE Solid-State Circuits Society (SSCS) student chapter decide which committee department a candidate should be placed in, now that their interview is complete.
+// One request judges up to this many candidates at once, instead of one request
+// per candidate. This exists because Gemini's free tier caps at 20 requests per
+// DAY (not per minute) — a chapter with 200+ interviewed candidates blew through
+// that in the first few seconds of a one-candidate-per-call run, and OpenAI
+// billing quota is just as finite. Batching a 200-candidate pool into ~14 calls
+// of 15 each is the difference between this feature being usable at all under a
+// free-tier key and not.
+export const COMMITTEE_FIT_BATCH_SIZE = 15;
 
-Candidate: ${input.fullName}
-
-Marks (this is the ONLY performance signal you have — there is no resume or application text):
-${input.marksSummary}
-
-Interviewer feedback:
-${input.feedbackText || '(No written feedback was left by the interviewer.)'}
-
-The candidate may ONLY be placed in one of the following departments — each is either a department they applied for, or a department an interviewer explicitly recommended them for. Do not suggest any department outside this list, even if the feedback mentions other skills:
-${choices}
-
-Pick the single best department from that numbered list, based only on the marks and the interviewer feedback above. Return ONLY a valid JSON object, no markdown, no code fences:
-{
-  "department": "the exact text of one department from the numbered list above",
-  "confidence": number 0-100, how confident you are this is the right call given the evidence,
-  "reasoning": "1-2 sentences citing the specific marks or feedback that justify this department over the other eligible option(s)"
-}`;
+function chunk<T>(items: T[], size: number): T[][] {
+    const out: T[][] = [];
+    for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+    return out;
 }
 
-function parseCommitteeFitJson(text: string, mode: 'gemini' | 'openai', eligibleDepts: string[]): Omit<CommitteeFitResult, 'mode'> & { mode: typeof mode } {
+function buildCommitteeFitBatchPrompt(inputs: CommitteeFitInput[]): string {
+    const blocks = inputs.map((input, i) => {
+        const choices = input.eligibleDepts.map((d, j) => `${j + 1}. ${d}`).join('\n');
+        return `Candidate ${i + 1} — id: "${input.id}" — ${input.fullName}
+Marks (the ONLY performance signal — there is no resume or application text): ${input.marksSummary}
+Interviewer feedback: ${input.feedbackText || '(No written feedback was left by the interviewer.)'}
+Eligible departments for THIS candidate only — pick exactly one, never a department from another candidate's list:
+${choices}`;
+    }).join('\n\n');
+
+    return `You are helping an IEEE Solid-State Circuits Society (SSCS) student chapter decide which committee department each of the following ${inputs.length} candidates should be placed in, now that interviews are complete. Judge each candidate independently, using only their own marks and interviewer feedback — never let one candidate's feedback influence another's placement, and never assign a department outside that specific candidate's own eligible list.
+
+${blocks}
+
+Return ONLY a valid JSON array, no markdown, no code fences, exactly one object per candidate listed above, in this schema:
+[
+  {
+    "id": "the exact id string given for that candidate",
+    "department": "the exact text of one department from THAT candidate's own eligible list",
+    "confidence": number 0-100,
+    "reasoning": "1-2 sentences citing the specific marks or feedback that justify this department over that candidate's other eligible option(s)"
+  }
+]
+
+You must return an entry for every one of the ${inputs.length} candidate ids above.`;
+}
+
+function parseCommitteeFitBatchJson(text: string, mode: 'gemini' | 'openai', inputs: CommitteeFitInput[]): Map<string, CommitteeFitResult> {
     const cleaned = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
     const parsed = JSON.parse(cleaned);
+    if (!Array.isArray(parsed)) throw new Error('Expected a JSON array of per-candidate results.');
 
-    const rawDept = typeof parsed.department === 'string' ? parsed.department.trim() : '';
-    // Exact match first, then case-insensitive — models occasionally alter casing
-    // even when told to return exact text.
-    const matched = eligibleDepts.find(d => d === rawDept)
-        || eligibleDepts.find(d => d.toLowerCase() === rawDept.toLowerCase());
+    interface RawEntry { id?: unknown; department?: unknown; confidence?: unknown; reasoning?: unknown }
+    const byId = new Map<string, RawEntry>();
+    (parsed as RawEntry[]).forEach(entry => {
+        if (entry && typeof entry.id === 'string') byId.set(entry.id, entry);
+    });
 
-    const confidence = Number(parsed.confidence);
-    return {
-        department: matched || eligibleDepts[0],
-        confidence: Number.isFinite(confidence) ? Math.max(0, Math.min(100, Math.round(confidence))) : 50,
-        reasoning: typeof parsed.reasoning === 'string' && parsed.reasoning.trim() ? parsed.reasoning.trim() : 'No reasoning provided.',
-        mode,
-        corrected: !matched,
-    };
+    const results = new Map<string, CommitteeFitResult>();
+    for (const input of inputs) {
+        const entry = byId.get(input.id);
+        const rawDept = entry && typeof entry.department === 'string' ? entry.department.trim() : '';
+        // Exact match first, then case-insensitive — models occasionally alter
+        // casing even when told to return exact text.
+        const matched = input.eligibleDepts.find(d => d === rawDept)
+            || input.eligibleDepts.find(d => d.toLowerCase() === rawDept.toLowerCase());
+
+        const confidence = entry ? Number(entry.confidence) : NaN;
+        results.set(input.id, {
+            department: matched || input.eligibleDepts[0],
+            confidence: Number.isFinite(confidence) ? Math.max(0, Math.min(100, Math.round(confidence))) : 50,
+            reasoning: entry && typeof entry.reasoning === 'string' && entry.reasoning.trim() ? entry.reasoning.trim() : (entry ? 'No reasoning provided.' : 'Missing from the model\'s response — defaulted.'),
+            mode,
+            corrected: !matched,
+        });
+    }
+    return results;
 }
 
 /**
- * Analyzes one candidate's committee-department fit using marks + interviewer
- * feedback only. Mirrors analyzeCandidate()'s primary-provider-with-fallback
+ * Analyzes one batch (already chunked to COMMITTEE_FIT_BATCH_SIZE or fewer) in
+ * a single request. Mirrors analyzeCandidate()'s primary-provider-with-fallback
  * shape above (kept as its own small copy rather than a shared helper, since
  * the two now return different result types and analyzeCandidate() is on the
  * hot path for the existing, already-relied-upon resume-fit feature — not
  * worth the regression risk of routing it through a new generic).
  */
-export async function analyzeCommitteeFit(input: CommitteeFitInput): Promise<CommitteeFitResult> {
-    if (input.eligibleDepts.length === 0) {
-        throw new Error(`${input.fullName} has no eligible department (no preference and no interviewer recommendation) — nothing for the AI to choose between.`);
-    }
-    if (input.eligibleDepts.length === 1) {
-        // Nothing to decide — nowhere else they could go.
-        return { department: input.eligibleDepts[0], confidence: 100, reasoning: 'Only eligible department.', mode: 'gemini', corrected: false };
-    }
-
+async function analyzeCommitteeFitChunk(inputs: CommitteeFitInput[]): Promise<Map<string, CommitteeFitResult>> {
     const { primary, geminiKey, openaiKey } = await resolveKeys();
     if (!primary) {
         throw new Error('AI Copilot is not configured. Add a Gemini and/or OpenAI API key under Admin → System Configuration → AI Copilot.');
     }
 
-    const prompt = buildCommitteeFitPrompt(input);
+    const prompt = buildCommitteeFitBatchPrompt(inputs);
     const secondary = primary === 'gemini' ? 'openai' : 'gemini';
     const secondaryKey = secondary === 'gemini' ? geminiKey : openaiKey;
 
-    const call = async (provider: 'gemini' | 'openai', key: string): Promise<CommitteeFitResult> => {
+    const call = async (provider: 'gemini' | 'openai', key: string): Promise<Map<string, CommitteeFitResult>> => {
         const text = provider === 'gemini' ? await callGeminiRaw(prompt, key) : await callOpenAIRaw(prompt, key);
-        return parseCommitteeFitJson(text, provider, input.eligibleDepts);
+        return parseCommitteeFitBatchJson(text, provider, inputs);
     };
 
     try {
         return await call(primary, (primary === 'gemini' ? geminiKey : openaiKey)!);
     } catch (primaryErr) {
         if (!secondaryKey) throw primaryErr;
-        console.warn(`[AI Copilot] Committee-fit: primary provider "${primary}" failed, falling back to "${secondary}".`, primaryErr);
+        console.warn(`[AI Copilot] Committee-fit chunk: primary provider "${primary}" failed, falling back to "${secondary}".`, primaryErr);
         try {
             return await call(secondary, secondaryKey);
         } catch (secondaryErr) {
@@ -531,39 +554,72 @@ export interface CommitteeFitProgress {
 }
 
 /**
- * Batch version of analyzeCommitteeFit, same bounded-concurrency shape as
- * analyzeCandidatesBatch(). Does not persist anything to the DB — the caller
- * (CommitteeDraftBoard) treats these as a draft suggestion, not a fact, until
- * an admin reviews and applies them.
+ * Judges committee-department fit for many candidates using marks + interviewer
+ * feedback only, batching COMMITTEE_FIT_BATCH_SIZE candidates into each request
+ * (see that constant for why — a single free-tier Gemini key cannot sustain
+ * one request per candidate). Candidates with 0 or 1 eligible departments never
+ * reach the network at all: there's nothing to judge. Does not persist
+ * anything to the DB — the caller (CommitteeDraftBoard) treats these as a
+ * draft suggestion, not a fact, until an admin reviews and applies them.
  */
 export async function analyzeCommitteeFitBatch(
     inputs: CommitteeFitInput[],
     options: { concurrency?: number; onProgress?: (p: CommitteeFitProgress) => void; onResult?: (id: string, result: CommitteeFitResult | null, error?: string) => void } = {}
 ): Promise<Map<string, CommitteeFitResult>> {
-    const { concurrency = 3, onProgress, onResult } = options;
+    const { concurrency = 2, onProgress, onResult } = options;
     const results = new Map<string, CommitteeFitResult>();
+    const total = inputs.length;
     let completed = 0;
-    let index = 0;
+    const bump = (n: number, current?: string) => {
+        completed += n;
+        onProgress?.({ completed, total, current });
+    };
+
+    // Nothing to decide for these — settle them immediately, no network call.
+    const needsAi: CommitteeFitInput[] = [];
+    for (const input of inputs) {
+        if (input.eligibleDepts.length === 1) {
+            const result: CommitteeFitResult = { department: input.eligibleDepts[0], confidence: 100, reasoning: 'Only eligible department.', mode: 'gemini', corrected: false };
+            results.set(input.id, result);
+            onResult?.(input.id, result);
+            bump(1, input.fullName);
+        } else if (input.eligibleDepts.length === 0) {
+            onResult?.(input.id, null, `${input.fullName} has no eligible department (no preference and no interviewer recommendation) — nothing for the AI to choose between.`);
+            bump(1, input.fullName);
+        } else {
+            needsAi.push(input);
+        }
+    }
+
+    const chunks = chunk(needsAi, COMMITTEE_FIT_BATCH_SIZE);
+    let chunkIndex = 0;
 
     const worker = async () => {
         for (; ;) {
-            const i = index++;
-            if (i >= inputs.length) return;
-            const input = inputs[i];
+            const i = chunkIndex++;
+            if (i >= chunks.length) return;
+            const group = chunks[i];
             try {
-                const result = await analyzeCommitteeFit(input);
-                results.set(input.id, result);
-                onResult?.(input.id, result);
+                const chunkResults = await analyzeCommitteeFitChunk(group);
+                group.forEach(input => {
+                    const result = chunkResults.get(input.id);
+                    if (result) {
+                        results.set(input.id, result);
+                        onResult?.(input.id, result);
+                    } else {
+                        onResult?.(input.id, null, 'Missing from the batch response.');
+                    }
+                });
             } catch (err) {
-                console.error(`[AI Copilot] Committee-fit batch failed for ${input.fullName}:`, err);
-                onResult?.(input.id, null, err instanceof Error ? err.message : String(err));
+                const message = err instanceof Error ? err.message : String(err);
+                console.error(`[AI Copilot] Committee-fit batch of ${group.length} failed:`, err);
+                group.forEach(input => onResult?.(input.id, null, message));
             } finally {
-                completed++;
-                onProgress?.({ completed, total: inputs.length, current: input.fullName });
+                bump(group.length, group[group.length - 1]?.fullName);
             }
         }
     };
 
-    await Promise.all(Array.from({ length: Math.min(concurrency, inputs.length) }, worker));
+    await Promise.all(Array.from({ length: Math.min(concurrency, chunks.length) }, worker));
     return results;
 }

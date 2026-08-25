@@ -225,9 +225,12 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
     // Marks only, formatted for the AI committee-fit prompt — deliberately
     // excludes skills/reason/links, which is the whole point of this analysis
     // being different from the pre-interview resume-fit AI Copilot.
+    // Task Score deliberately excluded — it's frequently unset (reads as a
+    // literal 0.0/10 rather than "not recorded"), and was showing up in AI
+    // reasoning as if a candidate had scored badly when the field simply hadn't
+    // been filled in.
     const marksSummaryFor = (c: Application): string => {
         const parts: string[] = [];
-        if (c.taskScore != null) parts.push(`Task Score: ${Number(c.taskScore).toFixed(1)}/10`);
         if (c.interviewScore != null) parts.push(`Interview Score: ${Number(c.interviewScore).toFixed(1)}/10`);
         if (c.finalScore != null) parts.push(`Final Score: ${Number(c.finalScore).toFixed(1)}`);
         if (c.rating != null) parts.push(`Star Rating: ${c.rating}/5`);
