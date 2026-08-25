@@ -179,11 +179,48 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
         return eligibleCandidates.filter(c => !draftMap[c.id]);
     }, [eligibleCandidates, draftMap]);
 
-    // ── 3. ⚡ SMART AUTO-DRAFT ALGORITHM (COMMITTEE MEMBERS ONLY) ─────────────
+    // ── 3. MERIT-RANKED AUTO-DRAFT ───────────────────────────────────────────
+    // Merit score for ranking. Deliberately defaults to 0, not 5: the old
+    // fallback handed an unscored candidate 5 points, which outranked anyone who
+    // genuinely scored below that.
+    const meritScore = (c: Application): number =>
+        Number(c.finalScore || c.interviewScore || (c.rating ? c.rating * 2 : 0)) || 0;
+
+    // The ONLY departments a candidate may be placed in: the two they asked for,
+    // plus anything an interviewer explicitly recommended. Returned in the order
+    // they should be offered — an interviewer's verdict outranks a stated
+    // preference, 1st preference outranks 2nd.
+    const eligibleDeptsFor = (c: Application): string[] => {
+        const ordered: string[] = [];
+        const push = (d?: string | null) => {
+            if (d && DEPARTMENTS.includes(d) && !ordered.includes(d)) ordered.push(d);
+        };
+        (feedbackMap[c.id] || []).forEach(push);   // interviewer recommendations
+        push(c.primaryDept || c.department);       // 1st preference
+        push(c.secondaryDept);                     // 2nd preference
+        return ordered;
+    };
+
     // Auto-Fill MERGES: it keeps everyone already placed by hand and only fills the
-    // seats still empty. Wiping manual work silently (what this used to do) made
-    // the button unusable once you'd started fine-tuning. Use Clear Draft first if
-    // you genuinely want to start over.
+    // seats still empty. Use Clear Draft if you want to start over.
+    //
+    // Allocation is a merit-ranked serial dictatorship: candidates are sorted by
+    // marks, highest first, and each in turn takes the best department that still
+    // has a seat. Two guarantees follow, neither of which the previous version
+    // gave:
+    //
+    //   1. Nobody is ever placed in a department they did not apply to and were
+    //      not recommended for. The old scorer built a match for every candidate
+    //      against every department — an unrelated pairing still scored the
+    //      candidate's base performance — so once the genuine matches ran out the
+    //      greedy loop filled the remaining seats with whoever was left over.
+    //   2. A higher-scoring candidate is never displaced by a lower-scoring one
+    //      for a seat they both wanted. The old global sort ranked (candidate,
+    //      department) pairs, so a weak recommended candidate outranked a strong
+    //      first-preference one.
+    //
+    // A candidate whose eligible departments are all full stays in the reserve
+    // pool rather than being parked somewhere arbitrary.
     const handleRunAutoDraft = () => {
         setIsDrafting(true);
         setTimeout(() => {
@@ -196,57 +233,47 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                 if (fillCount[dept] !== undefined) fillCount[dept] += 1;
             });
 
-            // Score each candidate against each department
-            interface MatchScore {
-                candidateId: string;
-                dept: string;
-                score: number;
-            }
-
-            const matches: MatchScore[] = [];
-            eligibleCandidates.forEach(c => {
-                const basePerf = Number(c.finalScore || c.interviewScore || c.rating * 2) || 5;
-                const recDepts = feedbackMap[c.id] || [];
-
-                DEPARTMENTS.forEach(dept => {
-                    let points = basePerf;
-                    // +50 if explicitly recommended by interviewers for this department!
-                    if (recDepts.includes(dept)) points += 50;
-                    // +30 if it is their 1st Preference
-                    if (c.primaryDept === dept || c.department === dept) points += 30;
-                    // +15 if it is their 2nd Preference
-                    if (c.secondaryDept === dept) points += 15;
-
-                    matches.push({ candidateId: c.id, dept, score: points });
-                });
-            });
-
-            // Sort all potential matches descending by score
-            matches.sort((a, b) => b.score - a.score);
-
-            // Anyone already placed keeps their seat and is skipped below.
             const draftedIds = new Set<string>(Object.keys(newDraft));
             const placedBefore = draftedIds.size;
 
-            // Greedy allocation up to quota
-            for (const match of matches) {
-                if (draftedIds.has(match.candidateId)) continue;
-                if ((fillCount[match.dept] || 0) < (quotas[match.dept] ?? DEFAULT_QUOTAS[match.dept] ?? 15)) {
-                    newDraft[match.candidateId] = match.dept;
-                    draftedIds.add(match.candidateId);
-                    fillCount[match.dept] = (fillCount[match.dept] || 0) + 1;
+            // Strict merit order. Ties broken by name so a re-run is deterministic.
+            const byMerit = [...eligibleCandidates]
+                .filter(c => !draftedIds.has(c.id))
+                .sort((a, b) => {
+                    const diff = meritScore(b) - meritScore(a);
+                    return diff !== 0 ? diff : (a.fullName || '').localeCompare(b.fullName || '');
+                });
+
+            const unplaced: Application[] = [];
+
+            for (const c of byMerit) {
+                const choices = eligibleDeptsFor(c);
+                const dept = choices.find(d => fillCount[d] < quotaFor(d));
+
+                if (!dept) {
+                    unplaced.push(c);
+                    continue;
                 }
+
+                newDraft[c.id] = dept;
+                draftedIds.add(c.id);
+                fillCount[dept] += 1;
             }
 
             const added = draftedIds.size - placedBefore;
             setDraftMap(newDraft);
             setIsDrafting(false);
-            setSuccessMsg(
-                placedBefore > 0
-                    ? `✅ Auto-Fill Complete! Added ${added} member${added === 1 ? '' : 's'} to the remaining seats and kept your ${placedBefore} existing placement${placedBefore === 1 ? '' : 's'}.`
-                    : `✅ Auto-Fill Complete! ${added} committee member${added === 1 ? '' : 's'} distributed based on interviewer verdicts, 1st/2nd preferences, and interview scores.`
-            );
-            setTimeout(() => setSuccessMsg(null), 6000);
+
+            const noEligible = unplaced.filter(c => eligibleDeptsFor(c).length === 0).length;
+            const seatsFull = unplaced.length - noEligible;
+
+            const parts = [`✅ Auto-Fill complete — ${added} member${added === 1 ? '' : 's'} placed by merit.`];
+            if (placedBefore > 0) parts.push(`Kept your ${placedBefore} existing placement${placedBefore === 1 ? '' : 's'}.`);
+            if (seatsFull > 0) parts.push(`${seatsFull} left in the reserve pool: every department they applied to or were recommended for is full.`);
+            if (noEligible > 0) parts.push(`${noEligible} could not be placed at all: no valid preference and no interviewer recommendation.`);
+
+            setSuccessMsg(parts.join(' '));
+            setTimeout(() => setSuccessMsg(null), 10000);
         }, 600);
     };
 
@@ -295,15 +322,37 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
         return applications.filter(app => draftMap[app.id] === dept);
     };
 
-    // Helper: Check if candidate can be dropped into target department (must be 1st or 2nd pref)
+    // A candidate may only go where they asked to go or were recommended to go.
+    // Same rule the auto-draft uses, so every placement path agrees: previously
+    // drag-drop allowed 1st/2nd preference only while auto-draft would place
+    // anyone anywhere, and the two contradicted each other.
     const isDeptAllowedForCandidate = (candidateId: string | null, targetDept: string): boolean => {
         if (!candidateId) return false;
         const candidate = applications.find(a => a.id === candidateId);
         if (!candidate) return false;
-        const p1 = candidate.primaryDept || candidate.department;
-        const p2 = candidate.secondaryDept;
-        return targetDept === p1 || (!!p2 && targetDept === p2);
+        return eligibleDeptsFor(candidate).includes(targetDept);
     };
+
+    // Why is this person in this department? Drives the badges and flags any
+    // placement that has no justification at all.
+    const placementBasis = (c: Application, dept: string): 'recommended' | 'first' | 'second' | 'none' => {
+        if ((feedbackMap[c.id] || []).includes(dept)) return 'recommended';
+        if ((c.primaryDept || c.department) === dept) return 'first';
+        if (c.secondaryDept === dept) return 'second';
+        return 'none';
+    };
+
+    // Anyone currently sitting in a department they never applied to and were
+    // never recommended for — i.e. left over from the old allocator.
+    const mismatchedMembers = useMemo(() => {
+        return Object.entries(draftMap)
+            .map(([id, dept]) => {
+                const app = applications.find(a => a.id === id);
+                return app && placementBasis(app, dept) === 'none' ? { app, dept } : null;
+            })
+            .filter((x): x is { app: Application; dept: string } => x !== null);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [draftMap, applications, feedbackMap]);
 
     // ── 4b. Seat Quota Editing ────────────────────────────────────────────────
     // Commits whatever is in the seat box: clamped to the number of members
@@ -502,6 +551,45 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                     </div>
                 </div>
             </div>
+
+            {/* Mismatched-placement audit. Every member the board shows should be in a
+                department they applied to or were recommended for; anything else is
+                left over from the old allocator and needs a decision. */}
+            <AnimatePresence>
+                {mismatchedMembers.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-amber-200 space-y-3 shadow-lg"
+                    >
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                            <div className="text-sm font-semibold">
+                                {mismatchedMembers.length} member{mismatchedMembers.length === 1 ? ' is' : 's are'} in a department they did not apply to and were not recommended for.
+                                <span className="font-normal text-amber-200/70"> Re-run Auto-Fill to reallocate them by merit, or move them by hand.</span>
+                            </div>
+                        </div>
+                        <div className="max-h-40 overflow-y-auto space-y-1 pl-8 scrollbar-thin">
+                            {mismatchedMembers.map(({ app, dept }) => (
+                                <div key={app.id} className="flex items-center justify-between gap-2 text-xs bg-black/30 rounded-lg px-2.5 py-1.5">
+                                    <span className="text-white font-semibold truncate">{app.fullName}</span>
+                                    <span className="flex items-center gap-1.5 shrink-0 font-mono text-[10px]">
+                                        <span className="text-amber-300">{dept}</span>
+                                        <span className="text-muted-foreground">
+                                            (applied: {app.primaryDept || '—'}{app.secondaryDept ? ` / ${app.secondaryDept}` : ''})
+                                        </span>
+                                        <button
+                                            onClick={() => removeCandidate(app.id)}
+                                            className="ml-1 px-2 py-0.5 rounded bg-red-500/15 hover:bg-red-500/25 text-red-300 font-bold"
+                                        >Remove</button>
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Quota / save failure alert */}
             <AnimatePresence>
@@ -726,6 +814,11 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                                                                         {isRec && <Badge variant="outline" className="text-[9px] bg-purple-500/20 text-purple-300 border-purple-500/30 px-1 py-0">Interviewer Rec</Badge>}
                                                                         {is1st && <Badge variant="outline" className="text-[9px] bg-blue-500/20 text-blue-300 border-blue-500/30 px-1 py-0">1st Pref</Badge>}
                                                                         {!is1st && is2nd && <Badge variant="outline" className="text-[9px] bg-cyan-500/20 text-cyan-300 border-cyan-500/30 px-1 py-0">2nd Pref</Badge>}
+                                                                        {!isRec && !is1st && !is2nd && (
+                                                                            <Badge variant="outline" className="text-[9px] bg-amber-500/20 text-amber-300 border-amber-500/40 px-1 py-0 font-extrabold">
+                                                                                ⚠ Not their preference
+                                                                            </Badge>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             </div>
