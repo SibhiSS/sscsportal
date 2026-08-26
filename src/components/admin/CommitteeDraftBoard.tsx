@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Users, CheckCircle, RefreshCw, Trash2, Plus, UserCheck, GripVertical, AlertTriangle, FileDown } from 'lucide-react';
+import { Users, CheckCircle, RefreshCw, Trash2, Plus, UserCheck, GripVertical, AlertTriangle, FileDown, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { exportCommitteeRosterPdf } from '@/lib/committeeRosterPdf';
+import SendCommitteeOffersDialog from './SendCommitteeOffersDialog';
 
 const DEPARTMENTS = [
     'Technical',
@@ -60,6 +61,7 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
     const [isLoadingFeedbacks, setIsLoadingFeedbacks] = useState(true);
     const [isDrafting, setIsDrafting] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
     // Drag and drop state
@@ -186,6 +188,16 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
     // genuinely scored below that.
     const meritScore = (c: Application): number =>
         Number(c.finalScore || c.interviewScore || (c.rating ? c.rating * 2 : 0)) || 0;
+
+    // Confirmed committee members still waiting on their offer mail — 'selected'
+    // is the saved, post-roster state; 'active_member' means the mail already
+    // went out and was confirmed delivered, so they're excluded here on purpose.
+    // Highest marks first, matching the roster/PDF ordering.
+    const pendingMailCandidates = useMemo(() => {
+        return applications
+            .filter(a => a.status === 'selected' && a.assignedPosition && DEPARTMENTS.includes(a.assignedPosition))
+            .sort((a, b) => meritScore(b) - meritScore(a));
+    }, [applications]);
 
     // The ONLY departments a candidate may be placed in: the two they asked for,
     // plus anything an interviewer explicitly recommended. Returned in the order
@@ -583,9 +595,23 @@ export const CommitteeDraftBoard: React.FC<CommitteeDraftBoardProps> = ({ applic
                             <FileDown className="w-3.5 h-3.5 mr-1.5" />
                             Export Roster PDF
                         </Button>
+                        <Button
+                            onClick={() => setIsSendDialogOpen(true)}
+                            variant="outline"
+                            className="h-10 px-6 rounded-xl border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 font-bold text-xs uppercase tracking-wider"
+                        >
+                            <Send className="w-3.5 h-3.5 mr-1.5" />
+                            Send Mails{pendingMailCandidates.length > 0 ? ` (${pendingMailCandidates.length} pending)` : ''}
+                        </Button>
                     </div>
                 </div>
             </div>
+
+            <SendCommitteeOffersDialog
+                open={isSendDialogOpen}
+                onClose={() => setIsSendDialogOpen(false)}
+                candidates={pendingMailCandidates}
+            />
 
             {/* Mismatched-placement audit. Every member the board shows should be in a
                 department they applied to or were recommended for; anything else is
