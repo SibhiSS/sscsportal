@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useRecruitmentWindow } from '@/hooks/useRecruitmentWindow';
+import { RECRUITMENT_CLOSED, INSTAGRAM_URL } from '@/config/recruitment';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -129,7 +130,13 @@ const Navigation = () => {
           {/* Actions */}
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-3">
-              {hasApplied ? (
+              {RECRUITMENT_CLOSED ? (
+                <Button size="sm" variant="outline" className="border-white/10 text-muted-foreground hover:text-foreground backdrop-blur-md rounded-full bg-white/5 px-6" asChild>
+                  <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
+                    Results on Instagram
+                  </a>
+                </Button>
+              ) : hasApplied ? (
                 <Button size="sm" variant="outline" className="border-white/10 text-primary/60 backdrop-blur-md rounded-full bg-white/5 cursor-not-allowed px-6" disabled>
                   Applied
                 </Button>

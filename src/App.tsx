@@ -14,16 +14,7 @@ import './App.css';
 
 
 import ScheduleInterview from '@/pages/ScheduleInterview';
-import ResultsNotice from '@/pages/ResultsNotice';
-
-// ── PORTAL KILL SWITCH ───────────────────────────────────────────────────────
-// While true, every candidate-facing route collapses to the "results are on
-// Instagram" notice at "/". Admin and interviewer routes stay reachable — both
-// sit behind auth, so they expose nothing publicly, and locking them would lock
-// the committee out of the panel that flips this back.
-//
-// To reopen the portal: set this to false and redeploy.
-const SITE_LOCKED = true;
+import { RECRUITMENT_CLOSED } from '@/config/recruitment';
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -54,30 +45,31 @@ function App() {
             <SpeedInsights />
             <Router>
               <Routes>
-                {SITE_LOCKED ? (
+                <Route path="/" element={<Index />} />
+                <Route path="/team" element={<Team />} />
+
+                {/* Recruitment routes — closed off while RECRUITMENT_CLOSED */}
+                {RECRUITMENT_CLOSED ? (
                   <>
-                    <Route path="/" element={<ResultsNotice />} />
-                    {/* Auth-gated staff routes stay live — they leak nothing publicly */}
-                    <Route path="/admin" element={<Admin />} />
-                    <Route path="/admin/schedule" element={<RecruitmentSchedule />} />
-                    <Route path="/interviewer" element={<InterviewerDashboard />} />
-                    {/* Everything candidate-facing folds back to the notice */}
-                    <Route path="*" element={<Navigate to="/" replace />} />
+                    <Route path="/apply" element={<Navigate to="/" replace />} />
+                    <Route path="/status" element={<Navigate to="/" replace />} />
+                    <Route path="/schedule" element={<Navigate to="/" replace />} />
+                    <Route path="/register" element={<Navigate to="/" replace />} />
                   </>
                 ) : (
                   <>
-                    <Route path="/" element={<Index />} />
                     <Route path="/apply" element={<Apply />} />
                     <Route path="/status" element={<StatusPage />} />
                     <Route path="/schedule" element={<ScheduleInterview />} />
-                    <Route path="/team" element={<Team />} />
                     <Route path="/register" element={<Register />} />
-                    <Route path="/admin" element={<Admin />} />
-                    <Route path="/admin/schedule" element={<RecruitmentSchedule />} />
-                    <Route path="/interviewer" element={<InterviewerDashboard />} />
-                    <Route path="*" element={<NotFound />} />
                   </>
                 )}
+
+                {/* Staff routes — auth-gated, unaffected by the recruitment switch */}
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/admin/schedule" element={<RecruitmentSchedule />} />
+                <Route path="/interviewer" element={<InterviewerDashboard />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
               <Toaster />
             </Router>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Instagram } from 'lucide-react';
 import HolographicCard from '@/components/ui/HolographicCard';
 import { Button } from '@/components/ui/button';
 import RevealText from '@/components/ui/RevealText';
@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useRecruitmentWindow } from '@/hooks/useRecruitmentWindow';
+import { RECRUITMENT_CLOSED, INSTAGRAM_URL } from '@/config/recruitment';
 
 const benefits = [
   { title: 'Hands-on Projects', description: 'Work on real SSCS projects' },
@@ -98,7 +99,18 @@ const JoinSection = () => {
 
           {/* CTA Button */}
           <div className="flex flex-col items-center">
-            {canBookSlot ? (
+            {RECRUITMENT_CLOSED ? (
+              <Button
+                size="lg"
+                className="px-12 h-16 bg-white/5 border border-white/10 text-foreground hover:bg-white/10 hover:border-primary/40 font-heading rounded-full text-lg transition-all"
+                asChild
+              >
+                <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
+                  RECRUITMENT CLOSED — RESULTS ON INSTAGRAM
+                  <Instagram className="w-6 h-6 ml-2" />
+                </a>
+              </Button>
+            ) : canBookSlot ? (
               <Button
                 size="lg"
                 className="px-12 h-16 bg-purple-600 hover:bg-purple-700 text-white font-heading rounded-full shadow-[0_0_30px_rgba(168,85,247,0.5)] transition-all hover:scale-105 text-lg animate-pulse"
@@ -150,7 +162,9 @@ const JoinSection = () => {
             )}
 
             <p className="text-sm text-muted-foreground mt-8 font-medium">
-              Applications are reviewed on a rolling basis
+              {RECRUITMENT_CLOSED
+                ? 'Recruitment for this cycle has closed. Results are announced on @ieee_sscs_vitcc.'
+                : 'Applications are reviewed on a rolling basis'}
             </p>
           </div>
       </div>

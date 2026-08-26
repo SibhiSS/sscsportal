@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronDown, ArrowRight, Video } from 'lucide-react';
+import { ChevronDown, ArrowRight, Video, Instagram } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import TechGridBackground from '@/components/ui/TechGridBackground';
@@ -8,6 +8,7 @@ import GlitchText from '@/components/ui/GlitchText';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useRecruitmentWindow } from '@/hooks/useRecruitmentWindow';
+import { RECRUITMENT_CLOSED, INSTAGRAM_URL } from '@/config/recruitment';
 
 const HeroSection = () => {
   const { user } = useAuth();
@@ -151,7 +152,18 @@ const HeroSection = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
             >
-              {canBookSlot ? (
+              {RECRUITMENT_CLOSED ? (
+                <Button
+                  size="lg"
+                  className="px-10 h-14 bg-white/5 border border-white/10 text-foreground hover:bg-white/10 hover:border-primary/40 font-heading rounded-full transition-all"
+                  asChild
+                >
+                  <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
+                    RECRUITMENT CLOSED — RESULTS ON INSTAGRAM
+                    <Instagram className="w-5 h-5 ml-2" />
+                  </a>
+                </Button>
+              ) : canBookSlot ? (
                 <Button
                   size="lg"
                   className="px-10 h-14 bg-purple-600 hover:bg-purple-700 text-white font-heading rounded-full shadow-[0_0_25px_rgba(168,85,247,0.5)] transition-all hover:scale-105 animate-pulse"
