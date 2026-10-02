@@ -1,55 +1,12 @@
-import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronDown, ArrowRight, Video, Instagram } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ChevronDown, Instagram } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TechGridBackground from '@/components/ui/TechGridBackground';
 import GlitchText from '@/components/ui/GlitchText';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
-import { useRecruitmentWindow } from '@/hooks/useRecruitmentWindow';
-import { RECRUITMENT_CLOSED, INSTAGRAM_URL } from '@/config/recruitment';
+
+const INSTAGRAM_URL = 'https://www.instagram.com/ieee_sscs_vitcc/';
 
 const HeroSection = () => {
-  const { user } = useAuth();
-  const [hasApplied, setHasApplied] = useState(false);
-  const [canBookSlot, setCanBookSlot] = useState(false);
-  const [isBooked, setIsBooked] = useState(false);
-  const [isSelected, setIsSelected] = useState(false);
-  // Server-evaluated: the manual switch AND the scheduled window. Was hardcoded
-  // to true, which left this CTA advertising an open form after it had closed.
-  const { isOpen: isRecruitmentOpen } = useRecruitmentWindow();
-
-  useEffect(() => {
-    const checkStatus = async () => {
-      // Fetch user application status
-      if (!user) return;
-      const { data } = await supabase
-        .from('applications')
-        .select('id, status, shortlist_notified')
-        .or(`user_id.eq.${user.uid},email.eq.${user.email}`)
-        .limit(1);
-
-      if (data && data.length > 0) {
-        setHasApplied(true);
-        const app = data[0];
-        const st = app.status;
-        if (st === 'shortlisted' && app.shortlist_notified === true) {
-          // Gated on shortlist_notified, same as every other page — otherwise
-          // this button would tell a shortlisted-but-not-yet-emailed applicant
-          // they can book before the team has actually notified them.
-          setCanBookSlot(true);
-        } else if (st === 'interview_scheduled') {
-          setIsBooked(true);
-        } else if (['selected', 'active_member'].includes(st)) {
-          setIsSelected(true);
-        }
-      }
-    };
-
-    checkStatus();
-  }, [user]);
-
   const scrollToSection = (href: string) => {
     const element = document.querySelector(href);
     if (element) {
@@ -152,78 +109,16 @@ const HeroSection = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
             >
-              {RECRUITMENT_CLOSED ? (
-                <Button
-                  size="lg"
-                  className="px-10 h-14 bg-white/5 border border-white/10 text-foreground hover:bg-white/10 hover:border-primary/40 font-heading rounded-full transition-all"
-                  asChild
-                >
-                  <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
-                    RECRUITMENT CLOSED — RESULTS ON INSTAGRAM
-                    <Instagram className="w-5 h-5 ml-2" />
-                  </a>
-                </Button>
-              ) : canBookSlot ? (
-                <Button
-                  size="lg"
-                  className="px-10 h-14 bg-purple-600 hover:bg-purple-700 text-white font-heading rounded-full shadow-[0_0_25px_rgba(168,85,247,0.5)] transition-all hover:scale-105 animate-pulse"
-                  asChild
-                >
-                  <Link to="/schedule">
-                    BOOK SLOT
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Link>
-                </Button>
-              ) : isBooked ? (
-                <Button
-                  size="lg"
-                  className="px-10 h-14 bg-purple-600 hover:bg-purple-700 text-white font-heading rounded-full shadow-[0_0_25px_rgba(168,85,247,0.5)] transition-all hover:scale-105"
-                  asChild
-                >
-                  <Link to="/apply">
-                    <Video className="w-5 h-5 mr-2" />
-                    VIEW INTERVIEW SLOT
-                  </Link>
-                </Button>
-              ) : isSelected ? (
-                <Button
-                  size="lg"
-                  className="px-10 h-14 bg-emerald-600 hover:bg-emerald-700 text-white font-heading rounded-full shadow-[0_0_25px_rgba(16,185,129,0.5)] transition-all hover:scale-105"
-                  asChild
-                >
-                  <Link to="/apply">
-                    APPLICATION SELECTED
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Link>
-                </Button>
-              ) : hasApplied ? (
-                <Button
-                  size="lg"
-                  className="px-10 h-14 bg-primary/20 text-primary/50 border border-primary/20 font-heading cursor-not-allowed rounded-full"
-                  disabled
-                >
-                  Application Received
-                </Button>
-              ) : !isRecruitmentOpen ? (
-                <Button
-                  size="lg"
-                  className="px-10 h-14 bg-white/5 border border-white/10 text-muted-foreground font-heading rounded-full cursor-not-allowed"
-                  disabled
-                >
-                  RECRUITMENT CLOSED
-                </Button>
-              ) : (
-                <Button
-                  size="lg"
-                  className="px-10 h-14 bg-primary text-primary-foreground hover:bg-primary/90 font-heading rounded-full shadow-[0_0_20px_rgba(220,20,60,0.3)] transition-all hover:scale-105"
-                  asChild
-                >
-                  <Link to="/apply">
-                    Join IEEE SSCS
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Link>
-                </Button>
-              )}
+              <Button
+                size="lg"
+                className="px-10 h-14 bg-primary text-primary-foreground hover:bg-primary/90 font-heading rounded-full shadow-[0_0_20px_rgba(220,20,60,0.3)] transition-all hover:scale-105"
+                asChild
+              >
+                <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
+                  Follow on Instagram
+                  <Instagram className="w-5 h-5 ml-2" />
+                </a>
+              </Button>
 
               <Button
                 size="lg"

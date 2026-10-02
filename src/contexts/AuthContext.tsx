@@ -2,12 +2,14 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { supabase } from '@/lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 
+type Role = 'super_admin' | 'admin' | 'member';
+
 interface User {
   email: string;
   displayName: string;
   photoURL: string;
   uid: string;
-  role?: 'super_admin' | 'admin' | 'interviewer' | 'viewer';
+  role?: Role;
 }
 
 interface AuthContextType {
@@ -79,7 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Fetch Role from DB. `admins.email` is matched case-insensitively here because
           // rows can be entered with inconsistent casing (e.g. pasted from a roster), while
           // OAuth always returns the email lowercased — a byte-exact match would silently
-          // miss the row and downgrade a real admin to 'viewer'.
+          // miss the row and downgrade a real admin to 'member'.
           const { data: adminData, error: adminLookupError } = await supabase
             .from('admins')
             .select('role')
@@ -90,8 +92,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.error('[Auth] Admin role lookup failed:', adminLookupError.message);
           }
 
-          // Use DB role if present, fallback to super_admin for exception email
-          const role = adminData?.role || (isHardcodedAdmin ? 'super_admin' : 'viewer');
+          // Only super_admin/admin carry privileges. Anything else in the table
+          // (legacy 'interviewer'/'viewer' rows) or no row at all is a plain member.
+          const dbRole = adminData?.role;
+          const role: Role =
+            dbRole === 'super_admin' || dbRole === 'admin' ? dbRole
+            : isHardcodedAdmin ? 'super_admin'
+            : 'member';
           const nextUser = {
             ...mapSupabaseUser(session.user),
             role
@@ -165,11 +172,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       localStorage.removeItem('sscs_local_bypass');
-      // FIX #16 (Privacy/Frontend Security): Clear all user form draft data from localStorage
-      // before signing out so sensitive PII is not left on shared/lab computers.
-      const keys = Object.keys(localStorage).filter(k => k.startsWith('sscsFormData_'));
-      keys.forEach(k => localStorage.removeItem(k));
-      localStorage.removeItem('sscs_admin_view');
 
       const { error } = await supabase.auth.signOut();
       if (error) throw error;

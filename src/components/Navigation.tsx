@@ -1,12 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, LogIn, LogOut, User as UserIcon, Eye } from 'lucide-react';
+import { Menu, X, LogIn, LogOut, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
-import { useRecruitmentWindow } from '@/hooks/useRecruitmentWindow';
-import { RECRUITMENT_CLOSED, INSTAGRAM_URL } from '@/config/recruitment';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +17,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [hasApplied, setHasApplied] = useState(false);
   const location = useLocation();
   const { user, signInWithGoogle, loginAsLocalAdmin, logout } = useAuth();
   const navigate = useNavigate();
@@ -33,28 +29,6 @@ const Navigation = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  // Server-evaluated: the manual switch AND the scheduled window.
-  const { isOpen: isRecruitmentOpen } = useRecruitmentWindow();
-
-  useEffect(() => {
-    const checkStatus = async () => {
-      if (!user) {
-        setHasApplied(false);
-        return;
-      }
-      const { data } = await supabase
-        .from('applications')
-        .select('id')
-        .or(`user_id.eq.${user.uid},email.eq.${user.email}`)
-        .limit(1);
-
-      if (data && data.length > 0) setHasApplied(true);
-      else setHasApplied(false);
-    };
-
-    checkStatus();
-  }, [user]);
 
   const navLinks = [
     { name: 'About', href: '#about' },
@@ -129,30 +103,6 @@ const Navigation = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-3">
-              {RECRUITMENT_CLOSED ? (
-                <Button size="sm" variant="outline" className="border-white/10 text-muted-foreground hover:text-foreground backdrop-blur-md rounded-full bg-white/5 px-6" asChild>
-                  <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
-                    Results on Instagram
-                  </a>
-                </Button>
-              ) : hasApplied ? (
-                <Button size="sm" variant="outline" className="border-white/10 text-primary/60 backdrop-blur-md rounded-full bg-white/5 cursor-not-allowed px-6" disabled>
-                  Applied
-                </Button>
-              ) : !isRecruitmentOpen ? (
-                <Button size="sm" variant="outline" className="border-white/10 text-muted-foreground backdrop-blur-md rounded-full bg-white/5 cursor-not-allowed px-6" disabled>
-                  Closed
-                </Button>
-              ) : (
-                <Link to="/apply">
-                  <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 shadow-[0_0_15px_rgba(220,20,60,0.2)] font-bold">
-                    Join Us
-                  </Button>
-                </Link>
-              )}
-            </div>
-
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -174,13 +124,10 @@ const Navigation = () => {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-white/5" />
                   <div className="p-1">
-                    {user.role && ['super_admin', 'admin', 'interviewer'].includes(user.role) && (
-                      <DropdownMenuItem onClick={() => {
-                        if (user.role === 'super_admin' || user.role === 'admin') navigate('/admin');
-                        else navigate('/interviewer');
-                      }} className="rounded-xl focus:bg-white/10 cursor-pointer p-3">
+                    {(user.role === 'super_admin' || user.role === 'admin') && (
+                      <DropdownMenuItem onClick={() => navigate('/admin')} className="rounded-xl focus:bg-white/10 cursor-pointer p-3">
                         <UserIcon className="mr-3 h-4 w-4 text-primary" />
-                        <span>{user.role === 'super_admin' || user.role === 'admin' ? 'Admin Dashboard' : 'Interviewer Dashboard'}</span>
+                        <span>Admin Dashboard</span>
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem onClick={logout} className="rounded-xl focus:bg-red-500/20 text-red-400 cursor-pointer p-3">
