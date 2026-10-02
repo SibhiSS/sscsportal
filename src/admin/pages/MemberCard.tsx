@@ -5,7 +5,7 @@ import { toast } from '@/components/ui/sonner';
 import { signProofImages } from '@/lib/club';
 import type { AdminContribution, RosterMember } from '@/types/admin';
 import { useAdminData } from '../AdminData';
-import { deleteContribution, fetchMemberContributions, reopenContribution, updateMember } from '../api';
+import { deleteContribution, fetchMemberContributions, removeFromRoster as apiRemoveFromRoster, reopenContribution, updateMember } from '../api';
 import { fmtMed, initials, isoDate } from '../calendarLogic';
 
 const errMsg = (err: unknown) => (err as { message?: string })?.message || 'Something went wrong.';
@@ -214,7 +214,7 @@ function EditMemberModal({ m, onClose, onSaved }: { m: RosterMember; onClose: ()
   const removeFromRoster = async () => {
     if (!window.confirm(`Take ${m.full_name} off the roster? Their history is kept, and they can be added back later.`)) return;
     setBusy(true);
-    try { await updateMember(m.id, { is_member: false }); await onSaved(); toast.success('Removed from the roster.'); }
+    try { await apiRemoveFromRoster(m.id); await onSaved(); toast.success('Removed from the roster.'); }
     catch (err) { toast.error(errMsg(err)); setBusy(false); }
   };
   return (

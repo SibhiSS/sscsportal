@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/sonner';
+import TechGridBackground from '@/components/ui/TechGridBackground';
 import { AdminDataProvider, useAdminData } from './AdminData';
 import { findContributionByCode } from './api';
 import { fmtShort, initials } from './calendarLogic';
@@ -19,7 +20,7 @@ const NAV = [
   { to: '/admin/approvals', label: 'Approvals', icon: CheckSquare },
 ];
 const ACCOUNT_NAV = [
-  { to: '/admin/settings', label: 'Settings', icon: Settings },
+  { to: '/admin/settings', label: 'Settings', icon: Settings, superOnly: true },
 ];
 
 /** Admin pages use the normal cursor and no noise overlay (both belong to the public site). */
@@ -32,10 +33,11 @@ function useAdminBodyClass() {
 
 function Gate({ children }: { children: React.ReactNode }) {
   const { user, loading, error, signInWithGoogle, loginAsLocalAdmin, logout } = useAuth();
-  if (loading) return <div className="adm center-card"><div className="muted">Loading…</div></div>;
+  if (loading) return <div className="adm center-card"><TechGridBackground /><div className="muted">Loading…</div></div>;
   if (!user) {
     return (
       <div className="adm center-card">
+        <TechGridBackground />
         <div className="box">
           <img src="/logo.png" alt="" width={44} height={44} style={{ objectFit: 'contain' }} />
           <h1>Admin panel</h1>
@@ -55,6 +57,7 @@ function Gate({ children }: { children: React.ReactNode }) {
   if (user.role !== 'super_admin' && user.role !== 'admin') {
     return (
       <div className="adm center-card">
+        <TechGridBackground />
         <div className="box">
           <ShieldAlert size={40} color="var(--busy)" />
           <h1>No access</h1>
@@ -177,32 +180,37 @@ function Shell() {
 
   return (
     <div className={`adm adm-app${navOpen ? ' nav-open' : ''}`}>
+      <TechGridBackground />
       {navOpen && <div className="adm-scrim" onClick={() => setNavOpen(false)} aria-hidden="true" />}
       <aside className="adm-side">
-        <Link to="/admin" className="adm-brand" style={{ textDecoration: 'none' }}>
+        <Link to="/admin" className="adm-brand" style={{ textDecoration: 'none' }} aria-label="IEEE SSCS admin">
           <img src="/logo.png" alt="" />
-          <div>IEEE <span>SSCS</span></div>
+          <div className="lbl">IEEE <span>SSCS</span></div>
         </Link>
         <div className="adm-nav-label">Menu</div>
         <nav className="adm-nav">
           {NAV.filter(n => isSuper || !n.superOnly).map(({ to, label, icon: Icon, end }) => (
-            <NavLink key={to} to={to} end={end} className={({ isActive }) => (isActive ? 'active' : '')}>
-              <span className="ic"><Icon /></span>{label}
+            <NavLink key={to} to={to} end={end} data-tip={label} aria-label={label} className={({ isActive }) => (isActive ? 'active' : '')}>
+              <span className="ic"><Icon /></span><span className="lbl">{label}</span>
               {to === '/admin/approvals' && pendingCount > 0 && <span className="adm-badge" aria-label={`${pendingCount} waiting`}>{pendingCount}</span>}
             </NavLink>
           ))}
         </nav>
-        <div className="adm-nav-label">Account</div>
-        <nav className="adm-nav">
-          {ACCOUNT_NAV.map(({ to, label, icon: Icon }) => (
-            <NavLink key={to} to={to} className={({ isActive }) => (isActive ? 'active' : '')}>
-              <span className="ic"><Icon /></span>{label}
-            </NavLink>
-          ))}
-        </nav>
+        {isSuper && (
+          <>
+            <div className="adm-nav-label">Account</div>
+            <nav className="adm-nav">
+              {ACCOUNT_NAV.filter(n => isSuper || !n.superOnly).map(({ to, label, icon: Icon }) => (
+                <NavLink key={to} to={to} data-tip={label} aria-label={label} className={({ isActive }) => (isActive ? 'active' : '')}>
+                  <span className="ic"><Icon /></span><span className="lbl">{label}</span>
+                </NavLink>
+              ))}
+            </nav>
+          </>
+        )}
         <div className="adm-side-foot">
-          <div className="avatar">{initials(user?.displayName || user?.email || '')}</div>
-          <div className="who">
+          <div className="avatar" title={user?.displayName || user?.email || ''}>{initials(user?.displayName || user?.email || '')}</div>
+          <div className="who lbl">
             <b>{user?.displayName || user?.email}</b>
             <span>{user?.role === 'super_admin' ? 'Super admin' : 'Admin'}</span>
           </div>

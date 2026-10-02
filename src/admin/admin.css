@@ -1,44 +1,47 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
 /*
- * Admin panel theme. Ported from club_calendar.html: same components and
- * spacing, re-coloured to a muted charcoal + crimson. No glows: emphasis comes
- * from borders and faint tints. Everything is scoped under .adm so it never
- * leaks into the public site's styles.
+ * Admin panel theme: frosted glass on the home page hero's black, with the
+ * hero's crimson (#DC143C) for highlights and glow. The background itself is
+ * the hero's <TechGridBackground />. Components follow club_calendar.html.
+ * Everything is scoped under .adm so it never leaks into the public site.
+ * Fonts come from index.html (Michroma for titles, Raleway for text).
  */
 .adm {
   color-scheme: dark;
-  --bg: #121214;
-  --side: #17171a;
-  --panel: #1b1b1f;
-  --cell: #202024;
-  --cell-hover: #26262b;
-  --input: #151518;
-  --line: rgba(255, 255, 255, .06);
-  --line-2: rgba(255, 255, 255, .10);
-  --text: #ececee;
-  --text-soft: #9a9aa3;
-  --text-dim: #66666e;
-  --accent: #c2434b;
-  --accent-2: #a93a41;
-  --accent-soft: rgba(194, 67, 75, .12);
-  --accent-line: rgba(194, 67, 75, .45);
+  --bg: #020202;
+  --side: rgba(255, 255, 255, .045);
+  --panel: rgba(255, 255, 255, .04);
+  --cell: rgba(255, 255, 255, .035);
+  --cell-hover: rgba(255, 255, 255, .07);
+  --input: rgba(0, 0, 0, .38);
+  --line: rgba(255, 255, 255, .08);
+  --line-2: rgba(255, 255, 255, .14);
+  --text: #f1f1f3;
+  --text-soft: #a7a7b0;
+  --text-dim: #6f6f78;
+  --accent: #dc143c;
+  --accent-2: #b80f31;
+  --accent-soft: rgba(220, 20, 60, .14);
+  --accent-line: rgba(220, 20, 60, .55);
+  --glow: 0 0 20px rgba(220, 20, 60, .35);
+  --glow-strong: 0 0 26px rgba(220, 20, 60, .55), 0 0 2px rgba(255, 90, 120, .6);
+  --glass-edge: inset 0 1px 0 rgba(255, 255, 255, .09), inset 0 0 0 1px rgba(255, 255, 255, .02);
+  --glass-shadow: 0 24px 60px rgba(0, 0, 0, .55);
   --free: #6cc293;
-  --busy: #d77474;
-  --ours: #d99a6c;
-  --ok: #4fb57d;
-  --no: #d0605f;
-  --online: #d8b44a;
-  --t-event: #e0656c;
-  --t-holiday: #a68bd8;
-  --t-blocked: #8a8f99;
-  --t-exam: #d4b44a;
-  --t-buffer: #d4b44a;
-  --t-noclass: #4fb3a3;
-  --t-vacation: #7389a8;
-  --radius: 14px;
+  --busy: #ef6b7c;
+  --ours: #ff9a6a;
+  --ok: #4fd18b;
+  --no: #ff4d6a;
+  --online: #f2c94c;
+  --t-event: #ff3b5c;
+  --t-holiday: #b39ae8;
+  --t-blocked: #9aa0aa;
+  --t-exam: #f0c94c;
+  --t-buffer: #f0c94c;
+  --t-noclass: #5cc8b6;
+  --t-vacation: #8aa2c4;
+  --radius: 16px;
 
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: 'Raleway', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   color: var(--text);
   background: var(--bg);
@@ -55,7 +58,7 @@ body.adm-body button:not(:disabled), body.adm-body a, body.adm-body [role="butto
 body.adm-body label.chk, body.adm-body .day, body.adm-body tr.click, body.adm-body select { cursor: pointer !important; }
 body.adm-body input:not([type=checkbox]):not([type=file]), body.adm-body textarea { cursor: text !important; }
 body.adm-body::after { display: none !important; }
-body.adm-body { caret-color: auto; background: #121214; }
+body.adm-body { caret-color: auto; background: #020202; }
 .adm button, .adm input, .adm select, .adm textarea { font-family: inherit; color: inherit; }
 .adm button { cursor: pointer; }
 .adm a { color: inherit; }
@@ -465,4 +468,157 @@ a.tile:hover { background: var(--cell); }
   .panel { padding: 16px; }
   .profile-side, .profile-main { padding: 18px; }
   .p-head { flex-direction: column; }
+}
+
+
+/* =============================================================================
+ * GLASS LAYER
+ * Frosted panels, a floating icon rail and the hero's red glow. Placed last so
+ * it refines the component styles above.
+ * ============================================================================= */
+.adm { background: transparent; position: relative; }
+.adm-app, .center-card { position: relative; z-index: 1; }
+.adm-app > .fixed, .center-card > .fixed { z-index: 0; }
+.adm-side, .adm-main { position: relative; z-index: 1; }
+
+.adm .board, .adm .panel, .adm .tile, .adm .profile, .adm .check-card, .adm .subcard,
+.adm .modal, .adm .center-card .box, .adm-search input, .adm .entry, .adm .ourcard, .adm .vcard {
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+}
+.adm .board, .adm .panel, .adm .profile, .adm .center-card .box {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .015) 55%);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--glass-edge), var(--glass-shadow);
+  border-radius: 26px;
+}
+.adm .tile, .adm .check-card, .adm .subcard, .adm .entry, .adm .ourcard, .adm .vcard {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .015));
+  border: 1px solid var(--line);
+  box-shadow: var(--glass-edge);
+}
+.adm .modal { background: linear-gradient(160deg, rgba(30, 30, 34, .92), rgba(12, 12, 14, .94)); border-color: var(--line-2); box-shadow: var(--glass-edge), 0 30px 90px rgba(0, 0, 0, .7); }
+.adm .modal-bg { background: rgba(0, 0, 0, .55); backdrop-filter: blur(6px); }
+
+/* Red bloom on highlighted cards (like the reference's course cards). */
+.adm .tile, .adm .entry.event, .adm .check-card:has(.tick.on) {
+  background:
+    radial-gradient(120% 90% at 0% 100%, rgba(220, 20, 60, .20), transparent 60%),
+    linear-gradient(160deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .015));
+}
+.adm a.tile:hover, .adm .ourcard:hover, .adm .entry.event:hover { border-color: var(--accent-line); box-shadow: var(--glass-edge), var(--glow); }
+.adm .tile .val { font-family: 'Michroma', sans-serif; font-size: 26px; letter-spacing: -.01em; }
+
+/* Titles in the site's display face. */
+.adm .top h1, .adm .cal-title, .adm-brand { font-family: 'Michroma', sans-serif; font-weight: 400; letter-spacing: .01em; }
+.adm .top h1 { font-size: 26px; }
+.adm .cal-title { font-size: 20px; }
+.adm h3.ph, .adm .sched-head h2, .adm .p-head h2 { font-weight: 600; letter-spacing: .01em; }
+
+/* ---------- floating icon rail ---------- */
+.adm-app { grid-template-columns: 104px minmax(0, 1fr); }
+.adm-side {
+  margin: 16px 0 16px 16px; height: calc(100vh - 32px); top: 16px; width: 88px; padding: 18px 10px;
+  border-radius: 28px; border: 1px solid var(--line-2); align-items: center;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02));
+  box-shadow: var(--glass-edge), var(--glass-shadow);
+  backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
+}
+.adm-brand { padding: 0 0 22px; justify-content: center; }
+.adm-brand img { width: 40px; height: 40px; filter: drop-shadow(0 0 10px rgba(220, 20, 60, .55)); }
+.adm-side .lbl, .adm-nav-label { display: none; }
+.adm-nav { gap: 10px; align-items: center; margin-bottom: 14px; }
+.adm-nav a { width: 52px; height: 52px; padding: 0; justify-content: center; border-radius: 16px; color: var(--text-soft); }
+.adm-nav a .ic { width: auto; height: auto; background: none !important; }
+.adm-nav a .ic svg { width: 20px; height: 20px; }
+.adm-nav a:hover { background: rgba(255, 255, 255, .07); color: var(--text); }
+.adm-nav a.active {
+  color: #fff; border: 1px solid rgba(255, 120, 140, .45);
+  background: linear-gradient(160deg, rgba(255, 70, 100, .55), rgba(150, 10, 40, .55));
+  box-shadow: var(--glow-strong), inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+.adm-nav a.active::after { display: none; }
+.adm-nav a[data-tip]:hover::before {
+  content: attr(data-tip); position: absolute; left: 66px; top: 50%; transform: translateY(-50%); white-space: nowrap;
+  background: rgba(10, 10, 12, .92); border: 1px solid var(--line-2); padding: 6px 11px; border-radius: 9px;
+  font-size: 12.5px; font-weight: 600; color: var(--text); z-index: 40; pointer-events: none;
+}
+.adm-badge { position: absolute; top: -4px; right: -4px; margin: 0; background: var(--accent); color: #fff; border: 2px solid #0a0a0b; box-shadow: var(--glow); min-width: 20px; height: 20px; font-size: 10.5px; padding: 0 5px; }
+.adm-side-foot { flex-direction: column; border-top: none; padding: 0; gap: 10px; }
+.adm-side-foot .avatar { width: 44px; height: 44px; border-radius: 14px; }
+
+/* ---------- top bar ---------- */
+.adm-top { background: transparent; border-bottom: none; backdrop-filter: none; padding: 22px 28px 6px; position: relative; }
+.adm-crumbs {
+  padding: 9px 16px; border-radius: 999px; border: 1px solid var(--line-2); font-size: 12.5px; letter-spacing: .08em;
+  background: linear-gradient(160deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02)); box-shadow: var(--glass-edge);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+}
+.adm-search input { border-radius: 999px; background: linear-gradient(160deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02)); border-color: var(--line-2); box-shadow: var(--glass-edge); padding: 11px 14px 11px 38px; }
+.adm-search-results { background: rgba(14, 14, 16, .96); backdrop-filter: blur(18px); border-radius: 16px; }
+
+/* ---------- buttons ---------- */
+.adm .add-btn, .adm .primary {
+  background: linear-gradient(160deg, #ff2f55, #b80f31); border: 1px solid rgba(255, 130, 150, .35);
+  box-shadow: var(--glow), inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+.adm .add-btn:hover, .adm .primary:hover { background: linear-gradient(160deg, #ff3d62, #c8123a); box-shadow: var(--glow-strong), inset 0 1px 0 rgba(255, 255, 255, .25); }
+.adm .primary:disabled, .adm .add-btn:disabled { box-shadow: none; }
+.adm .pill-btn, .adm .ghost, .adm .mini-btn, .adm .circ, .adm .vchipbtn {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02));
+  border-color: var(--line-2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+.adm .pill-btn:hover, .adm .ghost:hover, .adm .mini-btn:hover, .adm .circ:hover { border-color: rgba(255, 255, 255, .28); background: rgba(255, 255, 255, .09); }
+.adm .pill-btn.on {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .22), rgba(255, 255, 255, .08)); color: #fff; border-color: rgba(255, 255, 255, .35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 6px 18px rgba(0, 0, 0, .35);
+}
+.adm .mini-btn.danger { border-color: rgba(255, 77, 106, .35); }
+.adm .vchipbtn.active { background: #fff; color: #0b0b0c; }
+
+/* ---------- switches, inputs ---------- */
+.adm .switch input:checked + .track { background: linear-gradient(160deg, #ff2f55, #b80f31); box-shadow: var(--glow); }
+.adm .switch.amber input:checked + .track { background: #c9a227; box-shadow: 0 0 14px rgba(242, 201, 76, .4); }
+.adm .inp, .adm-form input:not([type=checkbox]):not([type=file]), .adm-form select, .adm-form textarea, .list-head select, .list-head input { border-radius: 12px; border-color: var(--line-2); }
+.adm .inp:focus, .adm-form input:focus, .adm-form select:focus, .adm-form textarea:focus { box-shadow: 0 0 0 3px var(--accent-soft), var(--glow); }
+
+/* ---------- calendar ---------- */
+.adm .day { background: linear-gradient(160deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .012)); border-color: var(--line); }
+.adm .day:hover { background: rgba(255, 255, 255, .08); }
+.adm .day.has-event { border-color: rgba(255, 59, 92, .45); }
+.adm .day.has-event::before { background: linear-gradient(180deg, transparent 10%, rgba(220, 20, 60, .26) 100%); }
+.adm .day.selected { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent), var(--glow); }
+.adm .day.today .num { background: var(--accent); box-shadow: var(--glow-strong); }
+.adm .vdot.no { box-shadow: 0 0 8px rgba(255, 77, 106, .8); }
+.adm .vdot.ok { box-shadow: 0 0 8px rgba(79, 209, 139, .7); }
+.adm .vdot.online { box-shadow: 0 0 8px rgba(242, 201, 76, .7); }
+.adm .evline.event::before { box-shadow: 0 0 6px rgba(255, 59, 92, .9); }
+.adm .sched { border-left-color: var(--line); }
+
+/* ---------- details that glow ---------- */
+.adm .prog { background: rgba(255, 255, 255, .08); }
+.adm .prog > i { background: linear-gradient(90deg, #b80f31, #ff3b5c); box-shadow: 0 0 12px rgba(255, 59, 92, .6); }
+.adm .prog.done > i { background: linear-gradient(90deg, #2f9e66, #4fd18b); box-shadow: 0 0 12px rgba(79, 209, 139, .5); }
+.adm .tick.on { box-shadow: 0 0 10px rgba(79, 209, 139, .6); }
+.adm .avatar { background: linear-gradient(160deg, rgba(255, 59, 92, .28), rgba(120, 10, 30, .3)); border-color: rgba(255, 90, 120, .35); color: #ffd0d8; }
+.adm .avatar.lg { box-shadow: var(--glow); }
+.adm .citem .code, .adm .tag.lead { box-shadow: 0 0 10px rgba(220, 20, 60, .25); }
+.adm .citem.hl { box-shadow: inset 0 0 0 1px var(--accent-line), var(--glow); }
+.adm .vopt.sel { box-shadow: var(--glow); }
+.adm table th { color: var(--text-dim); }
+.adm tr.click:hover td { background: rgba(255, 255, 255, .04); }
+
+/* ---------- small screens: the rail becomes a labelled drawer ---------- */
+@media (max-width: 980px) {
+  .adm-app { grid-template-columns: 1fr; }
+  .adm-side { margin: 0; top: 0; height: 100vh; width: 260px; border-radius: 0 24px 24px 0; align-items: stretch; padding: 22px 14px; background: rgba(12, 12, 14, .92); }
+  .adm-side .lbl { display: block; }
+  .adm-nav-label { display: block; }
+  .adm-brand { justify-content: flex-start; padding: 2px 10px 22px; }
+  .adm-nav { align-items: stretch; }
+  .adm-nav a { width: auto; height: auto; padding: 11px 12px; justify-content: flex-start; gap: 12px; }
+  .adm-nav a[data-tip]:hover::before { display: none; }
+  .adm-badge { position: static; margin-left: auto; }
+  .adm-side-foot { flex-direction: row; border-top: 1px solid var(--line); padding-top: 14px; }
+  .adm-top { padding: 14px 16px 4px; }
 }

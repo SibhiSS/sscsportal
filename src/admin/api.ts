@@ -103,12 +103,16 @@ const ROSTER_COLS =
 export const fetchRoster = async () =>
   check(await supabase.from('applications').select(ROSTER_COLS).eq('is_member', true).order('full_name')) as RosterMember[];
 
-/** Former applicants who are not on the roster, to add them with one click. */
+/** Former applicants who are not on the roster, to add them with one click. Super admins only. */
 export const fetchNonMembers = async () =>
   check(await supabase.from('applications').select(ROSTER_COLS).eq('is_member', false).order('full_name')) as RosterMember[];
 
 export const updateMember = async (id: string, patch: Partial<RosterMember>) =>
   check(await supabase.from('applications').update(patch).eq('id', id));
+
+/** Takes someone off the roster. A function, because the row stops being visible to an admin. */
+export const removeFromRoster = async (id: string) =>
+  check(await supabase.rpc('remove_from_roster', { p_id: id }));
 
 export const addMember = async (m: Pick<RosterMember, 'email' | 'full_name'> & Partial<RosterMember>) =>
   check(await supabase.from('applications').insert({ ...m, is_member: true }));

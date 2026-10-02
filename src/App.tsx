@@ -69,7 +69,7 @@ function App() {
                   <Route path="members" element={<MembersPage />} />
                   <Route path="members/:id" element={<MemberCard />} />
                   <Route path="approvals" element={<ApprovalsPage />} />
-                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="settings" element={<SuperAdminOnly><SettingsPage /></SuperAdminOnly>} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>

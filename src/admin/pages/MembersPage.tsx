@@ -5,6 +5,7 @@ import type { RosterMember } from '@/types/admin';
 import { useAdminData } from '../AdminData';
 import { addMember, fetchNonMembers, updateMember } from '../api';
 import { initials } from '../calendarLogic';
+import { useIsSuperAdmin } from '../SuperAdminOnly';
 
 const errMsg = (err: unknown) => (err as { message?: string })?.message || 'Something went wrong.';
 type Filter = 'active' | 'leads' | 'inactive' | 'all';
@@ -90,13 +91,18 @@ export default function MembersPage() {
 
 function AddMemberModal({ onClose, onAdded }: { onClose: () => void; onAdded: (id?: string) => void }) {
   const { reload } = useAdminData();
-  const [mode, setMode] = useState<'applicant' | 'new'>('applicant');
+  // Former applicants are visible to super admins only.
+  const isSuper = useIsSuperAdmin();
+  const [mode, setMode] = useState<'applicant' | 'new'>(isSuper ? 'applicant' : 'new');
   const [applicants, setApplicants] = useState<RosterMember[] | null>(null);
   const [q, setQ] = useState('');
   const [form, setForm] = useState({ full_name: '', email: '', roll_number: '', phone: '', member_department: '', member_position: '' });
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { fetchNonMembers().then(setApplicants).catch(err => { toast.error(errMsg(err)); setApplicants([]); }); }, []);
+  useEffect(() => {
+    if (!isSuper) return;
+    fetchNonMembers().then(setApplicants).catch(err => { toast.error(errMsg(err)); setApplicants([]); });
+  }, [isSuper]);
 
   const term = q.trim().toLowerCase();
   const matches = (applicants ?? []).filter(a => !term || [a.full_name, a.email, a.roll_number ?? ''].some(x => x.toLowerCase().includes(term))).slice(0, 40);
@@ -128,7 +134,11 @@ function AddMemberModal({ onClose, onAdded }: { onClose: () => void; onAdded: (i
       onAdded();
     } catch (err) {
       const msg = errMsg(err);
-      toast.error(/duplicate|unique/i.test(msg) ? 'Someone with that email or reg no already exists — add them from "Former applicants".' : msg);
+      toast.error(/duplicate|unique/i.test(msg)
+        ? (isSuper
+          ? 'Someone with that email or reg no already exists — add them from "Former applicant".'
+          : 'Someone with that email or reg no is a former applicant. Ask a super admin to add them back.')
+        : msg);
     } finally { setBusy(false); }
   };
 
@@ -136,10 +146,12 @@ function AddMemberModal({ onClose, onAdded }: { onClose: () => void; onAdded: (i
     <div className="modal-bg" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal adm-form" role="dialog" aria-modal="true" aria-labelledby="addMemberTitle">
         <div className="modal-head"><h3 id="addMemberTitle">Add to the roster</h3><button className="x" onClick={onClose} aria-label="Close">×</button></div>
-        <div className="form-acts" style={{ marginBottom: 16 }}>
-          <button className={`pill-btn${mode === 'applicant' ? ' on' : ''}`} onClick={() => setMode('applicant')}>Former applicant</button>
-          <button className={`pill-btn${mode === 'new' ? ' on' : ''}`} onClick={() => setMode('new')}>Someone new</button>
-        </div>
+        {isSuper && (
+          <div className="form-acts" style={{ marginBottom: 16 }}>
+            <button className={`pill-btn${mode === 'applicant' ? ' on' : ''}`} onClick={() => setMode('applicant')}>Former applicant</button>
+            <button className={`pill-btn${mode === 'new' ? ' on' : ''}`} onClick={() => setMode('new')}>Someone new</button>
+          </div>
+        )}
         {mode === 'applicant' ? (
           <>
             <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search applicants by name, email or reg no" aria-label="Search applicants" />

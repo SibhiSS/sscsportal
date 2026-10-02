@@ -69,7 +69,6 @@ function AdminsSection() {
     <section className="panel">
       <div className="list-head">
         <h3 className="ph">Admins</h3>
-        {!isSuper && <span className="asof">Only super admins can change this list.</span>}
       </div>
       <div className="tbl-wrap">
         <table>
