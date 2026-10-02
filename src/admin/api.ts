@@ -178,3 +178,59 @@ export async function signEventFile(path: string, download?: string) {
   if (error) throw error;
   return data.signedUrl;
 }
+
+// ---- approvals ---------------------------------------------------------------------
+
+export type ReviewFilter = 'pending' | 'approved' | 'rejected' | 'all';
+
+export async function fetchContributionsForReview(filter: ReviewFilter): Promise<AdminContribution[]> {
+  let q = supabase.from('contributions').select('*, contribution_types(name, category, default_points)');
+  if (filter !== 'all') q = q.eq('status', filter);
+  // Oldest first while waiting in the queue; newest first once reviewed.
+  q = q.order('created_at', { ascending: filter === 'pending' }).limit(300);
+  return check(await q) as AdminContribution[];
+}
+
+export async function reviewContribution(id: string, status: 'approved' | 'rejected', points: number | null, note: string | null) {
+  return check(await supabase.rpc('review_contribution', {
+    p_id: id, p_status: status, p_points: points, p_note: note,
+  })) as AdminContribution;
+}
+
+// ---- settings: admins + contribution types ------------------------------------------
+
+export interface AdminRow { id: string; email: string; role: 'super_admin' | 'admin' | 'member'; created_at: string; added_by: string | null }
+
+export const fetchAdmins = async () =>
+  check(await supabase.from('admins').select('id, email, role, created_at, added_by').in('role', ['super_admin', 'admin']).order('role', { ascending: false }).order('email')) as AdminRow[];
+
+export async function addAdmin(email: string, role: 'super_admin' | 'admin', addedBy: string) {
+  // A legacy row (old interviewer/viewer, now "member") may already exist for this email: promote it.
+  // Case-insensitive exact match: escape LIKE wildcards ("_" is common in emails).
+  const pattern = email.replace(/[\\%_]/g, c => '\\' + c);
+  const existing = check(await supabase.from('admins').select('id').ilike('email', pattern).maybeSingle()) as { id: string } | null;
+  if (existing) check(await supabase.from('admins').update({ role }).eq('id', existing.id));
+  else check(await supabase.from('admins').insert({ email, role, added_by: addedBy }));
+}
+
+export const setAdminRole = async (id: string, role: 'super_admin' | 'admin') =>
+  check(await supabase.from('admins').update({ role }).eq('id', id));
+
+export const removeAdmin = async (id: string) =>
+  check(await supabase.from('admins').delete().eq('id', id));
+
+export const fetchAllTypes = async () =>
+  check(await supabase.from('contribution_types').select('*').order('sort_order').order('name')) as ContributionType[];
+
+export async function saveType(t: Partial<ContributionType> & Pick<ContributionType, 'category' | 'name' | 'default_points'>) {
+  if (t.id) {
+    check(await supabase.from('contribution_types').update({
+      category: t.category, name: t.name, default_points: t.default_points, is_active: t.is_active,
+    }).eq('id', t.id));
+  } else {
+    check(await supabase.from('contribution_types').insert(t));
+  }
+}
+
+export const deleteType = async (id: string) =>
+  check(await supabase.from('contribution_types').delete().eq('id', id));

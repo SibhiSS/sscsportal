@@ -13,6 +13,8 @@ import EventDetail from '@/admin/pages/EventDetail';
 import VenuesPage from '@/admin/pages/VenuesPage';
 import MembersPage from '@/admin/pages/MembersPage';
 import MemberCard from '@/admin/pages/MemberCard';
+import ApprovalsPage from '@/admin/pages/ApprovalsPage';
+import SettingsPage from '@/admin/pages/SettingsPage';
 import './App.css';
 
 import { useState } from 'react';
@@ -65,6 +67,8 @@ function App() {
                   <Route path="venues" element={<VenuesPage />} />
                   <Route path="members" element={<MembersPage />} />
                   <Route path="members/:id" element={<MemberCard />} />
+                  <Route path="approvals" element={<ApprovalsPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>

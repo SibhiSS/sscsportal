@@ -16,10 +16,10 @@ const NAV = [
   { to: '/admin/events', label: 'Events', icon: Ticket },
   { to: '/admin/venues', label: 'Venues', icon: MapPin },
   { to: '/admin/members', label: 'Members', icon: Users },
+  { to: '/admin/approvals', label: 'Approvals', icon: CheckSquare },
 ];
-const SOON = [
-  { label: 'Approvals', icon: CheckSquare },
-  { label: 'Settings', icon: Settings },
+const ACCOUNT_NAV = [
+  { to: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
 /** Admin pages use the normal cursor and no noise overlay (both belong to the public site). */
@@ -74,7 +74,7 @@ function Crumbs() {
   const { pathname } = useLocation();
   const { events, roster } = useAdminData();
   const parts = pathname.replace(/^\/admin\/?/, '').split('/').filter(Boolean);
-  const section = NAV.find(n => n.to === '/admin/' + (parts[0] ?? '')) ?? NAV[0];
+  const section = [...NAV, ...ACCOUNT_NAV].find(n => n.to === '/admin/' + (parts[0] ?? '')) ?? NAV[0];
   let last = '';
   if (parts[0] === 'events' && parts[1]) last = events.find(e => e.id === parts[1])?.title ?? 'Event';
   if (parts[0] === 'members' && parts[1]) last = roster.find(m => m.id === parts[1])?.full_name ?? 'Member';
@@ -169,7 +169,7 @@ function GlobalSearch() {
 
 function Shell() {
   const { user, logout } = useAuth();
-  const { loading, error } = useAdminData();
+  const { loading, error, pendingCount } = useAdminData();
   const [navOpen, setNavOpen] = useState(false);
   const { pathname } = useLocation();
   useEffect(() => setNavOpen(false), [pathname]);
@@ -187,13 +187,16 @@ function Shell() {
           {NAV.map(({ to, label, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end} className={({ isActive }) => (isActive ? 'active' : '')}>
               <span className="ic"><Icon /></span>{label}
+              {to === '/admin/approvals' && pendingCount > 0 && <span className="adm-badge" aria-label={`${pendingCount} waiting`}>{pendingCount}</span>}
             </NavLink>
           ))}
         </nav>
-        <div className="adm-nav-label">Coming next</div>
+        <div className="adm-nav-label">Account</div>
         <nav className="adm-nav">
-          {SOON.map(({ label, icon: Icon }) => (
-            <span key={label} className="soon"><span className="ic"><Icon /></span>{label}<small>Soon</small></span>
+          {ACCOUNT_NAV.map(({ to, label, icon: Icon }) => (
+            <NavLink key={to} to={to} className={({ isActive }) => (isActive ? 'active' : '')}>
+              <span className="ic"><Icon /></span>{label}
+            </NavLink>
           ))}
         </nav>
         <div className="adm-side-foot">

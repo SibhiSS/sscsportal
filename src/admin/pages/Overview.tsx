@@ -42,8 +42,8 @@ export default function Overview() {
           <div className="hint">{upcoming[0] ? `Next: ${upcoming[0].title}, ${fmtShort(upcoming[0].start_date)}` : 'Nothing planned yet'}</div></Link>
         <Link className="tile" to="/admin/members"><div className="lbl">Active members</div><div className="val">{active}</div>
           <div className="hint">{roster.filter(m => m.is_lead).length} leads</div></Link>
-        <div className="tile"><div className="lbl">Contributions to review</div><div className="val">{pendingCount}</div>
-          <div className="hint">Approvals page comes next</div></div>
+        <Link className="tile" to="/admin/approvals"><div className="lbl">Contributions to review</div><div className="val">{pendingCount}</div>
+          <div className="hint">{pendingCount ? 'Waiting in Approvals' : 'All caught up'}</div></Link>
         <Link className="tile" to="/admin/venues"><div className="lbl">Our venue bookings</div><div className="val">{ourUpcoming.length}</div>
           <div className="hint">{ourUpcoming[0] ? `Next: ${venueName(venues, ourUpcoming[0].venue_id)}, ${fmtShort(ourUpcoming[0].booking_date)}` : 'None upcoming'}</div></Link>
       </div>
