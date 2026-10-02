@@ -35,15 +35,44 @@ export interface ContributionType {
   created_at: string;
 }
 
+/** A club event, with its planning checklist. Admin-only table. */
 export interface ClubEvent {
   id: string;
   title: string;
   description: string | null;
-  starts_at: string;
-  ends_at: string | null;
-  location: string | null;
+  /** Calendar days, "YYYY-MM-DD". */
+  start_date: string;
+  end_date: string;
+  is_online: boolean;
+  venue_id: string | null;
+  venue_booked: boolean;
+  poster_path: string | null;
+  report_path: string | null;
+  budget_sheet_path: string | null;
+  budget_planned: number | null;
+  budget_actual: number | null;
+  attendance_posted: boolean;
+  od_posted: boolean;
   created_by: string | null;
   created_at: string;
+  updated_at: string;
+}
+
+/** What members can see of an event, via `member_event_options()`. */
+export interface EventOption {
+  id: string;
+  title: string;
+  start_date: string;
+}
+
+/** A member's own attendance row, via `my_attendance()`. */
+export interface MyAttendance {
+  id: string;
+  event_id: string;
+  event_title: string;
+  start_date: string;
+  role: string;
+  points: number;
 }
 
 export interface EventAttendance {

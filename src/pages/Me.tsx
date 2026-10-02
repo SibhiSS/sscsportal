@@ -18,12 +18,14 @@ import HolographicCard from '@/components/ui/HolographicCard';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 import TechGridBackground from '@/components/ui/TechGridBackground';
 import {
-  AttendanceWithRefs, ContributionWithRefs, fetchEvents, fetchLeaderboardRow, fetchMyAttendance,
+  ContributionWithRefs, fetchEventOptions, fetchLeaderboardRow, fetchMyAttendance,
   fetchMyContributions, fetchMyMember, fetchSubmissionTypes, friendlyError, prepareProofImage,
   removeProofImages, signProofImages, submitContribution, uploadProofImages, withdrawContribution,
 } from '@/lib/club';
 import { MAX_PROOF_IMAGES } from '@/types/club';
-import type { ClubEvent, ContributionStatus, ContributionType, LeaderboardRow, MyMember } from '@/types/club';
+import type {
+  ContributionStatus, ContributionType, EventOption, LeaderboardRow, MyAttendance, MyMember,
+} from '@/types/club';
 
 type PickedImage = { file: File; preview: string };
 
@@ -36,7 +38,8 @@ const STATUS_STYLES: Record<ContributionStatus, string> = {
 };
 
 const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  new Date(iso.length === 10 ? `${iso}T00:00:00` : iso)
+    .toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
 const isHttpUrl = (value: string) => {
   try {
@@ -71,9 +74,9 @@ const Me = () => {
   const [loadError, setLoadError] = useState('');
   const [member, setMember] = useState<MyMember | null>(null);
   const [types, setTypes] = useState<ContributionType[]>([]);
-  const [events, setEvents] = useState<ClubEvent[]>([]);
+  const [events, setEvents] = useState<EventOption[]>([]);
   const [contributions, setContributions] = useState<ContributionWithRefs[]>([]);
-  const [attendance, setAttendance] = useState<AttendanceWithRefs[]>([]);
+  const [attendance, setAttendance] = useState<MyAttendance[]>([]);
   const [standing, setStanding] = useState<LeaderboardRow | null>(null);
 
   const [typeId, setTypeId] = useState('');
@@ -96,9 +99,9 @@ const Me = () => {
       }
       const [t, e, c, a, s] = await Promise.all([
         fetchSubmissionTypes(),
-        fetchEvents(),
+        fetchEventOptions(),
         fetchMyContributions(me.id),
-        fetchMyAttendance(me.id),
+        fetchMyAttendance(),
         fetchLeaderboardRow(me.id),
       ]);
       setMember(me);
@@ -130,6 +133,8 @@ const Me = () => {
   const imagesRef = useRef(images);
   imagesRef.current = images;
   useEffect(() => () => imagesRef.current.forEach(img => URL.revokeObjectURL(img.preview)), []);
+
+  const eventTitles = useMemo(() => new Map(events.map(ev => [ev.id, ev.title])), [events]);
 
   const visibleContributions = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -372,7 +377,7 @@ const Me = () => {
                   <SelectContent className="max-h-80">
                     <SelectItem value={NO_EVENT}>No event</SelectItem>
                     {events.map(ev => (
-                      <SelectItem key={ev.id} value={ev.id}>{ev.title} · {formatDate(ev.starts_at)}</SelectItem>
+                      <SelectItem key={ev.id} value={ev.id}>{ev.title} · {formatDate(ev.start_date)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -458,7 +463,7 @@ const Me = () => {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {c.contribution_types?.name}
-                      {c.events && <> · {c.events.title}</>}
+                      {c.event_id && eventTitles.get(c.event_id) && <> · {eventTitles.get(c.event_id)}</>}
                       {' · '}{formatDate(c.created_at)}
                     </p>
                     {c.proof_url && (
@@ -511,14 +516,13 @@ const Me = () => {
             {attendance.map(a => (
               <HolographicCard key={a.id} className="p-5 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-semibold break-words">{a.events?.title}</p>
+                  <p className="font-semibold break-words">{a.event_title}</p>
                   <p className="text-xs text-muted-foreground">
-                    {a.contribution_types?.name}
-                    {a.events && <> · {formatDate(a.events.starts_at)}</>}
+                    {a.role} · {formatDate(a.start_date)}
                   </p>
                 </div>
                 {!member?.is_lead && (
-                  <span className="text-lg font-bold tabular-nums shrink-0">+{a.contribution_types?.default_points ?? 0}</span>
+                  <span className="text-lg font-bold tabular-nums shrink-0">+{a.points}</span>
                 )}
               </HolographicCard>
             ))}

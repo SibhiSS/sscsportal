@@ -1,10 +1,10 @@
 import { supabase } from '@/lib/supabase';
 import type {
-  ClubEvent,
   Contribution,
   ContributionType,
-  EventAttendance,
+  EventOption,
   LeaderboardRow,
+  MyAttendance,
   MyMember,
   NewContribution,
 } from '@/types/club';
@@ -15,12 +15,6 @@ import type {
 
 export type ContributionWithRefs = Contribution & {
   contribution_types: Pick<ContributionType, 'name' | 'category' | 'default_points'> | null;
-  events: Pick<ClubEvent, 'title'> | null;
-};
-
-export type AttendanceWithRefs = EventAttendance & {
-  contribution_types: Pick<ContributionType, 'name' | 'default_points'> | null;
-  events: Pick<ClubEvent, 'title' | 'starts_at'> | null;
 };
 
 /** Turns database errors into something a member can act on. */
@@ -54,33 +48,27 @@ export async function fetchSubmissionTypes(): Promise<ContributionType[]> {
   return data as ContributionType[];
 }
 
-export async function fetchEvents(): Promise<ClubEvent[]> {
-  const { data, error } = await supabase
-    .from('events')
-    .select('*')
-    .order('starts_at', { ascending: false });
+/** Event titles and dates for the "related event" picker (events themselves are admin-only). */
+export async function fetchEventOptions(): Promise<EventOption[]> {
+  const { data, error } = await supabase.rpc('member_event_options');
   if (error) throw error;
-  return data as ClubEvent[];
+  return (data ?? []) as EventOption[];
 }
 
 export async function fetchMyContributions(memberId: string): Promise<ContributionWithRefs[]> {
   const { data, error } = await supabase
     .from('contributions')
-    .select('*, contribution_types(name, category, default_points), events(title)')
+    .select('*, contribution_types(name, category, default_points)')
     .eq('member_id', memberId)
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data as ContributionWithRefs[];
 }
 
-export async function fetchMyAttendance(memberId: string): Promise<AttendanceWithRefs[]> {
-  const { data, error } = await supabase
-    .from('event_attendance')
-    .select('*, contribution_types(name, default_points), events(title, starts_at)')
-    .eq('member_id', memberId)
-    .order('created_at', { ascending: false });
+export async function fetchMyAttendance(): Promise<MyAttendance[]> {
+  const { data, error } = await supabase.rpc('my_attendance');
   if (error) throw error;
-  return data as AttendanceWithRefs[];
+  return (data ?? []) as MyAttendance[];
 }
 
 /** The member's leaderboard row, or null for leads and inactive members. */
