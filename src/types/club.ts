@@ -53,6 +53,8 @@ export interface ClubEvent {
   budget_actual: number | null;
   attendance_posted: boolean;
   od_posted: boolean;
+  /** Upcoming events members may tag (past events always can). Super admins switch it. */
+  shown_to_members: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;

@@ -12,6 +12,7 @@ import {
 import {
   eventChecklist, eventHasOurBooking, fmtLong, fmtRange, fmtShort, fmtTime, formWarnings, initials, venueName, venueRange,
 } from '../calendarLogic';
+import { useIsSuperAdmin } from '../SuperAdminOnly';
 
 const errMsg = (err: unknown) => (err as { message?: string })?.message || 'Something went wrong.';
 
@@ -139,6 +140,7 @@ export default function EventDetail() {
     events, venues, roster, attendance, attendanceTypes, coordinatorTypeId, bookingMap, byDate, patchEvent, reload,
   } = useAdminData();
   const ev = events.find(e => e.id === id);
+  const isSuper = useIsSuperAdmin();
 
   const [draft, setDraft] = useState({ title: '', start_date: '', end_date: '', description: '', budget_planned: '', budget_actual: '' });
   const [saving, setSaving] = useState(false);
@@ -336,7 +338,8 @@ export default function EventDetail() {
               <div className="vstat no"><span className="ic" />{ev.venue_id ? `No booking marked as ours at ${venueName(venues, ev.venue_id)} on these dates.` : 'Pick a venue first.'}</div>
             )}
             <p className="note-sm" style={{ marginTop: 10, marginBottom: 0 }}>
-              Ticks itself when a booking marked “ours” exists for this venue and date. <Link className="linkbtn" to="/admin/venues">Venue bookings</Link>
+              Ticks itself when a booking marked “ours” exists for this venue and date.
+              {isSuper && <> <Link className="linkbtn" to="/admin/venues">Venue bookings</Link></>}
             </p>
           </div>
         )}

@@ -15,6 +15,7 @@ import MembersPage from '@/admin/pages/MembersPage';
 import MemberCard from '@/admin/pages/MemberCard';
 import ApprovalsPage from '@/admin/pages/ApprovalsPage';
 import SettingsPage from '@/admin/pages/SettingsPage';
+import SuperAdminOnly from '@/admin/SuperAdminOnly';
 import './App.css';
 
 import { useState } from 'react';
@@ -64,7 +65,7 @@ function App() {
                   <Route path="calendar" element={<CalendarPage />} />
                   <Route path="events" element={<EventsPage />} />
                   <Route path="events/:id" element={<EventDetail />} />
-                  <Route path="venues" element={<VenuesPage />} />
+                  <Route path="venues" element={<SuperAdminOnly><VenuesPage /></SuperAdminOnly>} />
                   <Route path="members" element={<MembersPage />} />
                   <Route path="members/:id" element={<MemberCard />} />
                   <Route path="approvals" element={<ApprovalsPage />} />

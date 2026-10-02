@@ -48,7 +48,7 @@ export async function fetchSubmissionTypes(): Promise<ContributionType[]> {
   return data as ContributionType[];
 }
 
-/** Event titles and dates for the "related event" picker (events themselves are admin-only). */
+/** Events a member may tag: past ones, plus upcoming ones a super admin has opened up. */
 export async function fetchEventOptions(): Promise<EventOption[]> {
   const { data, error } = await supabase.rpc('member_event_options');
   if (error) throw error;

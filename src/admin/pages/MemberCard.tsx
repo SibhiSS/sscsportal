@@ -1,16 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { Award, CalendarCheck, Contact, Info, Layers, Pencil } from 'lucide-react';
+import { Award, CalendarCheck, Contact, Info, Layers, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import { signProofImages } from '@/lib/club';
 import type { AdminContribution, RosterMember } from '@/types/admin';
 import { useAdminData } from '../AdminData';
-import { fetchMemberContributions, updateMember } from '../api';
-import { fmtMed, initials, isoDate, rangeDates, toDate, todayIso } from '../calendarLogic';
+import { deleteContribution, fetchMemberContributions, reopenContribution, updateMember } from '../api';
+import { fmtMed, initials, isoDate } from '../calendarLogic';
 
 const errMsg = (err: unknown) => (err as { message?: string })?.message || 'Something went wrong.';
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const DOWS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const localDay = (ts: string) => { const d = new Date(ts); return isoDate(d.getFullYear(), d.getMonth(), d.getDate()); };
 
 export default function MemberCard() {
@@ -39,6 +37,24 @@ export default function MemberCard() {
   }, [highlight, contribs]);
 
   const standing = leaderboard.find(r => r.member_id === id);
+
+  const refresh = async () => {
+    if (!id) return;
+    setContribs(await fetchMemberContributions(id));
+    await reload('pending', 'leaderboard');
+  };
+  const reopen = async (c: AdminContribution) => {
+    const lose = c.status === 'approved' ? ` Its ${c.points_awarded} points come off until it's approved again.` : '';
+    if (!window.confirm(`Move ${c.code} back to pending?${lose}`)) return;
+    try { await reopenContribution(c.id); toast.success(`${c.code} is waiting for review again.`); await refresh(); }
+    catch (err) { toast.error(errMsg(err)); }
+  };
+  const remove = async (c: AdminContribution) => {
+    const lose = c.status === 'approved' ? ` They lose its ${c.points_awarded} points.` : '';
+    if (!window.confirm(`Delete ${c.code} "${c.title}" permanently?${lose} This can't be undone.`)) return;
+    try { await deleteContribution(c); toast.success(`${c.code} deleted.`); await refresh(); }
+    catch (err) { toast.error(errMsg(err)); }
+  };
   const typeById = useMemo(() => new Map(attendanceTypes.map(t => [t.id, t])), [attendanceTypes]);
   const myEvents = useMemo(() => attendance
     .filter(a => a.member_id === id)
@@ -57,24 +73,6 @@ export default function MemberCard() {
     }
     return [...map.entries()].sort((a, b) => b[1] - a[1]);
   }, [list]);
-
-  // activity calendar
-  const [view, setView] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
-  const activity = useMemo(() => {
-    const map = new Map<string, { label: string; cls: string }[]>();
-    const push = (d: string, x: { label: string; cls: string }) => { const l = map.get(d); if (l) l.push(x); else map.set(d, [x]); };
-    for (const { ev, type } of myEvents) for (const d of rangeDates(ev!.start_date, ev!.end_date)) push(d, { label: `${ev!.title}${type ? ` (${type.name.split(' ')[0]})` : ''}`, cls: 'event' });
-    for (const c of list) push(localDay(c.created_at), { label: c.title, cls: 'contrib' });
-    return map;
-  }, [myEvents, list]);
-  const cells = useMemo(() => {
-    const first = (new Date(view.y, view.m, 1).getDay() + 6) % 7;
-    const days = new Date(view.y, view.m + 1, 0).getDate();
-    const out: (string | null)[] = Array(first).fill(null);
-    for (let d = 1; d <= days; d++) out.push(isoDate(view.y, view.m, d));
-    return out;
-  }, [view]);
-  const today = todayIso();
 
   if (!m) {
     return (
@@ -138,38 +136,7 @@ export default function MemberCard() {
         </aside>
 
         <section className="profile-main">
-          <div className="cal-head">
-            <div className="cal-title">{MONTHS[view.m]}, {view.y}</div>
-            <div className="cal-nav">
-              <button className="pill-btn" onClick={() => { const d = new Date(); setView({ y: d.getFullYear(), m: d.getMonth() }); }}>Today</button>
-              <button className="circ" aria-label="Previous month" onClick={() => setView(v => { const d = new Date(v.y, v.m - 1, 1); return { y: d.getFullYear(), m: d.getMonth() }; })}>‹</button>
-              <button className="circ" aria-label="Next month" onClick={() => setView(v => { const d = new Date(v.y, v.m + 1, 1); return { y: d.getFullYear(), m: d.getMonth() }; })}>›</button>
-            </div>
-          </div>
-          <div className="grid7">{DOWS.map(d => <div key={d} className="dow">{d}</div>)}</div>
-          <div className="grid7" style={{ marginTop: 4 }}>
-            {cells.map((iso, i) => {
-              if (!iso) return <div key={'e' + i} className="day empty" />;
-              const acts = activity.get(iso) ?? [];
-              const dow = toDate(iso).getDay();
-              const cls = `day${acts.some(a => a.cls === 'event') ? ' has-event' : ''}${!acts.length && (dow === 0 || dow === 6) ? ' hatched' : ''}${iso === today ? ' today' : ''}`;
-              return (
-                <div key={iso} className={cls} style={{ height: 92, cursor: 'default' }}>
-                  <div className="num">{toDate(iso).getDate()}</div>
-                  <div className="lines">
-                    {acts.slice(0, 2).map((a, j) => <div key={j} className={`evline ${a.cls}`} title={a.label}><span>{a.label}</span></div>)}
-                    {acts.length > 2 && <span className="morechip">+{acts.length - 2}</span>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="legend">
-            <span><span className="swatch" style={{ background: 'var(--t-event)' }} />Event attended</span>
-            <span><span className="swatch" style={{ background: 'var(--t-holiday)' }} />Contribution submitted</span>
-          </div>
-
-          <div className="divider" style={{ margin: '26px 0 6px' }}>Contributions</div>
+          <div className="divider" style={{ margin: '0 0 6px' }}>Contributions</div>
           <div className="form-acts" style={{ marginBottom: 6 }}>
             {(['all', 'pending', 'approved', 'rejected'] as const).map(f => (
               <button key={f} className={`pill-btn${statusFilter === f ? ' on' : ''}`} onClick={() => setStatusFilter(f)}>{f[0].toUpperCase() + f.slice(1)}</button>
@@ -195,6 +162,12 @@ export default function MemberCard() {
               <div style={{ textAlign: 'right' }}>
                 <span className={`tag ${c.status}`}>{c.status}</span>
                 {c.status === 'approved' && <div className="pts" style={{ marginTop: 6 }}>+{c.points_awarded}</div>}
+                <div className="form-acts" style={{ marginTop: 8, justifyContent: 'flex-end' }}>
+                  {c.status === 'pending'
+                    ? <Link className="mini-btn" to={`/admin/approvals?q=${c.code}`}>Review</Link>
+                    : <button className="mini-btn" onClick={() => reopen(c)} title="Move back to pending" aria-label={`Move ${c.code} back to pending`}><RotateCcw size={12} /></button>}
+                  <button className="mini-btn danger" onClick={() => remove(c)} title="Delete" aria-label={`Delete ${c.code}`}><Trash2 size={12} /></button>
+                </div>
               </div>
             </div>
           )) : <div className="muted">No {statusFilter === 'all' ? '' : statusFilter} contributions.</div>}

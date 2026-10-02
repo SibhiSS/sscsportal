@@ -8,6 +8,7 @@ import {
   toDate, venueDay, venueName, type CalItem,
 } from '../calendarLogic';
 import EntryModal from '../EntryModal';
+import { useIsSuperAdmin } from '../SuperAdminOnly';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DOWS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -275,6 +276,7 @@ function DayDetail({ iso, showVenues, venueFilter, onAdd, onEdit, onDelete, onTo
   onToggleOurs: (id: string, ours: boolean) => void; onRemoveBooking: (id: string, label: string) => void;
 }) {
   const { venues, bookings, bookingMap, byDate } = useAdminData();
+  const canEditBookings = useIsSuperAdmin();
   const ents = byDate.get(iso) ?? [];
   const blockers = ents.filter(e => NO_EVENT_TYPES.includes(e.t));
   const exam = blockers.find(e => e.t === 'exam');
@@ -345,10 +347,12 @@ function DayDetail({ iso, showVenues, venueFilter, onAdd, onEdit, onDelete, onTo
                     {(b.booked_by || b.phone) && (
                       <div className="bk-by">{b.booked_by}{b.phone && <> · <a className="tel" href={`tel:${b.phone}`}>{b.phone}</a></>}</div>
                     )}
-                    <div className="bk-acts">
-                      <button className="mini-btn" onClick={() => onToggleOurs(b.id, b.is_ours)}>{b.is_ours ? 'Not ours' : 'Mark as ours'}</button>
-                      <button className="mini-btn danger" onClick={() => onRemoveBooking(b.id, `"${b.event_name}" at ${x.v.name}`)}>Remove</button>
-                    </div>
+                    {canEditBookings && (
+                      <div className="bk-acts">
+                        <button className="mini-btn" onClick={() => onToggleOurs(b.id, b.is_ours)}>{b.is_ours ? 'Not ours' : 'Mark as ours'}</button>
+                        <button className="mini-btn danger" onClick={() => onRemoveBooking(b.id, `"${b.event_name}" at ${x.v.name}`)}>Remove</button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

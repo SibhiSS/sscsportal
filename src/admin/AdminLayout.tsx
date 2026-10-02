@@ -14,7 +14,7 @@ const NAV = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/admin/calendar', label: 'Calendar', icon: CalendarDays },
   { to: '/admin/events', label: 'Events', icon: Ticket },
-  { to: '/admin/venues', label: 'Venues', icon: MapPin },
+  { to: '/admin/venues', label: 'Venues', icon: MapPin, superOnly: true },
   { to: '/admin/members', label: 'Members', icon: Users },
   { to: '/admin/approvals', label: 'Approvals', icon: CheckSquare },
 ];
@@ -170,6 +170,7 @@ function GlobalSearch() {
 function Shell() {
   const { user, logout } = useAuth();
   const { loading, error, pendingCount } = useAdminData();
+  const isSuper = user?.role === 'super_admin';
   const [navOpen, setNavOpen] = useState(false);
   const { pathname } = useLocation();
   useEffect(() => setNavOpen(false), [pathname]);
@@ -184,7 +185,7 @@ function Shell() {
         </Link>
         <div className="adm-nav-label">Menu</div>
         <nav className="adm-nav">
-          {NAV.map(({ to, label, icon: Icon, end }) => (
+          {NAV.filter(n => isSuper || !n.superOnly).map(({ to, label, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end} className={({ isActive }) => (isActive ? 'active' : '')}>
               <span className="ic"><Icon /></span>{label}
               {to === '/admin/approvals' && pendingCount > 0 && <span className="adm-badge" aria-label={`${pendingCount} waiting`}>{pendingCount}</span>}

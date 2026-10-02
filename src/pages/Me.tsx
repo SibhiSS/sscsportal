@@ -29,7 +29,16 @@ import type {
 
 type PickedImage = { file: File; preview: string };
 
+
 const NO_EVENT = 'none';
+
+const STATUS_LABELS: Record<ContributionStatus, string> = {
+  pending: 'Waiting for review',
+  approved: 'Approved',
+  rejected: 'Not approved',
+};
+
+type HistoryFilter = 'all' | ContributionStatus;
 
 const STATUS_STYLES: Record<ContributionStatus, string> = {
   pending: 'text-amber-300 bg-amber-500/10 border-amber-500/30',
@@ -74,10 +83,10 @@ const Me = () => {
   const [loadError, setLoadError] = useState('');
   const [member, setMember] = useState<MyMember | null>(null);
   const [types, setTypes] = useState<ContributionType[]>([]);
-  const [events, setEvents] = useState<EventOption[]>([]);
   const [contributions, setContributions] = useState<ContributionWithRefs[]>([]);
   const [attendance, setAttendance] = useState<MyAttendance[]>([]);
   const [standing, setStanding] = useState<LeaderboardRow | null>(null);
+  const [events, setEvents] = useState<EventOption[]>([]);
 
   const [typeId, setTypeId] = useState('');
   const [eventId, setEventId] = useState(NO_EVENT);
@@ -89,6 +98,8 @@ const Me = () => {
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [search, setSearch] = useState('');
+  const [tab, setTab] = useState<'log' | 'history'>('log');
+  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('all');
 
   const load = useCallback(async () => {
     try {
@@ -138,10 +149,15 @@ const Me = () => {
 
   const visibleContributions = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return contributions;
     return contributions.filter(c =>
-      c.code?.toLowerCase().includes(term) || c.title.toLowerCase().includes(term));
-  }, [contributions, search]);
+      (historyFilter === 'all' || c.status === historyFilter)
+      && (!term || c.code?.toLowerCase().includes(term) || c.title.toLowerCase().includes(term)));
+  }, [contributions, search, historyFilter]);
+
+  const showHistory = (filter: HistoryFilter) => {
+    setHistoryFilter(filter);
+    setTab('history');
+  };
 
   const typesByCategory = useMemo(() => {
     const groups = new Map<string, ContributionType[]>();
@@ -212,7 +228,7 @@ const Me = () => {
         event_id: eventId === NO_EVENT ? null : eventId,
       });
       uploaded = [];
-      toast.success(`Submitted. Your code is ${code}.`, { description: 'An admin will review it.' });
+      toast.success(`Submitted. Your code is ${code}.`, { description: 'An admin will review it. Track it under My submissions.' });
       resetForm();
       setContributions(await fetchMyContributions(member.id));
     } catch (err) {
@@ -320,15 +336,21 @@ const Me = () => {
           {[
             { label: 'Points', value: standing?.total_points ?? 0, icon: Award },
             { label: 'Rank', value: standing ? `#${standing.rank}` : '—', icon: Trophy },
-            { label: 'Approved', value: approvedCount, icon: CalendarCheck },
-            { label: 'Pending', value: pendingCount, icon: Clock },
-          ].map(({ label, value, icon: Icon }) => (
-            <HolographicCard key={label} className="p-5">
-              <Icon className="w-4 h-4 text-primary mb-3" />
-              <div className="text-3xl font-bold tabular-nums">{value}</div>
-              <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{label}</div>
-            </HolographicCard>
-          ))}
+            { label: 'Approved', value: approvedCount, icon: CalendarCheck, filter: 'approved' as const },
+            { label: 'Pending', value: pendingCount, icon: Clock, filter: 'pending' as const },
+          ].map(({ label, value, icon: Icon, filter }) => {
+            const body = (
+              <HolographicCard className={`p-5 h-full${filter ? ' transition-colors hover:border-primary/40' : ''}`}>
+                <Icon className="w-4 h-4 text-primary mb-3" />
+                <div className="text-3xl font-bold tabular-nums">{value}</div>
+                <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{label}</div>
+              </HolographicCard>
+            );
+            return filter ? (
+              <button key={label} type="button" className="text-left" onClick={() => showHistory(filter)}
+                aria-label={`Show ${label.toLowerCase()} submissions`}>{body}</button>
+            ) : <div key={label}>{body}</div>;
+          })}
         </div>
       ) : (
         <HolographicCard className="p-6 text-muted-foreground">
@@ -338,50 +360,60 @@ const Me = () => {
         </HolographicCard>
       )}
 
-      {/* Submit */}
+      {/* Tabs: log something new, or look back at what was submitted */}
       {canEarn && (
+        <div className="flex gap-2 border-b border-white/10" role="tablist">
+          {([['log', 'Log a contribution'], ['history', `My submissions (${contributions.length})`]] as const).map(([key, label]) => (
+            <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)}
+              className={`px-4 py-2.5 text-sm font-semibold -mb-px border-b-2 transition-colors ${tab === key ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Submit */}
+      {canEarn && tab === 'log' && (
         <HolographicCard className="p-6 md:p-8">
           <h2 className="text-xl font-bold mb-1">Log a contribution</h2>
           <p className="text-sm text-muted-foreground mb-6">An admin reviews every submission before the points count.</p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid md:grid-cols-2 gap-5">
-              <div className="space-y-2">
-                <Label htmlFor="type">What did you do?</Label>
-                <Select value={typeId} onValueChange={setTypeId}>
-                  <SelectTrigger id="type"><SelectValue placeholder="Choose a contribution type" /></SelectTrigger>
-                  <SelectContent className="max-h-80">
-                    {typesByCategory.map(([category, items]) => (
-                      <SelectGroup key={category}>
-                        <SelectLabel>{category}</SelectLabel>
-                        {items.map(t => (
-                          <SelectItem key={t.id} value={t.id}>
-                            {t.name} · {t.default_points} pts
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {selectedType && (
-                  <p className="text-xs text-muted-foreground">
-                    Usually worth {selectedType.default_points} point{selectedType.default_points === 1 ? '' : 's'}. The reviewer may adjust it.
-                  </p>
-                )}
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="type">What did you do?</Label>
+              <Select value={typeId} onValueChange={setTypeId}>
+                <SelectTrigger id="type"><SelectValue placeholder="Choose a contribution type" /></SelectTrigger>
+                <SelectContent className="max-h-80">
+                  {typesByCategory.map(([category, items]) => (
+                    <SelectGroup key={category}>
+                      <SelectLabel>{category}</SelectLabel>
+                      {items.map(t => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name} · {t.default_points} pts
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedType && (
+                <p className="text-xs text-muted-foreground">
+                  Usually worth {selectedType.default_points} point{selectedType.default_points === 1 ? '' : 's'}. The reviewer may adjust it.
+                </p>
+              )}
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="event">Related event (optional)</Label>
-                <Select value={eventId} onValueChange={setEventId}>
-                  <SelectTrigger id="event"><SelectValue /></SelectTrigger>
-                  <SelectContent className="max-h-80">
-                    <SelectItem value={NO_EVENT}>No event</SelectItem>
-                    {events.map(ev => (
-                      <SelectItem key={ev.id} value={ev.id}>{ev.title} · {formatDate(ev.start_date)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="event">Which event was this for? (optional)</Label>
+              <Select value={eventId} onValueChange={setEventId}>
+                <SelectTrigger id="event"><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-80">
+                  <SelectItem value={NO_EVENT}>Not for a specific event</SelectItem>
+                  {events.map(ev => (
+                    <SelectItem key={ev.id} value={ev.id}>{ev.title} · {formatDate(ev.start_date)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -434,9 +466,20 @@ const Me = () => {
       )}
 
       {/* History */}
+      {(tab === 'history' || !canEarn) && (
       <section className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h2 className="text-xl font-bold">My submissions</h2>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by status">
+            {(['all', 'pending', 'approved', 'rejected'] as HistoryFilter[]).map(f => {
+              const n = f === 'all' ? contributions.length : contributions.filter(c => c.status === f).length;
+              return (
+                <button key={f} type="button" onClick={() => setHistoryFilter(f)} aria-pressed={historyFilter === f}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${historyFilter === f ? 'bg-primary text-primary-foreground border-primary' : 'border-white/10 text-muted-foreground hover:text-foreground'}`}>
+                  {f === 'all' ? 'All' : f === 'pending' ? 'Waiting' : STATUS_LABELS[f]} · {n}
+                </button>
+              );
+            })}
+          </div>
           {contributions.length > 0 && (
             <div className="relative sm:w-64">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -448,7 +491,9 @@ const Me = () => {
         {contributions.length === 0 ? (
           <p className="text-muted-foreground text-sm">Nothing submitted yet.</p>
         ) : visibleContributions.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No submission matches “{search}”.</p>
+          <p className="text-muted-foreground text-sm">
+            {search.trim() ? <>No submission matches “{search}”.</> : 'Nothing here.'}
+          </p>
         ) : (
           <div className="space-y-3">
             {visibleContributions.map(c => (
@@ -484,14 +529,24 @@ const Me = () => {
                         ))}
                       </div>
                     )}
+                    {c.status === 'pending' && (
+                      <p className="text-xs text-muted-foreground">Waiting for an admin to review it. You can withdraw it until then.</p>
+                    )}
+                    {c.status !== 'pending' && c.reviewed_at && (
+                      <p className="text-xs text-muted-foreground">
+                        {c.status === 'approved' ? 'Approved' : 'Reviewed'} on {formatDate(c.reviewed_at)}
+                        {c.status === 'approved' && c.contribution_types && c.points_awarded !== c.contribution_types.default_points
+                          && <> · usually {c.contribution_types.default_points} pts</>}
+                      </p>
+                    )}
                     {c.review_note && <p className="text-sm text-muted-foreground">Reviewer: {c.review_note}</p>}
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     {c.status === 'approved' && (
-                      <span className="text-lg font-bold tabular-nums">+{c.points_awarded}</span>
+                      <span className="text-lg font-bold tabular-nums">+{c.points_awarded} pts</span>
                     )}
-                    <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${STATUS_STYLES[c.status]}`}>
-                      {c.status}
+                    <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border whitespace-nowrap ${STATUS_STYLES[c.status]}`}>
+                      {STATUS_LABELS[c.status]}
                     </span>
                     {c.status === 'pending' && (
                       <Button variant="ghost" size="icon" aria-label="Withdraw submission"
@@ -506,6 +561,7 @@ const Me = () => {
           </div>
         )}
       </section>
+      )}
 
       <section className="space-y-4 pb-8">
         <h2 className="text-xl font-bold">Events</h2>

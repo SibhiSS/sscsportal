@@ -4,11 +4,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAdminData } from '../AdminData';
 import { ENTRY_TYPES, NO_EVENT_TYPES, addDays, fmtRange, fmtShort, fmtTime, initials, todayIso, venueName } from '../calendarLogic';
 import { useEventProgress } from '../useEventProgress';
+import { useIsSuperAdmin } from '../SuperAdminOnly';
 
 export default function Overview() {
   const { user } = useAuth();
   const { events, roster, bookings, venues, leaderboard, pendingCount, byDate } = useAdminData();
   const progress = useEventProgress();
+  const isSuper = useIsSuperAdmin();
   const today = todayIso();
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -44,8 +46,11 @@ export default function Overview() {
           <div className="hint">{roster.filter(m => m.is_lead).length} leads</div></Link>
         <Link className="tile" to="/admin/approvals"><div className="lbl">Contributions to review</div><div className="val">{pendingCount}</div>
           <div className="hint">{pendingCount ? 'Waiting in Approvals' : 'All caught up'}</div></Link>
-        <Link className="tile" to="/admin/venues"><div className="lbl">Our venue bookings</div><div className="val">{ourUpcoming.length}</div>
+        {isSuper
+          ? <Link className="tile" to="/admin/venues"><div className="lbl">Our venue bookings</div><div className="val">{ourUpcoming.length}</div>
           <div className="hint">{ourUpcoming[0] ? `Next: ${venueName(venues, ourUpcoming[0].venue_id)}, ${fmtShort(ourUpcoming[0].booking_date)}` : 'None upcoming'}</div></Link>
+          : <div className="tile"><div className="lbl">Our venue bookings</div><div className="val">{ourUpcoming.length}</div>
+          <div className="hint">{ourUpcoming[0] ? `Next: ${venueName(venues, ourUpcoming[0].venue_id)}, ${fmtShort(ourUpcoming[0].booking_date)}` : 'None upcoming'}</div></div>}
       </div>
 
       <div className="bk-grid">

@@ -234,3 +234,17 @@ export async function saveType(t: Partial<ContributionType> & Pick<ContributionT
 
 export const deleteType = async (id: string) =>
   check(await supabase.from('contribution_types').delete().eq('id', id));
+
+/** Puts a reviewed contribution back in the queue: its points come off and the review is cleared. */
+export async function reopenContribution(id: string) {
+  return check(await supabase.rpc('reopen_contribution', { p_id: id })) as AdminContribution;
+}
+
+/** Deletes a contribution and its proof images. */
+export async function deleteContribution(c: Pick<AdminContribution, 'id' | 'proof_images'>) {
+  check(await supabase.from('contributions').delete().eq('id', c.id));
+  if (c.proof_images?.length) {
+    const { error } = await supabase.storage.from('contribution-proofs').remove(c.proof_images);
+    if (error) console.warn('[admin] Could not remove proof images:', error.message);
+  }
+}
