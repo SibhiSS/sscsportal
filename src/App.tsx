@@ -5,6 +5,7 @@ import Index from '@/pages/Index';
 import Team from '@/pages/Team';
 import NotFound from '@/pages/NotFound';
 import Admin from '@/pages/Admin';
+import Me from '@/pages/Me';
 import './App.css';
 
 import { useState } from 'react';
@@ -39,6 +40,7 @@ function App() {
                 <Route path="/" element={<Index />} />
                 <Route path="/team" element={<Team />} />
 
+                <Route path="/me" element={<Me />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

@@ -58,8 +58,13 @@ export interface EventAttendance {
 
 export type ContributionStatus = 'pending' | 'approved' | 'rejected';
 
+/** Most proof images a contribution can carry (enforced by the database). */
+export const MAX_PROOF_IMAGES = 3;
+
 export interface Contribution {
   id: string;
+  /** 4-character lookup code assigned by the database, e.g. "K7Q2". */
+  code: string;
   member_id: string;
   /** Always a `submission` contribution type. */
   type_id: string;
@@ -67,6 +72,8 @@ export interface Contribution {
   title: string;
   description: string | null;
   proof_url: string | null;
+  /** Storage paths in the contribution-proofs bucket, "<member id>/<file>". */
+  proof_images: string[];
   status: ContributionStatus;
   points_awarded: number | null;
   reviewed_by: string | null;
@@ -77,7 +84,7 @@ export interface Contribution {
 
 /** Fields a member sends when submitting; everything else is set by the database or a reviewer. */
 export type NewContribution = Pick<Contribution, 'member_id' | 'type_id' | 'title'> &
-  Partial<Pick<Contribution, 'event_id' | 'description' | 'proof_url'>>;
+  Partial<Pick<Contribution, 'event_id' | 'description' | 'proof_url' | 'proof_images'>>;
 
 export interface LeaderboardRow {
   rank: number;

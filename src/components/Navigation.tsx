@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, LogIn, LogOut, User as UserIcon } from 'lucide-react';
+import { Menu, X, LogIn, LogOut, User as UserIcon, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -124,6 +124,10 @@ const Navigation = () => {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-white/5" />
                   <div className="p-1">
+                    <DropdownMenuItem onClick={() => navigate('/me')} className="rounded-xl focus:bg-white/10 cursor-pointer p-3">
+                      <Award className="mr-3 h-4 w-4 text-primary" />
+                      <span>My Contributions</span>
+                    </DropdownMenuItem>
                     {(user.role === 'super_admin' || user.role === 'admin') && (
                       <DropdownMenuItem onClick={() => navigate('/admin')} className="rounded-xl focus:bg-white/10 cursor-pointer p-3">
                         <UserIcon className="mr-3 h-4 w-4 text-primary" />
@@ -214,6 +218,16 @@ const Navigation = () => {
                     </Avatar>
                     <span className="font-bold">{user.displayName}</span>
                   </div>
+                  <Button variant="outline" className="rounded-full px-8" onClick={() => { navigate('/me'); setIsMobileMenuOpen(false); }}>
+                    <Award className="w-4 h-4 mr-2" />
+                    My Contributions
+                  </Button>
+                  {(user.role === 'super_admin' || user.role === 'admin') && (
+                    <Button variant="outline" className="rounded-full px-8" onClick={() => { navigate('/admin'); setIsMobileMenuOpen(false); }}>
+                      <UserIcon className="w-4 h-4 mr-2" />
+                      Admin Dashboard
+                    </Button>
+                  )}
                   <Button variant="outline" className="rounded-full px-8 border-red-500/30 text-red-400 hover:bg-red-500/10" onClick={() => { logout(); setIsMobileMenuOpen(false); }}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Log Out
