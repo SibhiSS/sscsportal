@@ -106,13 +106,13 @@ const coreTeam2026: { name: string; role: string; image: string; quote: string; 
   },
   {
     name: 'Sarweshwari',
-    role: 'Chairperson (Women in SSCS)',
+    role: 'Women in SSCS (Chairperson)',
     image: '/sarweshwari.png',
     quote: 'Empowering women in circuits.'
   },
   {
     name: 'Shree Devi',
-    role: 'Vice-Chairperson (Women in SSCS)',
+    role: 'Women in SSCS (Vice-Chairperson)',
     image: '/shreedevi.png',
     quote: 'Breaking barriers.'
   }

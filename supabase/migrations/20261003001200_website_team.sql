@@ -74,8 +74,8 @@ FROM (VALUES
   ('core', '2026-27', 'Goutham P',      'Vice Chairperson',                'SKY IS THE LIMIT', '/goutham.png', 1),
   ('core', '2026-27', 'Ilangkumaran',   'General Secretary',               'Big ideas don''t need noise, they need action.', '/ilangkumaran.png', 2),
   ('core', '2026-27', 'Neyalakshmi',    'Treasurer',                       'PEACE!', '/neya.png', 3),
-  ('core', '2026-27', 'Sarweshwari',    'Chairperson (Women in SSCS)',     'Empowering women in circuits.', '/sarweshwari.png', 4),
-  ('core', '2026-27', 'Shree Devi',     'Vice-Chairperson (Women in SSCS)', 'Breaking barriers.', '/shreedevi.png', 5),
+  ('core', '2026-27', 'Sarweshwari',    'Women in SSCS (Chairperson)',     'Empowering women in circuits.', '/sarweshwari.png', 4),
+  ('core', '2026-27', 'Shree Devi',     'Women in SSCS (Vice-Chairperson)', 'Breaking barriers.', '/shreedevi.png', 5),
 
   ('lead', '2026-27', 'S Jai Akaash',      'Technical Lead',                         '', '/jai.png', 0),
   ('lead', '2026-27', 'Pranav J',          'Associate Technical Lead',               '', '/pranav.png', 1),
