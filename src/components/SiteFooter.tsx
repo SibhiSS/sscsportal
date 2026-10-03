@@ -61,7 +61,7 @@ const SiteFooter = () => {
       )}
 
       {/* Text sits above the game; only its links and the PLAY/STOP button take clicks */}
-      <div className="pointer-events-none relative z-10 mx-auto grid max-w-[1800px] grid-cols-1 gap-x-10 gap-y-6 px-6 pt-28 md:grid-cols-2 md:px-16 md:pt-32">
+      <div className="pointer-events-none relative z-10 mx-auto grid max-w-[1800px] grid-cols-1 gap-x-10 gap-y-6 px-6 pt-12 md:grid-cols-2 md:px-16 md:pt-16">
         <div className="font-body font-medium leading-[0.92] tracking-tight text-white/35 text-[clamp(34px,4.6vw,76px)] select-none">
           <span className="relative">
             <span className="text-primary/85">IEEE</span> <span className="text-white/50">SSCS</span>

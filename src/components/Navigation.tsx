@@ -30,6 +30,25 @@ const Navigation = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Get out of the way of the full-screen footer (and its game) once at least half of it is on screen.
+  const [footerInView, setFooterInView] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      const footer = document.querySelector('footer');
+      if (!footer) { setFooterInView(false); return; }
+      const r = footer.getBoundingClientRect();
+      const visible = Math.max(0, Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0));
+      setFooterInView(visible >= Math.min(r.height, window.innerHeight) * 0.5);
+    };
+    check();
+    window.addEventListener('scroll', check, { passive: true });
+    window.addEventListener('resize', check);
+    return () => {
+      window.removeEventListener('scroll', check);
+      window.removeEventListener('resize', check);
+    };
+  }, [location.pathname]);
+
   const navLinks = [
     { name: 'About', href: '#about' },
     { name: 'Team', href: '/team' },
@@ -64,7 +83,12 @@ const Navigation = () => {
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none pt-6 px-6">
+      <motion.div
+        className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none pt-6 px-6"
+        animate={{ y: footerInView ? -140 : 0, opacity: footerInView ? 0 : 1 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        aria-hidden={footerInView || undefined}
+      >
         <motion.nav
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -179,7 +203,7 @@ const Navigation = () => {
             </button>
           </div>
         </motion.nav>
-      </div>
+      </motion.div>
 
       {/* Mobile Menu Overlay */}
       <AnimatePresence>

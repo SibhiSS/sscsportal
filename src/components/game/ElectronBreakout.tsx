@@ -160,7 +160,7 @@ const ElectronBreakout = ({ onScore, onCombo, onExit }: ElectronBreakoutProps) =
       paddle.h = W < 600 ? 13 : 16;
       baseSpeed = Math.min(1700, Math.max(1200, H * 2));
       // Gate just below the footer text: a big field below it, and room behind it for the electron to bounce back.
-      paddle.y = Math.min(Math.max(H * 0.42, 340), tl.top - 180);
+      paddle.y = Math.min(Math.max(H * 0.34, 260), tl.top - 180);
       paddle.cx = Math.min(Math.max(paddle.cx || W / 2, paddleW() / 2), W - paddleW() / 2);
       if (tl.cols !== colsBefore || !tiles.length) buildWall();
       seedMotes();
