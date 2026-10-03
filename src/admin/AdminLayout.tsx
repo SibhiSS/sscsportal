@@ -80,12 +80,13 @@ function Gate({ children }: { children: React.ReactNode }) {
 
 function Crumbs() {
   const { pathname } = useLocation();
-  const { events, roster } = useAdminData();
+  const { events, roster, proposals } = useAdminData();
   const parts = pathname.replace(/^\/admin\/?/, '').split('/').filter(Boolean);
   const section = [...NAV, ...ACCOUNT_NAV].find(n => n.to === '/admin/' + (parts[0] ?? '')) ?? NAV[0];
   let last = '';
   if (parts[0] === 'events' && parts[1]) last = events.find(e => e.id === parts[1])?.title ?? 'Event';
   if (parts[0] === 'members' && parts[1]) last = roster.find(m => m.id === parts[1])?.full_name ?? 'Member';
+  if (parts[0] === 'proposals' && parts[1]) last = proposals.find(p => p.id === parts[1])?.title ?? 'Proposal';
   return (
     <div className="adm-crumbs">
       {last ? (

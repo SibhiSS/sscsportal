@@ -82,7 +82,9 @@ export default function ProposalsPage() {
         {rows.length ? (
           <div className="pr-list">
             {rows.map(p => (
-              <article key={p.id} className="pr-card">
+              <article key={p.id} className="pr-card click" role="link" tabIndex={0}
+                onClick={() => navigate(`/admin/proposals/${p.id}`)}
+                onKeyDown={e => { if (e.key === 'Enter') navigate(`/admin/proposals/${p.id}`); }}>
                 <div className="pr-head">
                   <div style={{ minWidth: 0 }}>
                     <b className="pr-title">{p.title}</b>
@@ -96,7 +98,8 @@ export default function ProposalsPage() {
                 <p className="pr-body">{p.description}</p>
                 {p.requirements && <p className="pr-body"><b>Requirements:</b> {p.requirements}</p>}
                 {p.review_note && <p className="note-sm">Note: {p.review_note}</p>}
-                <div className="pr-acts">
+                <div className="pr-acts" onClick={e => e.stopPropagation()}>
+                  <Link className="mini-btn" to={`/admin/proposals/${p.id}`}>Details</Link>
                   {p.event_id && <Link className="mini-btn" to={`/admin/events/${p.event_id}`}>Open event</Link>}
                   {isSuper && p.status === 'pending' && (
                     <>
