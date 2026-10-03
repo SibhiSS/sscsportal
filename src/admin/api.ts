@@ -3,6 +3,7 @@ import type {
   AdminContribution, AttendanceRow, CalendarEntry, ClubEvent, RosterMember, Venue, VenueBooking,
 } from '@/types/admin';
 import type { ContributionType, LeaderboardRow } from '@/types/club';
+import { prepareProofImage, SITE_MEDIA_BUCKET } from '@/lib/club';
 import type { ImportRow } from './calendarLogic';
 
 // Admin data access. Every table here is admin-only under RLS.
@@ -181,6 +182,25 @@ export async function signEventFile(path: string, download?: string) {
     .createSignedUrl(path, 60 * 60, download ? { download } : undefined);
   if (error) throw error;
   return data.signedUrl;
+}
+
+// ---- website images (public "site-media" bucket, super admins write) ---------------
+
+/** Downscales like proof images do, uploads under the event's folder, returns the storage path. */
+export async function uploadSiteImage(eventId: string, file: File) {
+  const blob = await prepareProofImage(file);
+  const ext = blob.type === 'image/gif' ? 'gif' : 'jpg';
+  const path = `${eventId}/${crypto.randomUUID()}.${ext}`;
+  check(await supabase.storage.from(SITE_MEDIA_BUCKET).upload(path, blob, { contentType: blob.type }));
+  return path;
+}
+
+/** Best-effort cleanup of uploaded images. "/public" paths (the seeded events) are left alone. */
+export async function removeSiteImages(refs: (string | null)[]) {
+  const paths = refs.filter((r): r is string => !!r && !r.startsWith('/') && !/^https?:/.test(r));
+  if (!paths.length) return;
+  const { error } = await supabase.storage.from(SITE_MEDIA_BUCKET).remove(paths);
+  if (error) console.warn('[admin] Could not remove site images:', error.message);
 }
 
 // ---- approvals ---------------------------------------------------------------------

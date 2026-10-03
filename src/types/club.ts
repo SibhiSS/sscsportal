@@ -55,9 +55,36 @@ export interface ClubEvent {
   od_posted: boolean;
   /** Upcoming events members may tag (past events always can). Super admins switch it. */
   shown_to_members: boolean;
+  /** What the public website shows. Super admins only (enforced by a trigger). */
+  website_published: boolean;
+  website_featured: boolean;
+  website_blurb: string | null;
+  website_details: string[];
+  website_tags: string[];
+  /** A "site-media" storage path, or a "/public" path like "/event1.jpg". */
+  website_cover: string | null;
+  website_gallery: string[];
+  website_link: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** A published event as the public site sees it (`website_events` view). */
+export interface WebsiteEvent {
+  id: string;
+  title: string;
+  start_date: string;
+  end_date: string;
+  is_online: boolean;
+  venue: string | null;
+  featured: boolean;
+  blurb: string | null;
+  details: string[];
+  tags: string[];
+  cover: string | null;
+  gallery: string[];
+  link: string | null;
 }
 
 /** What members can see of an event, via `member_event_options()`. */

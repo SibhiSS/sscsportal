@@ -622,3 +622,20 @@ a.tile:hover { background: var(--cell); }
   .adm-side-foot { flex-direction: row; border-top: 1px solid var(--line); padding-top: 14px; }
   .adm-top { padding: 14px 16px 4px; }
 }
+
+/* ---- Website page ---------------------------------------------------------- */
+.ws-home { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.ws-card { background: var(--cell); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; text-align: left; padding: 0; color: inherit; }
+.ws-card:hover { background: var(--cell-hover); border-color: var(--line-2); }
+.ws-thumb { aspect-ratio: 16 / 9; display: grid; place-items: center; background: rgba(0, 0, 0, .3); font-size: 12px; }
+.ws-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ws-meta { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; font-size: 13px; }
+.ws-meta .muted { font-size: 12px; }
+.ws-modal { width: min(620px, 100%); }
+.ws-modal .frow { align-items: start; }
+.ws-modal .frow > label { padding-top: 9px; }
+.ws-images { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.ws-img { position: relative; width: 96px; height: 64px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line-2); }
+.ws-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ws-x { position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; border: none; background: rgba(0, 0, 0, .7); color: #fff; font-size: 14px; line-height: 20px; padding: 0; }
+.ws-pick { cursor: pointer; }

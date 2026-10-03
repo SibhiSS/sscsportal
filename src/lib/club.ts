@@ -7,6 +7,7 @@ import type {
   MyAttendance,
   MyMember,
   NewContribution,
+  WebsiteEvent,
 } from '@/types/club';
 
 // Data access for the club panel. Every call runs as the signed-in user, so the
@@ -97,6 +98,53 @@ export async function fetchPublicLeaderboard(limit?: number): Promise<Leaderboar
   const { data, error } = await query;
   if (error) throw error;
   return (data ?? []) as LeaderboardRow[];
+}
+
+// ---------------------------------------------------------------------------
+// Website events (public "website_events" view + public "site-media" bucket)
+// ---------------------------------------------------------------------------
+
+export const SITE_MEDIA_BUCKET = 'site-media';
+
+/** Turns a stored image reference into a URL: "/public" paths pass through, storage paths go via the public bucket. */
+export function siteMediaUrl(ref: string | null | undefined): string | null {
+  if (!ref) return null;
+  if (ref.startsWith('/') || /^https?:\/\//.test(ref)) return ref;
+  return supabase.storage.from(SITE_MEDIA_BUCKET).getPublicUrl(ref).data.publicUrl;
+}
+
+/** How many events the home page shows. */
+export const HOME_EVENT_SLOTS = 4;
+
+/** What the home page shows: featured events, or the latest published ones if none are featured. */
+export function homeEvents<T extends { start_date: string }>(published: T[], isFeatured: (e: T) => boolean): T[] {
+  const byNewest = [...published].sort((a, b) => b.start_date.localeCompare(a.start_date));
+  const featured = byNewest.filter(isFeatured);
+  return (featured.length ? featured : byNewest).slice(0, HOME_EVENT_SLOTS);
+}
+
+/** "Today" as YYYY-MM-DD in India, where the club's dates live. */
+export const todayIst = () => new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10);
+
+/**
+ * Exactly what the home page's Events section shows, shared with the admin
+ * preview: the next upcoming published event, then `homeEvents` of the past ones.
+ */
+export function splitHomeEvents<T extends { start_date: string; end_date: string }>(
+  published: T[], isFeatured: (e: T) => boolean, today = todayIst(),
+): { upNext: T | null; past: T[] } {
+  const upcoming = published.filter(e => e.end_date >= today).sort((a, b) => a.start_date.localeCompare(b.start_date));
+  return { upNext: upcoming[0] ?? null, past: homeEvents(published.filter(e => e.end_date < today), isFeatured) };
+}
+
+/** Every published event, newest first. Readable signed out. */
+export async function fetchWebsiteEvents(): Promise<WebsiteEvent[]> {
+  const { data, error } = await supabase
+    .from('website_events')
+    .select('*')
+    .order('start_date', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as WebsiteEvent[];
 }
 
 /** Inserts the contribution and returns the lookup code the database assigned. */

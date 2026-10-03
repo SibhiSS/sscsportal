@@ -16,6 +16,7 @@ import MembersPage from '@/admin/pages/MembersPage';
 import MemberCard from '@/admin/pages/MemberCard';
 import ApprovalsPage from '@/admin/pages/ApprovalsPage';
 import SettingsPage from '@/admin/pages/SettingsPage';
+import WebsitePage from '@/admin/pages/WebsitePage';
 import SuperAdminOnly from '@/admin/SuperAdminOnly';
 import './App.css';
 
@@ -71,6 +72,7 @@ function App() {
                   <Route path="members" element={<MembersPage />} />
                   <Route path="members/:id" element={<MemberCard />} />
                   <Route path="approvals" element={<ApprovalsPage />} />
+                  <Route path="website" element={<SuperAdminOnly><WebsitePage /></SuperAdminOnly>} />
                   <Route path="settings" element={<SuperAdminOnly><SettingsPage /></SuperAdminOnly>} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
