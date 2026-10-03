@@ -327,7 +327,7 @@ const Team = () => {
                         ))}
                     </div>
 
-                    {/* Core Team Section */}
+                    {/* Board Section */}
                     <div className="text-center mt-24 mb-16">
                         <motion.div
                             initial={{ opacity: 0, y: 10 }}
@@ -340,7 +340,7 @@ const Team = () => {
                             </span>
                         </motion.div>
                         <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight mb-8">
-                            <RevealText text="Core Team" />
+                            <RevealText text="Board" />
                         </h1>
                         <div className="flex flex-wrap justify-center gap-4">
                             {tenures.map(t => (

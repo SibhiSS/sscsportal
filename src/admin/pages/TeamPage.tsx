@@ -12,7 +12,7 @@ const errMsg = (err: unknown) => (err as { message?: string })?.message || 'Some
 
 const SECTIONS: { key: TeamSection; title: string; quoteLabel: string }[] = [
   { key: 'faculty', title: 'Faculty coordinators', quoteLabel: 'Description' },
-  { key: 'core', title: 'Core team', quoteLabel: 'Quote' },
+  { key: 'core', title: 'Board', quoteLabel: 'Quote' },
   { key: 'lead', title: 'Leads', quoteLabel: 'Quote' },
 ];
 
@@ -156,7 +156,7 @@ export default function TeamPage() {
         <div>
           <h1>Team</h1>
           <div className="sub">
-            Who appears on the public Team page. Faculty coordinators show for every tenure; the core team and leads
+            Who appears on the public Team page. Faculty coordinators show for every tenure; the board and leads
             belong to one tenure. The newest tenure is shown first on the site.
           </div>
         </div>
