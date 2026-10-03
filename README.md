@@ -3,7 +3,7 @@ Public website and club admin panel for the IEEE Solid-State Circuits Society, V
 
 ## Core Capabilities
 - **Institutional Authentication**: Google OAuth via Supabase, restricted to VIT domains (@vitstudent.ac.in, @vit.ac.in).
-- **Public Site**: Home and Team pages.
+- **Public Site**: Home, Team and Leaderboard pages, with a live top-10 on the home page.
 - **Admin Panel** (`/admin`): Club management for admins. Members, events, contributions and calendar are in progress.
 
 ## Technical Architecture

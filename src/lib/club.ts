@@ -82,6 +82,23 @@ export async function fetchLeaderboardRow(memberId: string): Promise<Leaderboard
   return data as LeaderboardRow | null;
 }
 
+/**
+ * The public leaderboard: members who have earned points, best first. Ties share
+ * a rank (the view uses rank()), so dropping the zeros never shifts anyone's rank.
+ */
+export async function fetchPublicLeaderboard(limit?: number): Promise<LeaderboardRow[]> {
+  let query = supabase
+    .from('leaderboard')
+    .select('*')
+    .gt('total_points', 0)
+    .order('rank')
+    .order('full_name');
+  if (limit) query = query.limit(limit);
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as LeaderboardRow[];
+}
+
 /** Inserts the contribution and returns the lookup code the database assigned. */
 export async function submitContribution(input: NewContribution): Promise<string> {
   const { data, error } = await supabase.from('contributions').insert(input).select('code').single();

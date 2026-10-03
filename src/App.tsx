@@ -3,6 +3,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/sonner';
 import Index from '@/pages/Index';
 import Team from '@/pages/Team';
+import Leaderboard from '@/pages/Leaderboard';
 import NotFound from '@/pages/NotFound';
 import Me from '@/pages/Me';
 import AdminLayout from '@/admin/AdminLayout';
@@ -58,6 +59,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/team" element={<Team />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
 
                 <Route path="/me" element={<Me />} />
                 <Route path="/admin" element={<AdminLayout />}>

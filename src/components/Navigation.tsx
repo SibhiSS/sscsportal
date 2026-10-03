@@ -33,6 +33,7 @@ const Navigation = () => {
   const navLinks = [
     { name: 'About', href: '#about' },
     { name: 'Team', href: '/team' },
+    { name: 'Leaderboard', href: '/leaderboard' },
     { name: 'Domains', href: '#domains' },
     { name: 'Events', href: '#events' },
     { name: 'Contact', href: '#contact' },
