@@ -7,6 +7,7 @@ import Leaderboard from '@/pages/Leaderboard';
 import MemberCalendar from '@/pages/Calendar';
 import Proposals from '@/pages/Proposals';
 import ProposalsPage from '@/admin/pages/ProposalsPage';
+import DrivePage from '@/admin/pages/DrivePage';
 import NotFound from '@/pages/NotFound';
 import Me from '@/pages/Me';
 import AdminLayout from '@/admin/AdminLayout';
@@ -79,6 +80,7 @@ function App() {
                   <Route path="members/:id" element={<MemberCard />} />
                   <Route path="approvals" element={<ApprovalsPage />} />
                   <Route path="proposals" element={<ProposalsPage />} />
+                  <Route path="drive" element={<DrivePage />} />
                   <Route path="website" element={<SuperAdminOnly><WebsitePage /></SuperAdminOnly>} />
                   <Route path="team" element={<SuperAdminOnly><TeamPage /></SuperAdminOnly>} />
                   <Route path="settings" element={<SuperAdminOnly><SettingsPage /></SuperAdminOnly>} />

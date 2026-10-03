@@ -13,6 +13,7 @@ import {
   eventChecklist, eventHasOurBooking, fmtLong, fmtRange, fmtShort, fmtTime, formWarnings, initials, venueName, venueRange,
 } from '../calendarLogic';
 import { useIsSuperAdmin } from '../SuperAdminOnly';
+import EventDriveFiles from '../EventDriveFiles';
 
 const errMsg = (err: unknown) => (err as { message?: string })?.message || 'Something went wrong.';
 
@@ -413,6 +414,12 @@ export default function EventDetail() {
             <Toggle checked={ev.attendance_posted} onChange={v => save({ attendance_posted: v })} label="Attendance posted" />
             {!ev.is_online && <Toggle checked={ev.od_posted} onChange={v => save({ od_posted: v })} label="OD posted" />}
           </div>
+        </div>
+
+        {/* Drive folder */}
+        <div className="check-card wide">
+          <div className="check-head"><h4>Files</h4><span className="asof">5 MB max each</span></div>
+          <EventDriveFiles eventId={ev.id} />
         </div>
 
         {/* Attendance */}

@@ -64,3 +64,26 @@ export interface AttendanceRow {
 export type AdminContribution = Contribution & {
   contribution_types: Pick<ContributionType, 'name' | 'category' | 'default_points'> | null;
 };
+
+/** A named folder in the admin drive (under "General"). */
+export interface DriveFolder {
+  id: string;
+  name: string;
+  created_by: string | null;
+  created_at: string;
+}
+
+/** A file in the admin drive: in General (no folder, no event), a folder, or an event's folder. */
+export interface DriveFile {
+  id: string;
+  folder_id: string | null;
+  event_id: string | null;
+  name: string;
+  path: string;
+  size: number;
+  mime: string | null;
+  uploaded_by: string;
+  created_at: string;
+}
+
+export interface BucketUsage { bucket_id: string; bytes: number; files: number }

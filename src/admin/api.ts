@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type {
-  AdminContribution, AttendanceRow, CalendarEntry, ClubEvent, RosterMember, Venue, VenueBooking,
+  AdminContribution, AttendanceRow, BucketUsage, CalendarEntry, ClubEvent, DriveFile, DriveFolder, RosterMember, Venue, VenueBooking,
 } from '@/types/admin';
 import type { ContributionType, EventProposal, LeaderboardRow, TeamMember } from '@/types/club';
 import { prepareProofImage, SITE_MEDIA_BUCKET } from '@/lib/club';
@@ -241,6 +241,78 @@ export const acceptProposal = async (id: string, start: string, end: string, not
 
 export const rejectProposal = async (id: string, note: string) =>
   check(await supabase.rpc('reject_event_proposal', { p_id: id, p_note: note || null }));
+
+// ---- admin drive (private "admin-drive" bucket, 5 MB per file, 400 MB in total) ---------
+
+export const DRIVE_BUCKET = 'admin-drive';
+export const DRIVE_MAX_FILE = 5 * 1024 * 1024;
+export const DRIVE_QUOTA = 400 * 1024 * 1024;
+/** The project's whole storage allowance on Supabase's free plan. */
+export const STORAGE_PLAN_BYTES = 1024 * 1024 * 1024;
+export const DRIVE_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.zip,image/*';
+
+export const fmtBytes = (n: number) =>
+  n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${(n / 1024).toFixed(0)} KB` : `${(n / 1024 / 1024).toFixed(n < 10 * 1024 * 1024 ? 1 : 0)} MB`;
+
+export const fetchDriveFolders = async () =>
+  check(await supabase.from('drive_folders').select('*').order('name')) as DriveFolder[];
+
+export const fetchDriveFiles = async () =>
+  fetchAll<DriveFile>((from, to) =>
+    supabase.from('drive_files').select('*').order('created_at', { ascending: false }).range(from, to));
+
+export const fetchEventDriveFiles = async (eventId: string) =>
+  check(await supabase.from('drive_files').select('*').eq('event_id', eventId).order('created_at', { ascending: false })) as DriveFile[];
+
+export const createDriveFolder = async (name: string, by: string) =>
+  check(await supabase.from('drive_folders').insert({ name, created_by: by }).select().single()) as DriveFolder;
+
+export const deleteDriveFolder = async (id: string) =>
+  check(await supabase.from('drive_folders').delete().eq('id', id));
+
+/** Files are named by the database; the storage path just needs to be unique and safe. */
+const safeName = (name: string) => name.normalize('NFKD').replace(/[^\w.-]+/g, '_').replace(/_+/g, '_').slice(-80) || 'file';
+
+/**
+ * Uploads one file into a drive location. Photos are shrunk like proof images
+ * (staying under 5 MB); anything else over 5 MB is refused before uploading.
+ */
+export async function uploadDriveFile(file: File, where: { folder_id: string | null; event_id: string | null }, by: string) {
+  let body: Blob = file;
+  if (/^image\/(jpeg|png|webp)$/.test(file.type) && file.size > 1024 * 1024) body = await prepareProofImage(file);
+  if (body.size > DRIVE_MAX_FILE) throw new Error(`${file.name} is larger than 5 MB.`);
+  const area = where.event_id ? `events/${where.event_id}` : where.folder_id ? `folders/${where.folder_id}` : 'general';
+  const path = `${area}/${crypto.randomUUID()}-${safeName(file.name)}`;
+  const contentType = body.type || file.type || 'application/octet-stream';
+  check(await supabase.storage.from(DRIVE_BUCKET).upload(path, body, { contentType }));
+  try {
+    return check(await supabase.from('drive_files').insert({
+      ...where, name: file.name.slice(0, 160), path, size: body.size, mime: contentType, uploaded_by: by,
+    }).select().single()) as DriveFile;
+  } catch (err) {
+    await supabase.storage.from(DRIVE_BUCKET).remove([path]);
+    throw err;
+  }
+}
+
+export const updateDriveFile = async (id: string, p: Partial<Pick<DriveFile, 'name' | 'folder_id' | 'event_id'>>) =>
+  check(await supabase.from('drive_files').update(p).eq('id', id).select().single()) as DriveFile;
+
+export async function deleteDriveFile(f: Pick<DriveFile, 'id' | 'path'>) {
+  check(await supabase.from('drive_files').delete().eq('id', f.id));
+  const { error } = await supabase.storage.from(DRIVE_BUCKET).remove([f.path]);
+  if (error) console.warn('[drive] Could not remove the stored file:', error.message);
+}
+
+/** A short-lived link that downloads the file under its own name. */
+export async function driveDownloadUrl(f: Pick<DriveFile, 'path' | 'name'>) {
+  const { data, error } = await supabase.storage.from(DRIVE_BUCKET).createSignedUrl(f.path, 60, { download: f.name });
+  if (error) throw error;
+  return data.signedUrl;
+}
+
+export const fetchStorageUsage = async () =>
+  ((check(await supabase.rpc('storage_usage')) as BucketUsage[] | null) ?? []).map(r => ({ ...r, bytes: Number(r.bytes), files: Number(r.files) }));
 
 // ---- approvals ---------------------------------------------------------------------
 
