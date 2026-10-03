@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Minus, ExternalLink, CalendarClock } from 'lucide-react';
+import { Plus, Minus, ExternalLink, CalendarClock, ChevronLeft, ChevronRight, X, ZoomIn } from 'lucide-react';
 import HolographicCard from '@/components/ui/HolographicCard';
 import ScrambleText from '@/components/fx/ScrambleText';
 import { fetchWebsiteEvents, siteMediaUrl, splitHomeEvents, todayIst } from '@/lib/club';
@@ -64,6 +64,33 @@ const EventsSection = () => {
 
   const shown = [...(upNext ? [upNext] : []), ...past];
   const selected = shown.find(e => e.id === selectedId) ?? null;
+  const images = useMemo(
+    () => (selected ? (selected.gallery.length ? selected.gallery : selected.cover ? [selected.cover] : []) : [])
+      .map(siteMediaUrl).filter((u): u is string => !!u),
+    [selected],
+  );
+
+  // Index of the photo open in the lightbox, or null when it's closed.
+  const [viewerIdx, setViewerIdx] = useState<number | null>(null);
+  useEffect(() => { setViewerIdx(null); }, [selectedId]);
+
+  const step = (dir: 1 | -1) =>
+    setViewerIdx(i => (i === null ? i : (i + dir + images.length) % images.length));
+
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (viewerIdx !== null) {
+        if (e.key === 'ArrowRight') step(1);
+        else if (e.key === 'ArrowLeft') step(-1);
+        else if (e.key === 'Escape') setViewerIdx(null);
+      } else if (e.key === 'Escape') {
+        setSelectedId(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   return (
     <section id="events" className="py-24 relative overflow-hidden">
@@ -148,10 +175,7 @@ const EventsSection = () => {
 
         {/* Enlarged Overlay */}
         <AnimatePresence>
-          {selected && (() => {
-            const images = (selected.gallery.length ? selected.gallery : selected.cover ? [selected.cover] : [])
-              .map(siteMediaUrl).filter((u): u is string => !!u);
-            return (
+          {selected && (
               <>
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -163,15 +187,15 @@ const EventsSection = () => {
                 <div className="fixed inset-0 flex items-center justify-center z-[101] p-4 pointer-events-none">
                   <motion.div
                     layoutId={`card-${selected.id}`}
-                    className="w-full max-w-4xl max-h-[90vh] bg-[#0a0a0a] border border-white/10 rounded-2xl overflow-y-auto pointer-events-auto custom-scrollbar shadow-2xl"
+                    className="w-full max-w-2xl max-h-[80vh] bg-[#0a0a0a] border border-white/10 rounded-2xl overflow-y-auto pointer-events-auto custom-scrollbar shadow-2xl"
                   >
-                    <div className="p-8 md:p-12">
-                      <div className="flex justify-between items-start mb-8">
+                    <div className="p-6 md:p-8">
+                      <div className="flex justify-between items-start mb-6">
                         <div className="flex-1 min-w-0">
                           <p className="text-[10px] md:text-xs text-muted-foreground tracking-[0.2em] uppercase font-medium mb-1">
                             {selected.id === upNext?.id ? fullDate(selected.start_date) : monthYear(selected.start_date)}
                           </p>
-                          <h3 className="text-2xl md:text-3xl font-semibold text-foreground mb-1">{selected.title}</h3>
+                          <h3 className="text-xl md:text-2xl font-semibold text-foreground mb-1">{selected.title}</h3>
                           <p className="text-sm md:text-base text-muted-foreground">{SUBTITLE}</p>
                         </div>
                         <button
@@ -184,21 +208,30 @@ const EventsSection = () => {
                       </div>
 
                       {selected.blurb && (
-                        <p className="text-sm md:text-lg text-muted-foreground/90 leading-relaxed mb-10">{selected.blurb}</p>
+                        <p className="text-sm md:text-base text-muted-foreground/90 leading-relaxed mb-6">{selected.blurb}</p>
                       )}
 
                       {images.length > 0 && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
                           {images.map((img, idx) => (
-                            <div key={img} className="aspect-video rounded-xl overflow-hidden border border-white/10">
-                              <img src={img} alt={`${selected.title} photo ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" />
-                            </div>
+                            <button
+                              key={img}
+                              type="button"
+                              onClick={() => setViewerIdx(idx)}
+                              className="group relative aspect-[4/3] rounded-lg overflow-hidden border border-white/10 hover:border-primary/40 transition-colors cursor-zoom-in"
+                              aria-label={`View photo ${idx + 1} of ${images.length}`}
+                            >
+                              <img src={img} alt={`${selected.title} photo ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                              <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <ZoomIn className="w-5 h-5 text-white" />
+                              </span>
+                            </button>
                           ))}
                         </div>
                       )}
 
                       {selected.details.length > 0 && (
-                        <div className="space-y-4 mb-10">
+                        <div className="space-y-3 mb-6">
                           {selected.details.map((detail, idx) => (
                             <div key={idx} className="flex items-start gap-4 text-muted-foreground">
                               <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
@@ -209,7 +242,7 @@ const EventsSection = () => {
                       )}
 
                       {(selected.link || selected.tags.length > 0) && (
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pt-8 border-t border-white/5">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-6 border-t border-white/5">
                           {selected.link && (
                             <a
                               href={selected.link}
@@ -233,8 +266,63 @@ const EventsSection = () => {
                   </motion.div>
                 </div>
               </>
-            );
-          })()}
+          )}
+        </AnimatePresence>
+
+        {/* Photo lightbox — full image, actual proportions, prev/next within this event */}
+        <AnimatePresence>
+          {selected && viewerIdx !== null && images[viewerIdx] && (
+            <motion.div
+              key="lightbox"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setViewerIdx(null)}
+              className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 md:p-12"
+            >
+              <motion.img
+                key={images[viewerIdx]}
+                src={images[viewerIdx]}
+                alt={`${selected.title} photo ${viewerIdx + 1}`}
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.2 }}
+                onClick={e => e.stopPropagation()}
+                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+              />
+
+              <button
+                onClick={e => { e.stopPropagation(); setViewerIdx(null); }}
+                className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                aria-label="Close photo"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={e => { e.stopPropagation(); step(-1); }}
+                    className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                    aria-label="Previous photo"
+                  >
+                    <ChevronLeft className="w-6 h-6 text-white" />
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); step(1); }}
+                    className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                    aria-label="Next photo"
+                  >
+                    <ChevronRight className="w-6 h-6 text-white" />
+                  </button>
+                </>
+              )}
+
+              <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-white/70 tracking-widest">
+                {viewerIdx + 1} / {images.length}
+              </p>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
     </section>

@@ -87,6 +87,20 @@ export interface WebsiteEvent {
   link: string | null;
 }
 
+export type TeamSection = 'faculty' | 'core' | 'lead';
+
+/** A person on the public /team page (`website_team`). Faculty have no tenure. */
+export interface TeamMember {
+  id: string;
+  section: TeamSection;
+  tenure: string | null;
+  name: string;
+  role: string;
+  quote: string | null;
+  image: string | null;
+  sort_order: number;
+}
+
 /** What members can see of an event, via `member_event_options()`. */
 export interface EventOption {
   id: string;

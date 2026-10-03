@@ -7,6 +7,7 @@ import type {
   MyAttendance,
   MyMember,
   NewContribution,
+  TeamMember,
   WebsiteEvent,
 } from '@/types/club';
 
@@ -146,6 +147,21 @@ export async function fetchWebsiteEvents(): Promise<WebsiteEvent[]> {
   if (error) throw error;
   return (data ?? []) as WebsiteEvent[];
 }
+
+/** Everyone on the /team page, in display order. Readable signed out. */
+export async function fetchTeam(): Promise<TeamMember[]> {
+  const { data, error } = await supabase
+    .from('website_team')
+    .select('id, section, tenure, name, role, quote, image, sort_order')
+    .order('sort_order')
+    .order('name');
+  if (error) throw error;
+  return (data ?? []) as TeamMember[];
+}
+
+/** Tenures that have anyone in them, newest first ("2026-27", "2025-26", …). */
+export const teamTenures = (team: TeamMember[]) =>
+  [...new Set(team.map(m => m.tenure).filter((t): t is string => !!t))].sort().reverse();
 
 /** Inserts the contribution and returns the lookup code the database assigned. */
 export async function submitContribution(input: NewContribution): Promise<string> {

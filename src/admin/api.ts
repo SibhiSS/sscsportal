@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import type {
   AdminContribution, AttendanceRow, CalendarEntry, ClubEvent, RosterMember, Venue, VenueBooking,
 } from '@/types/admin';
-import type { ContributionType, LeaderboardRow } from '@/types/club';
+import type { ContributionType, LeaderboardRow, TeamMember } from '@/types/club';
 import { prepareProofImage, SITE_MEDIA_BUCKET } from '@/lib/club';
 import type { ImportRow } from './calendarLogic';
 
@@ -201,6 +201,33 @@ export async function removeSiteImages(refs: (string | null)[]) {
   if (!paths.length) return;
   const { error } = await supabase.storage.from(SITE_MEDIA_BUCKET).remove(paths);
   if (error) console.warn('[admin] Could not remove site images:', error.message);
+}
+
+// ---- team page (public "website_team" table, super admins write) --------------------
+
+export type TeamMemberInput = Omit<TeamMember, 'id'>;
+
+export const addTeamMember = async (m: TeamMemberInput) =>
+  check(await supabase.from('website_team').insert(m).select().single()) as TeamMember;
+
+export const updateTeamMember = async (id: string, p: Partial<TeamMemberInput>) =>
+  check(await supabase.from('website_team').update(p).eq('id', id).select().single()) as TeamMember;
+
+export async function deleteTeamMember(m: Pick<TeamMember, 'id' | 'image'>) {
+  check(await supabase.from('website_team').delete().eq('id', m.id));
+  await removeSiteImages([m.image]);
+}
+
+/** Saves the batch of new sort orders after a reorder. */
+export async function reorderTeam(ids: string[]) {
+  await Promise.all(ids.map((id, i) => supabase.from('website_team').update({ sort_order: i }).eq('id', id).then(r => check(r))));
+}
+
+/** Uploads an already-cropped face photo; returns its storage path. */
+export async function uploadTeamPhoto(blob: Blob) {
+  const path = `team/${crypto.randomUUID()}.jpg`;
+  check(await supabase.storage.from(SITE_MEDIA_BUCKET).upload(path, blob, { contentType: 'image/jpeg' }));
+  return path;
 }
 
 // ---- approvals ---------------------------------------------------------------------

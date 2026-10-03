@@ -1,14 +1,17 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { GraduationCap, ArrowLeft, User, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { fetchTeam, siteMediaUrl, teamTenures } from '@/lib/club';
+import type { TeamMember } from '@/types/club';
 import HolographicCard from '@/components/ui/HolographicCard';
 import RevealText from '@/components/ui/RevealText';
 import TechGridBackground from '@/components/ui/TechGridBackground';
 
-const ProfileImage = ({ src, alt }: { src: string, alt: string }) => {
+const ProfileImage = ({ src: ref, alt }: { src: string | null, alt: string }) => {
     const [error, setError] = useState(false);
-    
+    const src = siteMediaUrl(ref);
+
     if (error || !src) {
         return (
             <div className="w-full h-full bg-white/5 flex items-center justify-center">
@@ -182,15 +185,37 @@ const leads2026 = [
   { name: 'K Srishtithaa', role: 'Associate Human Resource Lead', image: '/srishtithaa.png', quote: '' }
 ];
 
+// Used if the database can't be reached (e.g. before the website_team
+// migration has been run), so the page is never empty.
+const FALLBACK: TeamMember[] = [
+    ...coordinators.map(c => ({ ...c, quote: c.description, section: 'faculty' as const, tenure: null })),
+    ...coreTeam2025.map(m => ({ ...m, section: 'core' as const, tenure: '2025-26' })),
+    ...leads2025.map(m => ({ ...m, section: 'lead' as const, tenure: '2025-26' })),
+    ...coreTeam2026.map(m => ({ ...m, section: 'core' as const, tenure: '2026-27' })),
+    ...leads2026.map(m => ({ ...m, section: 'lead' as const, tenure: '2026-27' })),
+].map((m, i) => ({ id: `fallback-${i}`, sort_order: i, name: m.name, role: m.role, quote: m.quote || null, image: m.image, section: m.section, tenure: m.tenure }));
+
 const Team = () => {
     const [clicks, setClicks] = useState(0);
     const [isSibhiMode, setIsSibhiMode] = useState(false);
     const [isHoveringSibhi, setIsHoveringSibhi] = useState(false);
     const [showHeart, setShowHeart] = useState(false);
-    const [coreTeamYear, setCoreTeamYear] = useState('2026-27');
-    
-    const activeCoreTeam = coreTeamYear === '2025-26' ? coreTeam2025 : coreTeam2026;
-    const activeLeads = coreTeamYear === '2025-26' ? leads2025 : leads2026;
+    const [team, setTeam] = useState<TeamMember[] | null>(null);
+    const [coreTeamYear, setCoreTeamYear] = useState<string | null>(null);
+
+    useEffect(() => {
+        let active = true;
+        fetchTeam()
+            .then(rows => { if (active) setTeam(rows); })
+            .catch(err => { console.warn('[team] Using built-in team:', err); if (active) setTeam(FALLBACK); });
+        return () => { active = false; };
+    }, []);
+
+    const tenures = useMemo(() => teamTenures(team ?? []), [team]);
+    const year = coreTeamYear ?? tenures[0] ?? null;
+    const facultyList = (team ?? []).filter(m => m.section === 'faculty');
+    const activeCoreTeam = (team ?? []).filter(m => m.section === 'core' && m.tenure === year);
+    const activeLeads = (team ?? []).filter(m => m.section === 'lead' && m.tenure === year);
 
     useEffect(() => {
         if (clicks === 3) {
@@ -271,9 +296,9 @@ const Team = () => {
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
-                        {coordinators.map((coord, index) => (
+                        {facultyList.map((coord, index) => (
                             <motion.div
-                                key={coord.name}
+                                key={coord.id}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.1 }}
@@ -294,7 +319,7 @@ const Team = () => {
                                         </div>
 
                                         <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
-                                            {coord.description}
+                                            {coord.quote}
                                         </p>
                                     </div>
                                 </HolographicCard>
@@ -317,19 +342,16 @@ const Team = () => {
                         <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight mb-8">
                             <RevealText text="Core Team" />
                         </h1>
-                        <div className="flex justify-center gap-4">
-                            <button 
-                                onClick={() => setCoreTeamYear('2025-26')}
-                                className={`px-6 py-2 rounded-full text-sm font-bold tracking-widest uppercase transition-all ${coreTeamYear === '2025-26' ? 'bg-primary text-white' : 'bg-white/5 border border-white/10 text-muted-foreground hover:text-white hover:border-white/30'}`}
-                            >
-                                AY 2025-26
-                            </button>
-                            <button 
-                                onClick={() => setCoreTeamYear('2026-27')}
-                                className={`px-6 py-2 rounded-full text-sm font-bold tracking-widest uppercase transition-all ${coreTeamYear === '2026-27' ? 'bg-primary text-white' : 'bg-white/5 border border-white/10 text-muted-foreground hover:text-white hover:border-white/30'}`}
-                            >
-                                AY 2026-27
-                            </button>
+                        <div className="flex flex-wrap justify-center gap-4">
+                            {tenures.map(t => (
+                                <button
+                                    key={t}
+                                    onClick={() => setCoreTeamYear(t)}
+                                    className={`px-6 py-2 rounded-full text-sm font-bold tracking-widest uppercase transition-all ${year === t ? 'bg-primary text-white' : 'bg-white/5 border border-white/10 text-muted-foreground hover:text-white hover:border-white/30'}`}
+                                >
+                                    AY {t}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
@@ -341,7 +363,7 @@ const Team = () => {
                         ) : (
                             activeCoreTeam.map((member, index) => (
                             <motion.div
-                                key={member.name}
+                                key={member.id}
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
@@ -360,9 +382,11 @@ const Team = () => {
                                         <h2 className="font-heading text-xl font-bold text-white mb-3">
                                             {member.name}
                                         </h2>
-                                        <p className="text-xs italic text-muted-foreground leading-relaxed">
-                                            "{member.quote}"
-                                        </p>
+                                        {member.quote && (
+                                            <p className="text-xs italic text-muted-foreground leading-relaxed">
+                                                "{member.quote}"
+                                            </p>
+                                        )}
                                     </div>
                                 </HolographicCard>
                             </motion.div>
@@ -391,7 +415,7 @@ const Team = () => {
                             const isSibhi = member.name === 'Sibhi S';
                             return (
                                 <motion.div
-                                    key={member.name}
+                                    key={member.id}
                                     initial={{ opacity: 0, y: 20 }}
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
@@ -438,9 +462,11 @@ const Team = () => {
                                             <h2 className="font-heading text-lg font-bold text-white mb-3">
                                                 {member.name}
                                             </h2>
-                                            <p className="text-xs italic text-muted-foreground leading-relaxed">
-                                                "{member.quote}"
-                                            </p>
+                                            {member.quote && (
+                                                <p className="text-xs italic text-muted-foreground leading-relaxed">
+                                                    "{member.quote}"
+                                                </p>
+                                            )}
                                         </div>
                                     </HolographicCard>
                                 </motion.div>
