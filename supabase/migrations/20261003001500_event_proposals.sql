@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS public.event_proposals (
   expected_start date NOT NULL,
   expected_end   date NOT NULL,
   is_online      boolean NOT NULL DEFAULT false,
-  venue_id       uuid REFERENCES public.venues(id) ON DELETE SET NULL,
+  venue_id       text REFERENCES public.venues(id) ON UPDATE CASCADE ON DELETE SET NULL,
   proposer_email text NOT NULL,
   proposer_name  text,
   status         text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
@@ -174,7 +174,7 @@ GRANT EXECUTE ON FUNCTION public.reject_event_proposal(uuid, text) TO authentica
 -- -----------------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION public.proposal_venues()
-RETURNS TABLE (id uuid, name text)
+RETURNS TABLE (id text, name text)
 LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public
 AS $$
