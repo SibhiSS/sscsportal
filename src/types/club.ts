@@ -58,6 +58,8 @@ export interface ClubEvent {
   /** What the public website shows. Super admins only (enforced by a trigger). */
   website_published: boolean;
   website_featured: boolean;
+  /** Position among featured (spotlight) events, lowest first; null = by date. */
+  website_feature_order: number | null;
   website_blurb: string | null;
   website_details: string[];
   website_tags: string[];
@@ -79,6 +81,8 @@ export interface WebsiteEvent {
   is_online: boolean;
   venue: string | null;
   featured: boolean;
+  /** Missing until the feature-order migration has run. */
+  feature_order?: number | null;
   blurb: string | null;
   details: string[];
   tags: string[];

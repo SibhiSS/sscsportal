@@ -117,10 +117,20 @@ export function siteMediaUrl(ref: string | null | undefined): string | null {
 /** How many events the home page shows. */
 export const HOME_EVENT_SLOTS = 4;
 
-/** What the home page shows: featured events, or the latest published ones if none are featured. */
-export function homeEvents<T extends { start_date: string }>(published: T[], isFeatured: (e: T) => boolean): T[] {
+/** Spotlight order: lowest position first, unpositioned ones after, newest first within a tie. */
+export function byFeatureOrder<T extends { start_date: string }>(order: (e: T) => number | null | undefined) {
+  return (a: T, b: T) => {
+    const oa = order(a) ?? Infinity, ob = order(b) ?? Infinity;
+    return oa !== ob ? oa - ob : b.start_date.localeCompare(a.start_date);
+  };
+}
+
+/** What the home page shows: featured events in spotlight order, or the latest published ones if none are featured. */
+export function homeEvents<T extends { start_date: string }>(
+  published: T[], isFeatured: (e: T) => boolean, order: (e: T) => number | null | undefined = () => null,
+): T[] {
   const byNewest = [...published].sort((a, b) => b.start_date.localeCompare(a.start_date));
-  const featured = byNewest.filter(isFeatured);
+  const featured = byNewest.filter(isFeatured).sort(byFeatureOrder(order));
   return (featured.length ? featured : byNewest).slice(0, HOME_EVENT_SLOTS);
 }
 
@@ -132,10 +142,10 @@ export const todayIst = () => new Date(Date.now() + 5.5 * 3600_000).toISOString(
  * preview: the next upcoming published event, then `homeEvents` of the past ones.
  */
 export function splitHomeEvents<T extends { start_date: string; end_date: string }>(
-  published: T[], isFeatured: (e: T) => boolean, today = todayIst(),
+  published: T[], isFeatured: (e: T) => boolean, today = todayIst(), order?: (e: T) => number | null | undefined,
 ): { upNext: T | null; past: T[] } {
   const upcoming = published.filter(e => e.end_date >= today).sort((a, b) => a.start_date.localeCompare(b.start_date));
-  return { upNext: upcoming[0] ?? null, past: homeEvents(published.filter(e => e.end_date < today), isFeatured) };
+  return { upNext: upcoming[0] ?? null, past: homeEvents(published.filter(e => e.end_date < today), isFeatured, order) };
 }
 
 /** Every published event, newest first. Readable signed out. */

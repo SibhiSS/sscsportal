@@ -185,7 +185,7 @@ function Shell() {
       <TechGridBackground />
       {navOpen && <div className="adm-scrim" onClick={() => setNavOpen(false)} aria-hidden="true" />}
       <aside className="adm-side">
-        <Link to="/admin" className="adm-brand" style={{ textDecoration: 'none' }} aria-label="IEEE SSCS admin">
+        <Link to="/" className="adm-brand" style={{ textDecoration: 'none' }} aria-label="IEEE SSCS home page" title="Back to the website">
           <img src="/logo.png" alt="" />
           <div className="lbl">IEEE <span>SSCS</span></div>
         </Link>

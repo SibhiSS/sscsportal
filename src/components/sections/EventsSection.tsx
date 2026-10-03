@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Minus, ExternalLink, CalendarClock, ChevronLeft, ChevronRight, X, ZoomIn } from 'lucide-react';
+import { Plus, Minus, ExternalLink, CalendarClock, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, X, ZoomIn } from 'lucide-react';
 import HolographicCard from '@/components/ui/HolographicCard';
 import ScrambleText from '@/components/fx/ScrambleText';
 import { fetchWebsiteEvents, siteMediaUrl, splitHomeEvents, todayIst } from '@/lib/club';
@@ -60,9 +60,16 @@ const EventsSection = () => {
   }, []);
 
   const today = todayIst();
-  const { upNext, past } = useMemo(() => splitHomeEvents(events ?? [], e => e.featured, today), [events, today]);
+  const { upNext, past } = useMemo(
+    () => splitHomeEvents(events ?? [], e => e.featured, today, e => e.feature_order),
+    [events, today],
+  );
+  // Every past event, newest first, for "See all events".
+  const allPast = useMemo(() => (events ?? []).filter(e => e.end_date < today), [events, today]);
+  const [showAll, setShowAll] = useState(false);
+  const hidden = allPast.length - past.length;
 
-  const shown = [...(upNext ? [upNext] : []), ...past];
+  const shown = [...(upNext ? [upNext] : []), ...(showAll ? allPast : past)];
   const selected = shown.find(e => e.id === selectedId) ?? null;
   const images = useMemo(
     () => (selected ? (selected.gallery.length ? selected.gallery : selected.cover ? [selected.cover] : []) : [])
@@ -171,6 +178,21 @@ const EventsSection = () => {
               </motion.div>
             );
           })}
+
+          {hidden > 0 && (
+            <div className="flex justify-center pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  if (showAll) document.getElementById('events')?.scrollIntoView({ behavior: 'smooth' });
+                  setShowAll(v => !v);
+                }}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-white/10 bg-white/[0.03] text-xs font-bold tracking-[0.2em] uppercase text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
+              >
+                {showAll ? <>Show less <ChevronUp className="w-4 h-4" /></> : <>See all events ({allPast.length}) <ChevronDown className="w-4 h-4" /></>}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Enlarged Overlay */}

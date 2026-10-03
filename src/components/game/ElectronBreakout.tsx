@@ -264,7 +264,12 @@ const ElectronBreakout = ({ onScore, onCombo, onExit }: ElectronBreakoutProps) =
       }
     };
 
+    // The gate's span this frame: everything it swept through since the last frame, so a fast
+    // swipe (or a pointer jump) can't slide the gate past an electron without catching it.
+    let gateL = 0, gateR = 0, prevGateCx = -1;
+
     const stepBall = (b: Ball, dt: number) => {
+      const prevY = b.y;
       b.x += b.vx * dt; b.y += b.vy * dt;
       if (b.x < r) { b.x = r; b.vx = Math.abs(b.vx); }
       if (b.x > W - r) { b.x = W - r; b.vx = -Math.abs(b.vx); }
@@ -276,9 +281,13 @@ const ElectronBreakout = ({ onScore, onCombo, onExit }: ElectronBreakoutProps) =
       }
 
       // Gate: only its underside bounces (so an electron coming back down from the top passes through).
+      // Catches an electron anywhere in the gate's thickness, or one that crossed its underside
+      // during this step, while it's heading up.
       const pw = paddleW();
-      if (b.vy < 0 && b.y - r <= paddle.y + paddle.h && b.y + r >= paddle.y + paddle.h * 0.4
-        && b.x >= paddle.cx - pw / 2 - r && b.x <= paddle.cx + pw / 2 + r) {
+      const bottom = paddle.y + paddle.h;
+      const overlaps = b.y - r <= bottom && b.y + r >= paddle.y;
+      const crossed = prevY - r > bottom && b.y - r <= bottom;
+      if (b.vy < 0 && (overlaps || crossed) && b.x >= gateL - r && b.x <= gateR + r) {
         const off = Math.max(-1, Math.min(1, (b.x - paddle.cx) / (pw / 2)));
         // A few degrees of jitter so a dead-centre hit can't lock into a vertical loop.
         const a = off * (Math.PI / 3) + (Math.random() - 0.5) * 0.1;
@@ -334,6 +343,7 @@ const ElectronBreakout = ({ onScore, onCombo, onExit }: ElectronBreakoutProps) =
       for (const t of tiles) if (t.alive && t.fade < 1) t.fade = Math.min(1, t.fade + dt / 0.3);
       for (const m of motes) { m.y -= m.vy * dt * (fever > 0 ? 4 : 1); if (m.y < -4) { m.y = tl.top; m.x = Math.random() * W; } }
 
+      if (state !== 'playing') prevGateCx = paddle.cx;
       if (state === 'ready') { balls[0].x = paddle.cx; balls[0].y = paddle.y + paddle.h + r + 2; return; }
       if (state !== 'playing') return;
 
@@ -373,6 +383,11 @@ const ElectronBreakout = ({ onScore, onCombo, onExit }: ElectronBreakoutProps) =
           sparks.push({ x, y: tl.top, vx: (Math.random() - 0.5) * 60, vy: -260 - Math.random() * 260, life: 1, color: pick(FEVER_PALETTE) });
         }
       }
+
+      if (prevGateCx < 0) prevGateCx = paddle.cx;
+      gateL = Math.min(prevGateCx, paddle.cx) - pw / 2;
+      gateR = Math.max(prevGateCx, paddle.cx) + pw / 2;
+      prevGateCx = paddle.cx;
 
       const steps = Math.max(1, Math.ceil((speed() * dt) / (r * 0.7)));
       const h = dt / steps;

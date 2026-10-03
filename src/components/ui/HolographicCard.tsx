@@ -56,7 +56,7 @@ const HolographicCard: React.FC<HolographicCardProps> = ({ children, className =
                 handleMouseLeave();
                 props.onMouseLeave?.(e);
             }}
-            className={`relative group rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-2xl overflow-hidden transition-all duration-500 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] hover:bg-white/[0.08] hover:border-white/20 hover:shadow-[0_8px_32px_0_rgba(220,20,60,0.15)] ${className}`}
+            className={`relative group rounded-[2rem] bg-white/[0.045] border border-white/10 overflow-hidden transition-[background-color,border-color,box-shadow] duration-500 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] hover:bg-white/[0.08] hover:border-white/20 hover:shadow-[0_8px_32px_0_rgba(220,20,60,0.15)] ${className}`}
         >
             {/* Glass Inner Glow */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />

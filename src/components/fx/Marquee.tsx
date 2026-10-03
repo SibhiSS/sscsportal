@@ -17,7 +17,7 @@ const Marquee = ({ items, duration = 30, className = '' }: MarqueeProps) => {
   ));
 
   return (
-    <div className={`group relative overflow-hidden border-y border-white/5 bg-white/[0.02] backdrop-blur-sm ${className}`}>
+    <div className={`group relative overflow-hidden border-y border-white/5 bg-white/[0.02] ${className}`}>
       <div
         className="flex w-max animate-marquee group-hover:[animation-play-state:paused] motion-reduce:animate-none py-4 font-heading text-xs md:text-sm uppercase tracking-[0.25em] text-foreground/70"
         style={{ '--marquee-duration': `${duration}s` } as CSSProperties}

@@ -101,8 +101,9 @@ const DomainCard = ({ domain, index }: { domain: Domain; index: number }) => {
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       viewport={{ once: true }}
+      whileHover={{ y: -4 }}
       onMouseMove={onMouseMove}
-      className={`group relative h-full overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.035] to-white/[0.01] p-7 md:p-8 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_20px_50px_-20px_rgba(220,20,60,0.35)] ${BLOCK_SPAN[domain.id] ?? ''}`}
+      className={`group relative h-full overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.035] to-white/[0.01] p-7 md:p-8 transition-[border-color,box-shadow] duration-300 hover:border-primary/40 hover:shadow-[0_20px_50px_-20px_rgba(220,20,60,0.35)] ${BLOCK_SPAN[domain.id] ?? ''}`}
     >
       {/* Red light along the top edge on hover */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />

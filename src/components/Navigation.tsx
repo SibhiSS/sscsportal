@@ -93,7 +93,7 @@ const Navigation = () => {
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           className={`
-            pointer-events-auto grid grid-cols-[minmax(max-content,1fr)_auto] md:grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)] items-center gap-4 px-6 py-3 transition-all duration-500
+            pointer-events-auto grid grid-cols-[minmax(max-content,1fr)_auto] md:grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)] items-center gap-4 px-6 py-3 transition-[max-width,background-color,border-color,box-shadow,border-radius] duration-500
             ${isScrolled 
               ? 'w-full max-w-5xl rounded-full bg-white/5 border border-white/10 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]' 
               : 'w-full max-w-7xl bg-transparent border-transparent'

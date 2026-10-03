@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { toast } from '@/components/ui/sonner';
-import { HOME_EVENT_SLOTS, siteMediaUrl, splitHomeEvents } from '@/lib/club';
+import { ArrowDown, ArrowUp } from 'lucide-react';
+import { byFeatureOrder, HOME_EVENT_SLOTS, siteMediaUrl, splitHomeEvents } from '@/lib/club';
 import type { ClubEvent } from '@/types/admin';
 import { useAdminData } from '../AdminData';
 import { removeSiteImages, updateEvent, uploadSiteImage } from '../api';
@@ -35,8 +36,10 @@ export default function WebsitePage() {
 
   const newestFirst = useMemo(() => [...events].sort((a, b) => b.start_date.localeCompare(a.start_date)), [events]);
   const published = newestFirst.filter(e => e.website_published);
-  const featuredCount = published.filter(e => e.website_featured).length;
-  const { upNext, past } = splitHomeEvents(published, e => e.website_featured);
+  const featureOrder = (e: ClubEvent) => e.website_feature_order;
+  const spotlight = published.filter(e => e.website_featured).sort(byFeatureOrder(featureOrder));
+  const featuredCount = spotlight.length;
+  const { upNext, past } = splitHomeEvents(published, e => e.website_featured, undefined, featureOrder);
   const onHome = [...(upNext ? [upNext] : []), ...past];
 
   const rows = useMemo(() => {
@@ -56,7 +59,7 @@ export default function WebsitePage() {
 
   const togglePublished = (e: ClubEvent) =>
     e.website_published
-      ? patch(e, { website_published: false, website_featured: false }, `"${e.title}" is off the website.`)
+      ? patch(e, { website_published: false, website_featured: false, website_feature_order: null }, `"${e.title}" is off the website.`)
       : patch(e, { website_published: true }, `"${e.title}" is on the website.`);
 
   const toggleFeatured = (e: ClubEvent) => {
@@ -64,9 +67,24 @@ export default function WebsitePage() {
       toast.error(`Only ${HOME_EVENT_SLOTS} events can be featured. Unfeature one first.`);
       return;
     }
+    const last = Math.max(-1, ...spotlight.map(x => x.website_feature_order ?? -1));
     patch(e, e.website_featured
-      ? { website_featured: false }
-      : { website_featured: true, website_published: true });
+      ? { website_featured: false, website_feature_order: null }
+      : { website_featured: true, website_published: true, website_feature_order: last + 1 });
+  };
+
+  // Swap a spotlight event with its neighbour, then renumber the whole list 0..n-1.
+  const moveSpotlight = async (idx: number, dir: -1 | 1) => {
+    const j = idx + dir;
+    if (j < 0 || j >= spotlight.length) return;
+    const list = [...spotlight];
+    [list[idx], list[j]] = [list[j], list[idx]];
+    setBusy(list[j].id);
+    try {
+      await Promise.all(list.map((e, i) => e.website_feature_order === i ? null : updateEvent(e.id, { website_feature_order: i })));
+      await reload('events');
+    } catch (err) { toast.error(errMsg(err)); }
+    finally { setBusy(null); }
   };
 
   // ---- editor ----
@@ -156,6 +174,27 @@ export default function WebsitePage() {
             })}
           </div>
         ) : <div className="muted">Nothing is published yet. Switch an event on below.</div>}
+      </section>
+
+      <section className="panel">
+        <div className="list-head">
+          <h3 className="ph">Spotlight order</h3>
+          <span className="asof">Featured past events show on the home page in this order</span>
+        </div>
+        {spotlight.length ? (
+          <ol className="ws-order">
+            {spotlight.map((e, i) => (
+              <li key={e.id}>
+                <span className="ws-pos">{i + 1}</span>
+                <div className="ws-meta"><b>{e.title}</b><span className="muted">{fmtMed(e.start_date)}</span></div>
+                <div className="acts">
+                  <button className="mini-btn" aria-label={`Move ${e.title} up`} disabled={!!busy || i === 0} onClick={() => moveSpotlight(i, -1)}><ArrowUp className="w-3.5 h-3.5" /></button>
+                  <button className="mini-btn" aria-label={`Move ${e.title} down`} disabled={!!busy || i === spotlight.length - 1} onClick={() => moveSpotlight(i, 1)}><ArrowDown className="w-3.5 h-3.5" /></button>
+                </div>
+              </li>
+            ))}
+          </ol>
+        ) : <div className="muted">No featured events. Switch on "Featured" below to pick and order them; otherwise the latest {HOME_EVENT_SLOTS} are shown.</div>}
       </section>
 
       <section className="panel">
