@@ -104,7 +104,7 @@ export default function ProposalDetail() {
         {/* The proposal */}
         <div className="check-card wide">
           <div className="check-head"><h4>The idea</h4>
-            <span className="asof">{fmtRange(p.expected_start, p.expected_end)} · {p.is_online ? 'Online' : venueName(venues, p.venue_id) || 'No venue preference'}</span>
+            <span className="asof">{p.expected_start ? fmtRange(p.expected_start, p.expected_end ?? p.expected_start) : 'Date: board decides'} · {p.is_online ? 'Online' : venueName(venues, p.venue_id) || 'No venue preference'}</span>
           </div>
           <p className="pr-body" style={{ marginTop: 0 }}>{p.description}</p>
           {p.requirements && (
@@ -187,7 +187,11 @@ export default function ProposalDetail() {
             <span className="asof">{start ? (lead >= 0 ? `${lead} day${lead === 1 ? '' : 's'} away` : `${-lead} days ago`) : ''}</span>
           </div>
           {start && <div className="muted" style={{ fontSize: 13, marginBottom: 10 }}>{fmtLong(start)}{end !== start ? ` – ${fmtLong(end)}` : ''}</div>}
-          {clashes.length ? (
+          {!start ? (
+            <p className="muted" style={{ margin: 0 }}>
+              The proposer left the date to the board.{p.status === 'pending' && isSuper ? ' Pick dates under Decision and they are checked here.' : ''}
+            </p>
+          ) : clashes.length ? (
             <>
               <div className="warn" style={{ marginTop: 0 }}>Already on these days:</div>
               <div className="chips" style={{ marginTop: 8 }}>
@@ -203,7 +207,7 @@ export default function ProposalDetail() {
           <div className="check-card">
             <div className="check-head"><MapPin size={16} /><h4>Venue check</h4></div>
             {!p.venue_id ? <p className="muted" style={{ margin: 0 }}>No preferred venue. Pick one on the event once it's accepted.</p>
-              : !venue ? <p className="muted" style={{ margin: 0 }}>Pick valid dates to check {venueName(venues, p.venue_id)}.</p>
+              : !venue ? <p className="muted" style={{ margin: 0 }}>{start ? `Pick valid dates to check ${venueName(venues, p.venue_id)}.` : `Preferred: ${venueName(venues, p.venue_id)}. Its availability is checked once dates are picked.`}</p>
               : venue.state === 'busy' ? (
                 <div className="vstat no"><span className="ic" />
                   {venueName(venues, p.venue_id)} is booked by another club: {venue.othersOn.flatMap(d => d.bl.filter(b => !b.is_ours)

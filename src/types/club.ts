@@ -113,8 +113,9 @@ export interface EventProposal {
   title: string;
   description: string;
   requirements: string | null;
-  expected_start: string;
-  expected_end: string;
+  /** Both null: the proposer left the date to the board. */
+  expected_start: string | null;
+  expected_end: string | null;
   is_online: boolean;
   venue_id: string | null;
   proposer_email: string;

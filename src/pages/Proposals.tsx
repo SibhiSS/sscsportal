@@ -37,7 +37,7 @@ const Centered = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-const empty = { title: '', description: '', requirements: '', start: '', end: '', online: false, venueId: '' };
+const empty = { title: '', description: '', requirements: '', start: '', end: '', boardDecides: false, online: false, venueId: '' };
 
 const Proposals = () => {
   const { user, loading: authLoading, error: authError, signInWithGoogle, logout } = useAuth();
@@ -75,10 +75,10 @@ const Proposals = () => {
 
   // Anything already on the chosen days, so people can steer clear of exams and other events.
   const clashes = useMemo(() => {
-    if (!form.start) return [];
+    if (form.boardDecides || !form.start) return [];
     const end = form.end || form.start;
     return calendar.filter(it => it.start_date <= end && it.end_date >= form.start);
-  }, [calendar, form.start, form.end]);
+  }, [calendar, form.start, form.end, form.boardDecides]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,14 +86,14 @@ const Proposals = () => {
     const title = form.title.trim(), description = form.description.trim();
     if (title.length < 3) { toast.error('Give the event a name.'); return; }
     if (description.length < 10) { toast.error('Describe the event in a sentence or two.'); return; }
-    if (!form.start) { toast.error('Pick the expected date on the calendar.'); return; }
+    if (!form.boardDecides && !form.start) { toast.error('Pick the expected date on the calendar, or leave it to the board.'); return; }
     setSending(true);
     try {
       await submitProposal({
         title, description,
         requirements: form.requirements.trim() || null,
-        expected_start: form.start,
-        expected_end: form.end || form.start,
+        expected_start: form.boardDecides ? null : form.start,
+        expected_end: form.boardDecides ? null : form.end || form.start,
         is_online: form.online,
         venue_id: form.online ? null : form.venueId || null,
         proposer_email: user.email,
@@ -205,10 +205,20 @@ const Proposals = () => {
 
                 <div>
                   <span className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
-                    Expected date {form.start && <span className="normal-case tracking-normal font-semibold text-foreground ml-1">· {fmtDayRange(form.start, form.end || form.start)}</span>}
+                    Expected date {!form.boardDecides && form.start && <span className="normal-case tracking-normal font-semibold text-foreground ml-1">· {fmtDayRange(form.start, form.end || form.start)}</span>}
                   </span>
-                  <MiniCalendar items={calendar} start={form.start} end={form.end} min={today}
-                    onChange={(s, e) => setForm(f => ({ ...f, start: s, end: e }))} />
+                  <label className="flex items-start gap-3 mb-3 p-3 rounded-xl border border-white/10 bg-white/[0.02] cursor-pointer select-none hover:border-white/20 transition-colors">
+                    <input type="checkbox" className="w-4 h-4 mt-0.5 accent-[hsl(var(--primary))]" checked={form.boardDecides}
+                      onChange={e => setForm(f => ({ ...f, boardDecides: e.target.checked }))} />
+                    <span className="text-sm">
+                      Leave the date to the board
+                      <span className="block text-xs text-muted-foreground mt-0.5">The board picks a slot that fits around exams and other events.</span>
+                    </span>
+                  </label>
+                  {!form.boardDecides && (
+                    <MiniCalendar items={calendar} start={form.start} end={form.end} min={today}
+                      onChange={(s, e) => setForm(f => ({ ...f, start: s, end: e }))} />
+                  )}
                   {clashes.length > 0 && (
                     <div className="mt-3 rounded-xl border border-yellow-300/30 bg-yellow-300/5 p-3 text-xs text-yellow-100">
                       <b>Already on these days:</b>{' '}
@@ -248,7 +258,7 @@ const Proposals = () => {
                       <li key={p.id} className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
                         <div className="flex items-start justify-between gap-2">
                           <b className="text-sm">{p.title}</b>
-                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">{fmtDayRange(p.expected_start, p.expected_end)}</span>
+                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">{p.expected_start ? fmtDayRange(p.expected_start, p.expected_end ?? p.expected_start) : 'Board decides'}</span>
                         </div>
                         <span className={`inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full border text-[11px] ${st.cls}`}>
                           <st.icon className="w-3 h-3" /> {st.label}

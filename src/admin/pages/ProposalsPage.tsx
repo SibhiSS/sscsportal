@@ -27,7 +27,7 @@ export default function ProposalsPage() {
 
   const open = (p: EventProposal, mode: 'accept' | 'reject') => {
     setDeciding({ p, mode });
-    setDates({ start: p.expected_start, end: p.expected_end });
+    setDates({ start: p.expected_start ?? '', end: p.expected_end ?? p.expected_start ?? '' });
     setNote('');
   };
 
@@ -89,7 +89,7 @@ export default function ProposalsPage() {
                   <div style={{ minWidth: 0 }}>
                     <b className="pr-title">{p.title}</b>
                     <div className="muted pr-sub">
-                      {fmtRange(p.expected_start, p.expected_end)} · {p.is_online ? 'Online' : venueName(venues, p.venue_id) || 'No venue preference'}
+                      {p.expected_start ? fmtRange(p.expected_start, p.expected_end ?? p.expected_start) : 'Date: board decides'} · {p.is_online ? 'Online' : venueName(venues, p.venue_id) || 'No venue preference'}
                       {' · '}by {p.proposer_name || (isSuper ? p.proposer_email : 'a club member')} · {fmtMed(p.created_at.slice(0, 10))}
                     </div>
                   </div>
