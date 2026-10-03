@@ -87,3 +87,34 @@ export interface DriveFile {
 }
 
 export interface BucketUsage { bucket_id: string; bytes: number; files: number }
+
+export type BudgetKind = 'expense' | 'income';
+export type BudgetStatus = 'planned' | 'paid' | 'reimbursed' | 'received';
+
+/** One line of an event's budget (`event_budget_items`). */
+export interface BudgetItem {
+  id: string;
+  event_id: string;
+  kind: BudgetKind;
+  category: string;
+  item: string;
+  quantity: number;
+  unit_cost: number;
+  actual: number | null;
+  status: BudgetStatus;
+  paid_by: string | null;
+  notes: string | null;
+  receipt_file_id: string | null;
+  sort_order: number;
+  created_by: string | null;
+  created_at: string;
+}
+
+/** One entry in an event's activity log (super admins only). */
+export interface EventActivity {
+  id: number;
+  event_id: string;
+  actor: string;
+  action: string;
+  created_at: string;
+}

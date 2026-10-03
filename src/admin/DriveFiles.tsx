@@ -104,7 +104,7 @@ export default function DriveFiles({ files, where, onChange, locationOf, canUplo
                     </td>
                     {locationOf && <td className="hide-sm muted">{locationOf(f)}</td>}
                     <td className="d">{fmtBytes(f.size)}</td>
-                    <td className="hide-sm muted">{f.uploaded_by.split('@')[0]} · {fmtMed(f.created_at.slice(0, 10))}</td>
+                    <td className="hide-sm muted">{isSuper ? `${f.uploaded_by.split('@')[0]} · ` : ''}{fmtMed(f.created_at.slice(0, 10))}</td>
                     <td className="acts">
                       <button className="mini-btn" onClick={() => download(f)} aria-label={`Download ${f.name}`}><Download size={13} /></button>
                       {(mine || isSuper) && <>

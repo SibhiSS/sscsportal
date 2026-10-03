@@ -14,6 +14,9 @@ import {
 } from '../calendarLogic';
 import { useIsSuperAdmin } from '../SuperAdminOnly';
 import EventDriveFiles from '../EventDriveFiles';
+import BudgetCard from '../BudgetCard';
+import EventCompletion from '../EventCompletion';
+import EventActivityLog from '../EventActivityLog';
 
 const errMsg = (err: unknown) => (err as { message?: string })?.message || 'Something went wrong.';
 
@@ -143,7 +146,7 @@ export default function EventDetail() {
   const ev = events.find(e => e.id === id);
   const isSuper = useIsSuperAdmin();
 
-  const [draft, setDraft] = useState({ title: '', start_date: '', end_date: '', description: '', budget_planned: '', budget_actual: '' });
+  const [draft, setDraft] = useState({ title: '', start_date: '', end_date: '', description: '' });
   const [saving, setSaving] = useState(false);
   const loadedFor = useRef<string | null>(null);
 
@@ -152,7 +155,6 @@ export default function EventDetail() {
     loadedFor.current = ev.id + ev.updated_at;
     setDraft({
       title: ev.title, start_date: ev.start_date, end_date: ev.end_date, description: ev.description ?? '',
-      budget_planned: ev.budget_planned?.toString() ?? '', budget_actual: ev.budget_actual?.toString() ?? '',
     });
   }, [ev]);
 
@@ -178,8 +180,7 @@ export default function EventDetail() {
   const isDone = (k: string) => checklist.find(i => i.key === k)?.done ?? false;
 
   const dirty = draft.title !== ev.title || draft.start_date !== ev.start_date || draft.end_date !== ev.end_date
-    || draft.description !== (ev.description ?? '') || draft.budget_planned !== (ev.budget_planned?.toString() ?? '')
-    || draft.budget_actual !== (ev.budget_actual?.toString() ?? '');
+    || draft.description !== (ev.description ?? '');
 
   const save = async (patch: Partial<ClubEvent>) => {
     try { patchEvent(await updateEvent(ev.id, patch)); }
@@ -190,14 +191,11 @@ export default function EventDetail() {
     const title = draft.title.trim();
     if (!title) { toast.error('The event needs a title.'); return; }
     if (!draft.start_date || (draft.end_date && draft.end_date < draft.start_date)) { toast.error('Check the dates: "To" is before "From".'); return; }
-    const money = (s: string) => (s.trim() === '' ? null : Number(s));
-    const planned = money(draft.budget_planned), actual = money(draft.budget_actual);
-    if ([planned, actual].some(v => v !== null && (!Number.isFinite(v) || v < 0))) { toast.error('Budget amounts must be positive numbers.'); return; }
     setSaving(true);
     try {
       patchEvent(await updateEvent(ev.id, {
         title, start_date: draft.start_date, end_date: draft.end_date || draft.start_date,
-        description: draft.description.trim() || null, budget_planned: planned, budget_actual: actual,
+        description: draft.description.trim() || null,
       }));
       toast.success('Saved.');
     } catch (err) { toast.error(errMsg(err)); }
@@ -267,11 +265,13 @@ export default function EventDetail() {
         </div>
       </div>
 
+      <EventCompletion ev={ev} credited={rows.length} />
+
       <div className="check-grid">
         {/* Basics */}
         <div className="check-card adm-form">
           <div className="check-head"><Tick on /><h4>Event</h4>
-            {!isSuper && <span className="asof">Super admins edit these</span>}
+            {!isSuper && <span className="asof">Super admins change the name and dates</span>}
           </div>
           <div className="fld" style={{ marginBottom: 12 }}><label htmlFor="evTitle">Title</label>
             <input id="evTitle" disabled={!isSuper} value={draft.title} maxLength={120} onChange={e => setDraft(d => ({ ...d, title: e.target.value }))} />
@@ -288,7 +288,7 @@ export default function EventDetail() {
           {dateWarn.map(w => <div key={w} className="warn">{w}</div>)}
           <div style={{ marginTop: 14 }}>
             <label className="switch amber">
-              <input type="checkbox" checked={ev.is_online} disabled={!isSuper} onChange={e => {
+              <input type="checkbox" checked={ev.is_online} onChange={e => {
                 const goingOnline = e.target.checked;
                 if (goingOnline && (ev.venue_id || ev.venue_booked || ev.od_posted)
                   && !window.confirm('Make this an online event? Its venue, "venue booked" and "OD posted" will be cleared.')) return;
@@ -311,7 +311,7 @@ export default function EventDetail() {
         {/* Details */}
         <div className="check-card adm-form">
           <div className="check-head"><Tick on={isDone('details')} /><h4>Event details</h4></div>
-          <textarea rows={7} maxLength={4000} value={draft.description} disabled={!isSuper} placeholder="What, who it's for, schedule, speakers, rules…"
+          <textarea rows={7} maxLength={4000} value={draft.description} placeholder="What, who it's for, schedule, speakers, rules…"
             onChange={e => setDraft(d => ({ ...d, description: e.target.value }))} />
         </div>
 
@@ -323,7 +323,7 @@ export default function EventDetail() {
             </div>
             <div className="vopts">
               {venueOptions.map(o => (
-                <button key={o.v.id} type="button" className={`vopt${ev.venue_id === o.v.id ? ' sel' : ''}`} disabled={!isSuper}
+                <button key={o.v.id} type="button" className={`vopt${ev.venue_id === o.v.id ? ' sel' : ''}`}
                   onClick={() => save({ venue_id: ev.venue_id === o.v.id ? null : o.v.id })}>
                   <span className="nm">{o.v.name}</span>
                   <span className={`st ${o.state}`}>
@@ -376,7 +376,7 @@ export default function EventDetail() {
             })}
           </div>
           <MemberPicker exclude={onEvent} placeholder="Add a coordinator from the roster…" onPick={m => mark(m, coordinatorTypeId)} />
-          <p className="note-sm" style={{ marginTop: 8, marginBottom: 0 }}>Coordinators get the coordinator points automatically (leads excepted).</p>
+          <p className="note-sm" style={{ marginTop: 8, marginBottom: 0 }}>Coordinators get the coordinator points once the event is marked completed (leads excepted).</p>
         </div>
 
         {/* Poster */}
@@ -386,17 +386,12 @@ export default function EventDetail() {
         </div>
 
         {/* Budget */}
-        <div className="check-card adm-form">
-          <div className="check-head"><Tick on={isDone('budget')} /><h4>Budget</h4></div>
-          <div className="grid2" style={{ marginBottom: 12 }}>
-            <div className="fld"><label htmlFor="bPlan">Planned (₹)</label>
-              <input id="bPlan" inputMode="decimal" value={draft.budget_planned} onChange={e => setDraft(d => ({ ...d, budget_planned: e.target.value }))} placeholder="0" />
-            </div>
-            <div className="fld"><label htmlFor="bAct">Actual spent (₹)</label>
-              <input id="bAct" inputMode="decimal" value={draft.budget_actual} onChange={e => setDraft(d => ({ ...d, budget_actual: e.target.value }))} placeholder="—" />
-            </div>
+        <div className="check-card wide">
+          <div className="check-head"><Tick on={isDone('budget')} /><h4>Budget</h4>
+            <span className="asof">Itemised: totals update the checklist</span>
           </div>
-          <label style={{ display: 'block', marginBottom: 6 }}>Budget sheet (optional)</label>
+          <BudgetCard ev={ev} onTotals={() => { reload('events'); }} />
+          <label style={{ display: 'block', margin: '16px 0 6px' }}>Budget sheet (optional)</label>
           <FileSlot ev={ev} kind="budget" path={ev.budget_sheet_path} label="Budget sheet"
             accept=".pdf,.xls,.xlsx,.csv,.doc,.docx,image/*" onSaved={patchEvent} />
         </div>
@@ -425,7 +420,7 @@ export default function EventDetail() {
         {/* Attendance */}
         <div className="check-card wide">
           <div className="check-head"><Tick on={others.length > 0} /><h4>Volunteers and attendees</h4>
-            <span className="asof">{others.length} marked · points are added automatically</span>
+            <span className="asof">{others.length} marked · points once the event is completed</span>
           </div>
           <div className="people" style={{ marginBottom: 10 }}>
             {others.map(a => {
@@ -451,6 +446,12 @@ export default function EventDetail() {
             ))}
           </div>
         </div>
+        {isSuper && (
+          <div className="check-card wide">
+            <div className="check-head"><h4>Activity</h4><span className="asof">Who did what · super admins only</span></div>
+            <EventActivityLog eventId={ev.id} version={ev.updated_at} />
+          </div>
+        )}
       </div>
     </>
   );

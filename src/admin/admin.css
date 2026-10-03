@@ -770,3 +770,55 @@ a.tile:hover { background: var(--cell); }
 .efp-tag { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: rgba(255, 255, 255, .07); color: var(--text-soft); }
 .efp-tag.up { background: rgba(79, 209, 139, .14); color: #7fe0ad; }
 .efp-empty { padding: 16px 12px; color: var(--text-dim); font-size: 13px; }
+
+/* Cards with an open member picker sit above their neighbours */
+.adm .check-card { position: relative; }
+.adm .check-card:focus-within, .adm .check-card:has(.picker-list) { z-index: 20; }
+
+/* Event completion banner */
+.ev-done { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; padding: 14px 18px; border-radius: 18px; border: 1px solid var(--line-2); background: rgba(255, 255, 255, .03); color: var(--text-soft); }
+.ev-done.ok { border-color: rgba(79, 209, 139, .35); background: rgba(79, 209, 139, .07); color: #7fe0ad; }
+.ev-done .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ev-done .tx b { color: var(--text); font-size: 15px; }
+.ev-done .tx span { font-size: 13px; color: var(--text-soft); }
+@media (max-width: 640px) { .ev-done { flex-wrap: wrap; } .ev-done .primary { width: 100%; } }
+
+/* Budget */
+.bdg-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.bdg-tiles > div { background: rgba(255, 255, 255, .04); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+.bdg-tiles span { font-size: 11.5px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; }
+.bdg-tiles b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.bdg-tiles small { font-size: 11.5px; color: var(--text-dim); }
+.bdg-tiles .over b { color: #ff8a9d; }
+.bdg-tiles .ok b { color: #7fe0ad; }
+.bdg-cats { display: grid; gap: 7px; margin: 6px 0 16px; }
+.bdg-cat { display: grid; grid-template-columns: 170px minmax(0, 1fr) auto; gap: 12px; align-items: center; font-size: 12.5px; }
+.bdg-cat .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-soft); }
+.bdg-cat .bars { display: grid; gap: 3px; }
+.bdg-cat .bars i, .bdg-legend i { display: block; height: 6px; border-radius: 3px; min-width: 2px; }
+.bdg-cat i.p, .bdg-legend i.p { background: rgba(255, 255, 255, .22); }
+.bdg-cat i.a, .bdg-legend i.a { background: var(--accent); }
+.bdg-cat i.a.over { background: #ffb340; }
+.bdg-cat .v { color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.bdg-legend { display: flex; gap: 14px; font-size: 11.5px; color: var(--text-dim); }
+.bdg-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.bdg-legend i { width: 16px; }
+.bdg-lines h5 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); margin: 14px 0 6px; }
+.bdg-tbl { min-width: 980px; }
+.bdg-tbl th { font-size: 11.5px; white-space: nowrap; }
+.bdg-tbl td { padding: 4px 4px; vertical-align: middle; }
+.bdg-tbl input, .bdg-tbl select { padding: 7px 9px !important; font-size: 13px; border-radius: 9px !important; }
+.bdg-tbl input.n { width: 84px; text-align: right; }
+.bdg-tbl .num { text-align: right; }
+.bdg-rc { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.bdg-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+@media (max-width: 760px) { .bdg-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bdg-cat { grid-template-columns: 110px minmax(0, 1fr); } .bdg-cat .v { grid-column: 2; } }
+
+/* Activity log */
+.act-log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; max-height: 360px; overflow-y: auto; }
+.act-log li { display: grid; grid-template-columns: 140px minmax(0, 1fr) auto; gap: 12px; padding: 8px 2px; border-top: 1px solid var(--line); font-size: 13px; }
+.act-log li:first-child { border-top: none; }
+.act-log .who { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-log .what { color: var(--text-soft); }
+.act-log time { color: var(--text-dim); font-size: 12px; white-space: nowrap; }
+@media (max-width: 640px) { .act-log li { grid-template-columns: 1fr; gap: 2px; } }

@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type {
-  AdminContribution, AttendanceRow, BucketUsage, CalendarEntry, ClubEvent, DriveFile, DriveFolder, RosterMember, Venue, VenueBooking,
+  AdminContribution, AttendanceRow, BucketUsage, BudgetItem, CalendarEntry, EventActivity, ClubEvent, DriveFile, DriveFolder, RosterMember, Venue, VenueBooking,
 } from '@/types/admin';
 import type { ContributionType, EventProposal, LeaderboardRow, TeamMember } from '@/types/club';
 import { prepareProofImage, SITE_MEDIA_BUCKET } from '@/lib/club';
@@ -313,6 +313,32 @@ export async function driveDownloadUrl(f: Pick<DriveFile, 'path' | 'name'>) {
 
 export const fetchStorageUsage = async () =>
   ((check(await supabase.rpc('storage_usage')) as BucketUsage[] | null) ?? []).map(r => ({ ...r, bytes: Number(r.bytes), files: Number(r.files) }));
+
+// ---- event budgets ------------------------------------------------------------------
+
+/** Postgres numerics arrive as strings; make them numbers. */
+const toItem = (r: BudgetItem): BudgetItem => ({
+  ...r, quantity: Number(r.quantity), unit_cost: Number(r.unit_cost), actual: r.actual === null ? null : Number(r.actual),
+});
+
+export const fetchBudgetItems = async (eventId: string) =>
+  ((check(await supabase.from('event_budget_items').select('*').eq('event_id', eventId)
+    .order('kind').order('sort_order').order('created_at')) as BudgetItem[]) ?? []).map(toItem);
+
+export const addBudgetItem = async (b: Partial<BudgetItem> & Pick<BudgetItem, 'event_id' | 'kind'>) =>
+  toItem(check(await supabase.from('event_budget_items').insert(b).select().single()) as BudgetItem);
+
+export const updateBudgetItem = async (id: string, p: Partial<BudgetItem>) =>
+  toItem(check(await supabase.from('event_budget_items').update(p).eq('id', id).select().single()) as BudgetItem);
+
+export const deleteBudgetItem = async (id: string) =>
+  check(await supabase.from('event_budget_items').delete().eq('id', id));
+
+// ---- activity log (super admins) -----------------------------------------------------
+
+export const fetchEventActivity = async (eventId: string) =>
+  check(await supabase.from('event_activity').select('*').eq('event_id', eventId)
+    .order('created_at', { ascending: false }).limit(200)) as EventActivity[];
 
 // ---- approvals ---------------------------------------------------------------------
 

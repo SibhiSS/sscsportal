@@ -57,6 +57,9 @@ export interface ClubEvent {
   shown_to_members: boolean;
   /** Members see it on /calendar (title, dates, coordinators only). Super admins switch it. */
   calendar_confirmed: boolean;
+  /** Set when a super admin marks it completed; only then do its volunteers get points. */
+  completed_at: string | null;
+  completed_by: string | null;
   /** What the public website shows. Super admins only (enforced by a trigger). */
   website_published: boolean;
   website_featured: boolean;
