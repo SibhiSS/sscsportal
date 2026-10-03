@@ -226,7 +226,7 @@ const Proposals = () => {
                   {!form.online && (
                     <div>
                       <label htmlFor="pVenue" className="sr-only">Preferred venue</label>
-                      <select id="pVenue" className={inputCls} value={form.venueId} onChange={e => setForm(f => ({ ...f, venueId: e.target.value }))}>
+                      <select id="pVenue" className={`${inputCls} [color-scheme:dark] [&>option]:bg-[#141416] [&>option]:text-white`} value={form.venueId} onChange={e => setForm(f => ({ ...f, venueId: e.target.value }))}>
                         <option value="">Preferred venue: no preference</option>
                         {venues.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                       </select>
