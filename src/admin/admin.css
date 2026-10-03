@@ -748,3 +748,5 @@ a.tile:hover { background: var(--cell); }
 .pd-history a { color: var(--text); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pd-history a:hover { text-decoration: underline; }
 @media (max-width: 640px) { .pd-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.drv-side select, .drv-search { color-scheme: dark; }
+.drv-side select option { background: #141416; color: #fff; }

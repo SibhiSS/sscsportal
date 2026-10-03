@@ -94,7 +94,7 @@ export default function ProposalDetail() {
           </Link>
           <h1>{p.title}</h1>
           <div className="sub">
-            Proposed {fmtMed(p.created_at.slice(0, 10))} by {p.proposer_name || p.proposer_email}
+            Proposed {fmtMed(p.created_at.slice(0, 10))} by {p.proposer_name || (isSuper ? p.proposer_email : 'a club member')}
           </div>
         </div>
         <span className={`tag ${TAG[p.status]}`} style={{ fontSize: 13, padding: '6px 14px' }}>{LABEL[p.status]}</span>
@@ -123,7 +123,16 @@ export default function ProposalDetail() {
           )}
         </div>
 
-        {/* Proposer */}
+        {/* Proposer: contact details and record are for super admins only */}
+        {!isSuper ? (
+          <div className="check-card">
+            <div className="check-head"><h4>Proposed by</h4></div>
+            <div className="person">
+              <span className="avatar">{initials(p.proposer_name ?? p.proposer_email)}</span>
+              <div className="who"><b>{p.proposer_name || 'A club member'}</b></div>
+            </div>
+          </div>
+        ) : <>
         <div className="check-card">
           <div className="check-head"><h4>Proposed by</h4>
             {member && <Link className="linkbtn" to={`/admin/members/${member.id}`}>Member page →</Link>}
@@ -170,6 +179,7 @@ export default function ProposalDetail() {
             </p>
           )}
         </div>
+        </>}
 
         {/* Date check */}
         <div className="check-card">

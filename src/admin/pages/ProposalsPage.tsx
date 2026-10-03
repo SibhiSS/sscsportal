@@ -90,7 +90,7 @@ export default function ProposalsPage() {
                     <b className="pr-title">{p.title}</b>
                     <div className="muted pr-sub">
                       {fmtRange(p.expected_start, p.expected_end)} · {p.is_online ? 'Online' : venueName(venues, p.venue_id) || 'No venue preference'}
-                      {' · '}by {p.proposer_name || p.proposer_email} · {fmtMed(p.created_at.slice(0, 10))}
+                      {' · '}by {p.proposer_name || (isSuper ? p.proposer_email : 'a club member')} · {fmtMed(p.created_at.slice(0, 10))}
                     </div>
                   </div>
                   <span className={`tag ${TAG[p.status]}`}>{LABEL[p.status]}</span>

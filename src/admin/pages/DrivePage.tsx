@@ -21,6 +21,7 @@ const BUCKET_LABEL: Record<string, string> = {
   'event-files': 'Event checklist files',
   'contribution-proofs': 'Contribution proofs',
   'site-media': 'Website photos',
+  resumes: 'Résumés (old applications)',
 };
 
 const Meter = ({ used, total, label }: { used: number; total: number; label: string }) => {
@@ -46,10 +47,12 @@ export default function DrivePage() {
 
   const load = useCallback(async () => {
     try {
-      const [fo, fi, us] = await Promise.all([fetchDriveFolders(), fetchDriveFiles(), fetchStorageUsage()]);
+      const [fo, fi, us] = await Promise.all([
+        fetchDriveFolders(), fetchDriveFiles(), isSuper ? fetchStorageUsage() : Promise.resolve([] as BucketUsage[]),
+      ]);
       setFolders(fo); setFiles(fi); setUsage(us); setError(null);
     } catch (err) { setError(errMsg(err)); setFiles([]); }
-  }, []);
+  }, [isSuper]);
   useEffect(() => { load(); }, [load]);
 
   const all = useMemo(() => files ?? [], [files]);
@@ -102,9 +105,9 @@ export default function DrivePage() {
       <div className="top">
         <div>
           <h1>Drive</h1>
-          <div className="sub">Club documents for admins and super admins only. Up to 5 MB per file, {fmtBytes(DRIVE_QUOTA)} in total.</div>
+          <div className="sub">Club documents for admins and super admins only. Up to 5 MB per file.</div>
         </div>
-        <input className="drv-search" aria-label="Search all files" placeholder="Search all files" value={query} onChange={e => setQuery(e.target.value)} />
+        <input className="drv-search inp" aria-label="Search all files" placeholder="Search all files" value={query} onChange={e => setQuery(e.target.value)} />
       </div>
 
       {error && (
@@ -115,7 +118,7 @@ export default function DrivePage() {
         </section>
       )}
 
-      <section className="panel drv-usage">
+      {isSuper && <section className="panel drv-usage">
         <Meter used={driveUsed} total={DRIVE_QUOTA} label="Drive" />
         <Meter used={totalUsed} total={STORAGE_PLAN_BYTES} label="All Supabase storage (free plan)" />
         {usage.length > 0 && (
@@ -123,7 +126,7 @@ export default function DrivePage() {
             {usage.map(u => <span key={u.bucket_id} className="chip">{BUCKET_LABEL[u.bucket_id] ?? u.bucket_id}<b>{fmtBytes(u.bytes)}</b></span>)}
           </div>
         )}
-      </section>
+      </section>}
 
       <div className="drv-grid">
         <aside className="panel drv-side">
@@ -143,7 +146,7 @@ export default function DrivePage() {
               <Ticket size={15} /> <span>{e.title}</span> <small>{count({ kind: 'event', id: e.id })}</small>
             </button>
           ))}
-          <select aria-label="Open an event's folder" value="" onChange={e => { if (e.target.value) { setQuery(''); setPlace({ kind: 'event', id: e.target.value }); } }}>
+          <select className="inp" aria-label="Open an event's folder" value="" onChange={e => { if (e.target.value) { setQuery(''); setPlace({ kind: 'event', id: e.target.value }); } }}>
             <option value="">{eventsWithFiles.length ? 'Another event…' : 'Open an event folder…'}</option>
             {otherEvents.map(e => <option key={e.id} value={e.id}>{e.title} · {fmtShort(e.start_date)}</option>)}
           </select>
