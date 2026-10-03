@@ -49,7 +49,33 @@ const domains: Domain[] = [
   },
 ];
 
+// The floorplan: wide and narrow blocks staggered row by row, like a die.
+//   lg:  [ Tech Tech  Mgmt ]
+//        [ Ops  Crea  Crea ]
+//        [ Outr Outr  HR   ]
+const BLOCK_SPAN: Record<string, string> = {
+  '01': 'sm:col-span-2 lg:col-span-2',
+  '04': 'sm:col-span-2 lg:col-span-2',
+  '05': 'lg:col-span-2',
+};
+
+/** Focus areas per domain, taken from each description. */
+const FOCUS: Record<string, string[]> = {
+  '01': ['Projects', 'Research', 'Web Development'],
+  '02': ['Finance', 'Coordination', 'Documentation'],
+  '03': ['Planning', 'On-ground Ops', 'Execution'],
+  '04': ['Design', 'Social Media', 'Content'],
+  '05': ['Industry Relations', 'Speakers', 'Sponsorships'],
+  '06': ['Recruitment', 'Engagement', 'Conflict Resolution'],
+};
+
+/** Bond pads along one edge of the die outline. */
+const PAD_STRIP = (direction: 'h' | 'v') => ({
+  backgroundImage: `repeating-linear-gradient(${direction === 'h' ? '90deg' : '180deg'}, rgba(255,255,255,0.12) 0 8px, transparent 8px 26px)`,
+});
+
 const DomainCard = ({ domain, index }: { domain: Domain; index: number }) => {
+  const isCore = domain.id === '01';
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
@@ -66,7 +92,7 @@ const DomainCard = ({ domain, index }: { domain: Domain; index: number }) => {
       transition={{ delay: index * 0.1 }}
       viewport={{ once: true }}
       onMouseMove={onMouseMove}
-      className="group relative h-full rounded-2xl border border-white/5 bg-white/[0.02] p-8 transition-all hover:border-primary/50"
+      className={`group relative h-full rounded-2xl border border-white/5 bg-white/[0.02] p-8 transition-all hover:border-primary/50 ${BLOCK_SPAN[domain.id] ?? ''}`}
     >
       {/* Spotlight Effect */}
       <motion.div
@@ -85,7 +111,7 @@ const DomainCard = ({ domain, index }: { domain: Domain; index: number }) => {
       <div className="relative flex h-full flex-col">
         {/* Card Header */}
         <div className="mb-6 flex items-center justify-between border-b border-white/[0.08] pb-4">
-          <h3 className="font-heading text-xl font-bold text-foreground group-hover:text-primary transition-colors">
+          <h3 className={`font-heading font-bold text-foreground group-hover:text-primary transition-colors ${isCore ? 'text-2xl md:text-3xl' : 'text-xl'}`}>
             {domain.title}
           </h3>
           <span className="font-mono text-xs font-bold text-white/20 group-hover:text-primary transition-colors">
@@ -95,9 +121,18 @@ const DomainCard = ({ domain, index }: { domain: Domain; index: number }) => {
 
         {/* Content */}
         <div className="flex-1 mt-2">
-          <p className="text-sm leading-relaxed text-muted-foreground/80">
+          <p className={`leading-relaxed text-muted-foreground/80 ${isCore ? 'text-base max-w-md' : 'text-sm'}`}>
             {domain.description}
           </p>
+        </div>
+
+        {/* Focus areas, pinned to the bottom of the block */}
+        <div className="mt-6 flex flex-wrap gap-2">
+          {(FOCUS[domain.id] ?? []).map(f => (
+            <span key={f} className="px-3 py-1 rounded-full bg-white/[0.03] border border-white/5 text-[10px] uppercase tracking-wider text-muted-foreground group-hover:border-primary/20 transition-colors">
+              {f}
+            </span>
+          ))}
         </div>
 
 
@@ -150,10 +185,21 @@ const DomainsSection = () => {
           </div>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
-          {domains.map((domain, index) => (
-            <DomainCard key={domain.id} domain={domain} index={index} />
-          ))}
+        {/* The die: a thin outline with bond pads, the domains laid out as its floorplan */}
+        <div className="relative max-w-6xl mx-auto rounded-3xl border border-white/10 bg-white/[0.01] p-3 md:p-5">
+          <div aria-hidden="true" className="pointer-events-none absolute -top-[5px] left-12 right-12 h-[9px]" style={PAD_STRIP('h')} />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-[5px] left-12 right-12 h-[9px]" style={PAD_STRIP('h')} />
+          <div aria-hidden="true" className="pointer-events-none absolute -left-[5px] top-12 bottom-12 w-[9px]" style={PAD_STRIP('v')} />
+          <div aria-hidden="true" className="pointer-events-none absolute -right-[5px] top-12 bottom-12 w-[9px]" style={PAD_STRIP('v')} />
+          <span aria-hidden="true" className="absolute -top-6 right-6 font-mono text-[10px] tracking-[0.3em] text-white/25 uppercase">
+            sscs-vitc · 6 blocks
+          </span>
+
+          <div className="grid gap-3 md:gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {domains.map((domain, index) => (
+              <DomainCard key={domain.id} domain={domain} index={index} />
+            ))}
+          </div>
         </div>
       </div>
     </section>
