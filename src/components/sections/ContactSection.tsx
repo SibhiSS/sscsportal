@@ -28,7 +28,7 @@ const ContactSection = () => {
         </motion.div>
 
         {/* Contact Info */}
-        <div className="max-w-2xl mx-auto mb-20">
+        <div className="max-w-2xl mx-auto">
           <motion.div
             className="flex flex-wrap justify-center gap-6 mb-10"
             initial={{ opacity: 0, y: 20 }}
@@ -69,40 +69,6 @@ const ContactSection = () => {
             ))}
           </motion.div>
         </div>
-
-        {/* Slimmed Footer */}
-        <motion.footer
-          className="relative pt-4 mt-4 border-t border-white/5"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-        >
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-4">
-            <div className="flex items-center gap-3 group">
-              <div className="relative">
-                <img src="/logo.png" alt="IEEE SSCS" className="w-8 h-8 object-contain relative z-10 transition-transform group-hover:rotate-12" />
-                <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <span className="font-heading font-bold text-base">
-                <span className="text-primary">IEEE</span>
-                <span className="text-foreground"> SSCS</span>
-              </span>
-            </div>
-
-            <p className="text-xs text-muted-foreground/80 font-medium italic">
-              Think Silicon. Think SSCS
-            </p>
-
-            <div className="flex flex-col items-center md:items-end gap-1">
-              <p className="text-[9px] text-muted-foreground/60 tracking-widest uppercase font-mono">
-                Design • Build • Iterate
-              </p>
-              <p className="text-[10px] text-muted-foreground/80 font-medium">
-                © 2026 IEEE SSCS Portal
-              </p>
-            </div>
-          </div>
-        </motion.footer>
       </div>
     </section>
   );

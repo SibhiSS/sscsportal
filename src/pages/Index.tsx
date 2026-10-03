@@ -8,6 +8,7 @@ import EventsSection from '@/components/sections/EventsSection';
 import LeaderboardSection from '@/components/sections/LeaderboardSection';
 import MembershipSection from '@/components/sections/MembershipSection';
 import ContactSection from '@/components/sections/ContactSection';
+import SiteFooter from '@/components/SiteFooter';
 
 const PERKS = ['Real Hardware', 'Any Simulator', 'No Hierarchy', 'Tape-out Dreams', 'Ship Circuits', 'Free Workshops', 'Late-night Debugging'];
 
@@ -27,6 +28,7 @@ const Index = () => {
           <MembershipSection />
           <ContactSection />
         </main>
+        <SiteFooter />
       </div>
     </div>
   );
