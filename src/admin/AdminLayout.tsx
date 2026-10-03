@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  CalendarDays, CheckSquare, Globe, LayoutDashboard, LogIn, LogOut, MapPin, Menu, Search, Settings, ShieldAlert, Ticket, UserSquare, Users,
+  CalendarDays, CheckSquare, Globe, LayoutDashboard, Lightbulb, LogIn, LogOut, MapPin, Menu, Search, Settings, ShieldAlert, Ticket, UserSquare, Users,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/sonner';
 import TechGridBackground from '@/components/ui/TechGridBackground';
 import { AdminDataProvider, useAdminData } from './AdminData';
 import { findContributionByCode } from './api';
+import NotificationBell from './NotificationBell';
 import { fmtShort, initials } from './calendarLogic';
 import './admin.css';
 
@@ -18,6 +19,7 @@ const NAV = [
   { to: '/admin/venues', label: 'Venues', icon: MapPin, superOnly: true },
   { to: '/admin/members', label: 'Members', icon: Users },
   { to: '/admin/approvals', label: 'Approvals', icon: CheckSquare },
+  { to: '/admin/proposals', label: 'Proposals', icon: Lightbulb },
   { to: '/admin/website', label: 'Website', icon: Globe, superOnly: true },
   { to: '/admin/team', label: 'Team', icon: UserSquare, superOnly: true },
 ];
@@ -174,7 +176,8 @@ function GlobalSearch() {
 
 function Shell() {
   const { user, logout } = useAuth();
-  const { loading, error, pendingCount } = useAdminData();
+  const { loading, error, pendingCount, proposals } = useAdminData();
+  const waitingProposals = proposals.filter(p => p.status === 'pending').length;
   const isSuper = user?.role === 'super_admin';
   const [navOpen, setNavOpen] = useState(false);
   const { pathname } = useLocation();
@@ -195,6 +198,7 @@ function Shell() {
             <NavLink key={to} to={to} end={end} data-tip={label} aria-label={label} className={({ isActive }) => (isActive ? 'active' : '')}>
               <span className="ic"><Icon /></span><span className="lbl">{label}</span>
               {to === '/admin/approvals' && pendingCount > 0 && <span className="adm-badge" aria-label={`${pendingCount} waiting`}>{pendingCount}</span>}
+              {to === '/admin/proposals' && isSuper && waitingProposals > 0 && <span className="adm-badge" aria-label={`${waitingProposals} waiting`}>{waitingProposals}</span>}
             </NavLink>
           ))}
         </nav>
@@ -225,6 +229,7 @@ function Shell() {
           <button className="adm-menu-btn" onClick={() => setNavOpen(o => !o)} aria-label="Open menu"><Menu size={18} /></button>
           <Crumbs />
           <GlobalSearch />
+          <NotificationBell />
         </header>
         <main className="adm-page">
           {loading ? <div className="muted">Loading club data…</div>

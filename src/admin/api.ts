@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import type {
   AdminContribution, AttendanceRow, CalendarEntry, ClubEvent, RosterMember, Venue, VenueBooking,
 } from '@/types/admin';
-import type { ContributionType, LeaderboardRow, TeamMember } from '@/types/club';
+import type { ContributionType, EventProposal, LeaderboardRow, TeamMember } from '@/types/club';
 import { prepareProofImage, SITE_MEDIA_BUCKET } from '@/lib/club';
 import type { ImportRow } from './calendarLogic';
 
@@ -229,6 +229,18 @@ export async function uploadTeamPhoto(blob: Blob) {
   check(await supabase.storage.from(SITE_MEDIA_BUCKET).upload(path, blob, { contentType: 'image/jpeg' }));
   return path;
 }
+
+// ---- event proposals ----------------------------------------------------------------
+
+export const fetchProposals = async () =>
+  check(await supabase.from('event_proposals').select('*').order('created_at', { ascending: false }).limit(500)) as EventProposal[];
+
+/** Super admins only (checked in the database). Creates the event and returns its id. */
+export const acceptProposal = async (id: string, start: string, end: string, note: string) =>
+  check(await supabase.rpc('accept_event_proposal', { p_id: id, p_start: start, p_end: end, p_note: note || null })) as string;
+
+export const rejectProposal = async (id: string, note: string) =>
+  check(await supabase.rpc('reject_event_proposal', { p_id: id, p_note: note || null }));
 
 // ---- approvals ---------------------------------------------------------------------
 

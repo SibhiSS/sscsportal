@@ -4,6 +4,9 @@ import { Toaster } from '@/components/ui/sonner';
 import Index from '@/pages/Index';
 import Team from '@/pages/Team';
 import Leaderboard from '@/pages/Leaderboard';
+import MemberCalendar from '@/pages/Calendar';
+import Proposals from '@/pages/Proposals';
+import ProposalsPage from '@/admin/pages/ProposalsPage';
 import NotFound from '@/pages/NotFound';
 import Me from '@/pages/Me';
 import AdminLayout from '@/admin/AdminLayout';
@@ -62,6 +65,8 @@ function App() {
                 <Route path="/" element={<Index />} />
                 <Route path="/team" element={<Team />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/calendar" element={<MemberCalendar />} />
+                <Route path="/proposals" element={<Proposals />} />
 
                 <Route path="/me" element={<Me />} />
                 <Route path="/admin" element={<AdminLayout />}>
@@ -73,6 +78,7 @@ function App() {
                   <Route path="members" element={<MembersPage />} />
                   <Route path="members/:id" element={<MemberCard />} />
                   <Route path="approvals" element={<ApprovalsPage />} />
+                  <Route path="proposals" element={<ProposalsPage />} />
                   <Route path="website" element={<SuperAdminOnly><WebsitePage /></SuperAdminOnly>} />
                   <Route path="team" element={<SuperAdminOnly><TeamPage /></SuperAdminOnly>} />
                   <Route path="settings" element={<SuperAdminOnly><SettingsPage /></SuperAdminOnly>} />

@@ -55,6 +55,8 @@ export interface ClubEvent {
   od_posted: boolean;
   /** Upcoming events members may tag (past events always can). Super admins switch it. */
   shown_to_members: boolean;
+  /** Members see it on /calendar (title, dates, coordinators only). Super admins switch it. */
+  calendar_confirmed: boolean;
   /** What the public website shows. Super admins only (enforced by a trigger). */
   website_published: boolean;
   website_featured: boolean;
@@ -90,6 +92,43 @@ export interface WebsiteEvent {
   gallery: string[];
   link: string | null;
 }
+
+export type MemberCalendarKind = 'event' | 'holiday' | 'blocked' | 'exam' | 'buffer' | 'noclass' | 'vacation';
+
+/** One row of `member_calendar()`: all a member may see of the club calendar. */
+export interface MemberCalendarItem {
+  kind: MemberCalendarKind;
+  title: string;
+  start_date: string;
+  end_date: string;
+  /** Student coordinators' names; events only. */
+  coordinators: string[];
+}
+
+export type ProposalStatus = 'pending' | 'accepted' | 'rejected';
+
+/** An event someone has proposed (`event_proposals`). */
+export interface EventProposal {
+  id: string;
+  title: string;
+  description: string;
+  requirements: string | null;
+  expected_start: string;
+  expected_end: string;
+  is_online: boolean;
+  venue_id: string | null;
+  proposer_email: string;
+  proposer_name: string | null;
+  status: ProposalStatus;
+  review_note: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  event_id: string | null;
+  created_at: string;
+}
+
+export type NewProposal = Pick<EventProposal,
+  'title' | 'description' | 'requirements' | 'expected_start' | 'expected_end' | 'is_online' | 'venue_id' | 'proposer_email' | 'proposer_name'>;
 
 export type TeamSection = 'faculty' | 'core' | 'lead';
 

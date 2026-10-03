@@ -5,6 +5,8 @@ import { useAdminData } from './AdminData';
 import { createEvent, saveEntry, updateEvent } from './api';
 import { ENTRY_TYPES, formWarnings, type CalItem, type EntryType } from './calendarLogic';
 import type { CalendarEntryType } from '@/types/admin';
+import { Link } from 'react-router-dom';
+import { useIsSuperAdmin } from './SuperAdminOnly';
 
 interface Props {
   /** null = add. */
@@ -19,7 +21,10 @@ interface Props {
 /** The calendar's add/edit form: title, type, dates, online toggle, venue, note, live warnings. */
 export default function EntryModal({ editing, defaultDate, defaultType = 'event', onClose, onSaved }: Props) {
   const { user } = useAuth();
+  const isSuper = useIsSuperAdmin();
   const { venues, bookingMap, byDate, patchEvent, reload } = useAdminData();
+  // Only super admins create events; everyone else adds calendar entries (or proposes an event).
+  if (!isSuper && !editing && defaultType === 'event') defaultType = 'holiday';
   const [title, setTitle] = useState(editing?.title ?? '');
   const [type, setType] = useState<EntryType>(editing?.t ?? defaultType);
   const [from, setFrom] = useState(editing?.s ?? defaultDate);
@@ -77,6 +82,24 @@ export default function EntryModal({ editing, defaultDate, defaultType = 'event'
     }
   };
 
+  if (!isSuper && editing?.kind === 'event') {
+    return (
+      <div className="modal-bg" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className="modal" role="dialog" aria-modal="true" aria-labelledby="entryTitle">
+          <div className="modal-head">
+            <h3 id="entryTitle">{editing.title}</h3>
+            <button className="x" onClick={onClose} aria-label="Close">×</button>
+          </div>
+          <p className="muted">Only super admins can change an event's title, dates or venue. You can still work through its checklist.</p>
+          <div className="modal-foot">
+            <button type="button" className="ghost" onClick={onClose}>Close</button>
+            <Link className="primary" to={`/admin/events/${editing.id}`} onClick={onClose}>Open checklist</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="modal-bg" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal adm-form" role="dialog" aria-modal="true" aria-labelledby="entryTitle">
@@ -93,7 +116,9 @@ export default function EntryModal({ editing, defaultDate, defaultType = 'event'
               {Object.entries(ENTRY_TYPES).map(([k, v]) => (
                 <option key={k} value={k}
                   // An event keeps its checklist and attendance, so it can't turn into a holiday and back.
-                  disabled={!!editing && ((editing.kind === 'event') !== (k === 'event'))}>{v}</option>
+                  disabled={(!!editing && ((editing.kind === 'event') !== (k === 'event'))) || (k === 'event' && !isSuper)}>
+                  {k === 'event' && !isSuper ? `${v} (super admins; propose one instead)` : v}
+                </option>
               ))}
             </select>
           </div>

@@ -55,6 +55,8 @@ const Navigation = () => {
     { name: 'Leaderboard', href: '/leaderboard' },
     { name: 'Domains', href: '#domains' },
     { name: 'Events', href: '#events' },
+    { name: 'Calendar', href: '/calendar' },
+    { name: 'Propose', href: '/proposals' },
     { name: 'Contact', href: '#contact' },
   ];
 

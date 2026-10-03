@@ -669,3 +669,34 @@ a.tile:hover { background: var(--cell); }
 .ws-order .ws-meta { flex: 1; min-width: 0; padding: 0; }
 .ws-order .acts { display: flex; gap: 6px; }
 .ws-pos { width: 26px; height: 26px; flex: none; border-radius: 8px; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: rgba(255, 255, 255, .06); color: var(--accent); }
+
+/* Notification bell (top bar) */
+.adm-bell { position: relative; flex: none; }
+.adm-bell-btn { position: relative; width: 42px; height: 42px; border-radius: 999px; display: grid; place-items: center; color: var(--text); border: 1px solid var(--line-2); background: linear-gradient(160deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02)); box-shadow: var(--glass-edge); }
+.adm-bell-btn:hover { border-color: var(--accent-line); }
+.adm-bell-btn .adm-badge { position: absolute; top: -5px; right: -5px; }
+.adm-bell-pop { position: absolute; right: 0; top: calc(100% + 10px); width: min(360px, calc(100vw - 32px)); max-height: 70vh; overflow: auto; z-index: 70; background: rgba(14, 14, 16, .97); border: 1px solid var(--line-2); border-radius: 16px; box-shadow: 0 24px 60px rgba(0, 0, 0, .6); padding: 6px; }
+.adm-bell-head { font-size: 12px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .08em; padding: 10px 12px 8px; }
+.adm-note { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; color: var(--text); text-decoration: none; font-size: 13px; }
+.adm-note:hover { background: rgba(255, 255, 255, .05); }
+.adm-note .ic { width: 28px; height: 28px; flex: none; border-radius: 9px; display: grid; place-items: center; background: rgba(255, 255, 255, .06); color: var(--text-soft); }
+.adm-note.unread .ic { background: var(--accent); color: #fff; }
+.adm-note .tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.adm-note .tx b { font-weight: 600; }
+.adm-note .tx small { color: var(--text-dim); font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+
+/* Proposals */
+.pr-list { display: flex; flex-direction: column; gap: 12px; }
+.pr-card { background: var(--cell); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.pr-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.pr-title { font-size: 15px; }
+.pr-sub { font-size: 12.5px; margin-top: 2px; }
+.pr-body { font-size: 13.5px; color: var(--text-soft); margin: 10px 0 0; white-space: pre-wrap; }
+.pr-acts { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 12px; }
+
+/* Shorter screens: keep every rail icon on screen */
+@media (min-width: 981px) and (max-height: 860px) {
+  .adm-nav { gap: 6px; }
+  .adm-nav a { width: 46px; height: 46px; border-radius: 14px; }
+  .adm-brand { padding-bottom: 14px; }
+}

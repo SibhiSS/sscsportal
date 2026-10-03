@@ -2,10 +2,13 @@ import { supabase } from '@/lib/supabase';
 import type {
   Contribution,
   ContributionType,
+  EventProposal,
   EventOption,
   LeaderboardRow,
+  MemberCalendarItem,
   MyAttendance,
   MyMember,
+  NewProposal,
   NewContribution,
   TeamMember,
   WebsiteEvent,
@@ -156,6 +159,47 @@ export async function fetchWebsiteEvents(): Promise<WebsiteEvent[]> {
     .order('start_date', { ascending: false });
   if (error) throw error;
   return (data ?? []) as WebsiteEvent[];
+}
+
+/** The members' calendar between two dates: confirmed events plus every holiday, exam and break. */
+export async function fetchMemberCalendar(from: string, to: string): Promise<MemberCalendarItem[]> {
+  const { data, error } = await supabase.rpc('member_calendar', { p_from: from, p_to: to });
+  if (error) throw error;
+  return ((data ?? []) as MemberCalendarItem[]).map(r => ({ ...r, coordinators: r.coordinators ?? [] }));
+}
+
+// ---------------------------------------------------------------------------
+// Event proposals (members and admins propose; super admins decide)
+// ---------------------------------------------------------------------------
+
+/** Proposals the signed-in user made, newest first. */
+export async function fetchMyProposals(email: string): Promise<EventProposal[]> {
+  const { data, error } = await supabase
+    .from('event_proposals')
+    .select('*')
+    .ilike('proposer_email', email.trim())
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as EventProposal[];
+}
+
+export async function submitProposal(p: NewProposal): Promise<void> {
+  const { error } = await supabase.from('event_proposals').insert(p);
+  if (error) throw error;
+}
+
+/** Withdraw a pending proposal. Decided ones are protected by RLS. */
+export async function withdrawProposal(id: string): Promise<void> {
+  const { data, error } = await supabase.from('event_proposals').delete().eq('id', id).eq('status', 'pending').select('id');
+  if (error) throw error;
+  if (!data?.length) throw new Error('This proposal has already been decided and cannot be withdrawn.');
+}
+
+/** Active venues for the proposal form. */
+export async function fetchProposalVenues(): Promise<{ id: string; name: string }[]> {
+  const { data, error } = await supabase.rpc('proposal_venues');
+  if (error) throw error;
+  return (data ?? []) as { id: string; name: string }[];
 }
 
 /** Everyone on the /team page, in display order. Readable signed out. */

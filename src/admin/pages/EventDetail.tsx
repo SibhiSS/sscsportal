@@ -248,7 +248,7 @@ export default function EventDetail() {
         </div>
         <div className="form-acts">
           <Link className="ghost" to={`/admin/calendar?d=${ev.start_date}`}>Open in calendar</Link>
-          <button className="ghost" onClick={remove} style={{ color: 'var(--busy)' }}><Trash2 size={14} /> Delete</button>
+          {isSuper && <button className="ghost" onClick={remove} style={{ color: 'var(--busy)' }}><Trash2 size={14} /> Delete</button>}
           <button className="primary" onClick={saveDraft} disabled={!dirty || saving}>{saving ? 'Saving…' : dirty ? 'Save changes' : 'Saved'}</button>
         </div>
       </div>
@@ -269,23 +269,25 @@ export default function EventDetail() {
       <div className="check-grid">
         {/* Basics */}
         <div className="check-card adm-form">
-          <div className="check-head"><Tick on /><h4>Event</h4></div>
+          <div className="check-head"><Tick on /><h4>Event</h4>
+            {!isSuper && <span className="asof">Super admins edit these</span>}
+          </div>
           <div className="fld" style={{ marginBottom: 12 }}><label htmlFor="evTitle">Title</label>
-            <input id="evTitle" value={draft.title} maxLength={120} onChange={e => setDraft(d => ({ ...d, title: e.target.value }))} />
+            <input id="evTitle" disabled={!isSuper} value={draft.title} maxLength={120} onChange={e => setDraft(d => ({ ...d, title: e.target.value }))} />
           </div>
           <div className="grid2">
             <div className="fld"><label htmlFor="evFrom">From</label>
-              <input id="evFrom" type="date" value={draft.start_date}
+              <input id="evFrom" type="date" disabled={!isSuper} value={draft.start_date}
                 onChange={e => setDraft(d => ({ ...d, start_date: e.target.value, end_date: !d.end_date || d.end_date < e.target.value ? e.target.value : d.end_date }))} />
             </div>
             <div className="fld"><label htmlFor="evTo">To</label>
-              <input id="evTo" type="date" value={draft.end_date} min={draft.start_date} onChange={e => setDraft(d => ({ ...d, end_date: e.target.value }))} />
+              <input id="evTo" type="date" disabled={!isSuper} value={draft.end_date} min={draft.start_date} onChange={e => setDraft(d => ({ ...d, end_date: e.target.value }))} />
             </div>
           </div>
           {dateWarn.map(w => <div key={w} className="warn">{w}</div>)}
           <div style={{ marginTop: 14 }}>
             <label className="switch amber">
-              <input type="checkbox" checked={ev.is_online} onChange={e => {
+              <input type="checkbox" checked={ev.is_online} disabled={!isSuper} onChange={e => {
                 const goingOnline = e.target.checked;
                 if (goingOnline && (ev.venue_id || ev.venue_booked || ev.od_posted)
                   && !window.confirm('Make this an online event? Its venue, "venue booked" and "OD posted" will be cleared.')) return;
@@ -295,12 +297,20 @@ export default function EventDetail() {
               <span>Online event <small className="muted">— no venue or OD needed</small></span>
             </label>
           </div>
+          <div style={{ marginTop: 10 }}>
+            <label className="switch" title={isSuper ? undefined : 'Only super admins can confirm events'}>
+              <input type="checkbox" checked={ev.calendar_confirmed} disabled={!isSuper}
+                onChange={e => save({ calendar_confirmed: e.target.checked })} />
+              <span className="track"><span className="knob" /></span>
+              <span>Confirmed <small className="muted">— members see it on their calendar (name, dates, coordinators)</small></span>
+            </label>
+          </div>
         </div>
 
         {/* Details */}
         <div className="check-card adm-form">
           <div className="check-head"><Tick on={isDone('details')} /><h4>Event details</h4></div>
-          <textarea rows={7} maxLength={4000} value={draft.description} placeholder="What, who it's for, schedule, speakers, rules…"
+          <textarea rows={7} maxLength={4000} value={draft.description} disabled={!isSuper} placeholder="What, who it's for, schedule, speakers, rules…"
             onChange={e => setDraft(d => ({ ...d, description: e.target.value }))} />
         </div>
 
@@ -312,7 +322,7 @@ export default function EventDetail() {
             </div>
             <div className="vopts">
               {venueOptions.map(o => (
-                <button key={o.v.id} type="button" className={`vopt${ev.venue_id === o.v.id ? ' sel' : ''}`}
+                <button key={o.v.id} type="button" className={`vopt${ev.venue_id === o.v.id ? ' sel' : ''}`} disabled={!isSuper}
                   onClick={() => save({ venue_id: ev.venue_id === o.v.id ? null : o.v.id })}>
                   <span className="nm">{o.v.name}</span>
                   <span className={`st ${o.state}`}>

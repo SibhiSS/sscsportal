@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { AttendanceRow, CalendarEntry, ClubEvent, RosterMember, Venue, VenueBooking } from '@/types/admin';
-import type { ContributionType, LeaderboardRow } from '@/types/club';
+import type { ContributionType, EventProposal, LeaderboardRow } from '@/types/club';
 import * as api from './api';
 import { indexBookings, indexByDate, toCalItems, type CalItem } from './calendarLogic';
 
-type Collection = 'venues' | 'bookings' | 'entries' | 'events' | 'settings' | 'roster' | 'attendance' | 'leaderboard' | 'pending';
+type Collection = 'venues' | 'bookings' | 'entries' | 'events' | 'settings' | 'roster' | 'attendance' | 'leaderboard' | 'pending' | 'proposals';
 
 interface AdminDataValue {
   loading: boolean;
@@ -19,6 +19,7 @@ interface AdminDataValue {
   attendance: AttendanceRow[];
   leaderboard: LeaderboardRow[];
   pendingCount: number;
+  proposals: EventProposal[];
   // derived
   items: CalItem[];
   byDate: Map<string, CalItem[]>;
@@ -51,6 +52,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   const [attendance, setAttendance] = useState<AttendanceRow[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
+  const [proposals, setProposals] = useState<EventProposal[]>([]);
 
   const loaders = useMemo<Record<Collection, () => Promise<void>>>(() => ({
     venues: async () => setVenues(await api.fetchVenues()),
@@ -66,6 +68,11 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     },
     leaderboard: async () => setLeaderboard(await api.fetchLeaderboard()),
     pending: async () => setPendingCount(await api.countPendingContributions()),
+    // Optional until the proposals migration has run, so it never blocks the panel.
+    proposals: async () => setProposals(await api.fetchProposals().catch(err => {
+      console.warn('[admin] Proposals unavailable:', err?.message);
+      return [];
+    })),
   }), []);
 
   const reload = useCallback(async (...which: Collection[]) => {
@@ -95,7 +102,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
 
   const value: AdminDataValue = {
     loading, error, venues, bookings, entries, events, settings, roster, attendanceTypes, attendance,
-    leaderboard, pendingCount, items, byDate, bookingMap, coordinatorTypeId, ourNames, reload, patchEvent,
+    leaderboard, pendingCount, proposals, items, byDate, bookingMap, coordinatorTypeId, ourNames, reload, patchEvent,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from '@/components/ui/sonner';
+import type { ClubEvent } from '@/types/admin';
 import { useAdminData } from '../AdminData';
+import { updateEvent } from '../api';
+import { useIsSuperAdmin } from '../SuperAdminOnly';
 import { fmtRange, todayIso, venueName } from '../calendarLogic';
 import EntryModal from '../EntryModal';
 import { useEventProgress } from '../useEventProgress';
@@ -8,7 +12,16 @@ import { useEventProgress } from '../useEventProgress';
 type Filter = 'upcoming' | 'past' | 'all';
 
 export default function EventsPage() {
-  const { events, venues } = useAdminData();
+  const { events, venues, patchEvent } = useAdminData();
+  const isSuper = useIsSuperAdmin();
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const setConfirmed = async (ev: ClubEvent, on: boolean) => {
+    setBusy(ev.id);
+    try { patchEvent(await updateEvent(ev.id, { calendar_confirmed: on })); }
+    catch (err) { toast.error((err as { message?: string })?.message || 'Something went wrong.'); }
+    finally { setBusy(null); }
+  };
   const progress = useEventProgress();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>('upcoming');
@@ -27,7 +40,9 @@ export default function EventsPage() {
           <h1>Events</h1>
           <div className="sub">Plan each event with its checklist: venue, coordinators, poster, budget, report, attendance and OD.</div>
         </div>
-        <button className="add-btn" onClick={() => setAdding(true)}><span style={{ fontSize: 16, lineHeight: 1 }}>+</span> New event</button>
+        {isSuper
+          ? <button className="add-btn" onClick={() => setAdding(true)}><span style={{ fontSize: 16, lineHeight: 1 }}>+</span> New event</button>
+          : <Link className="add-btn" to="/proposals" style={{ textDecoration: 'none' }}><span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Propose an event</Link>}
       </div>
 
       <section className="panel">
@@ -43,7 +58,7 @@ export default function EventsPage() {
         </div>
         <div className="tbl-wrap">
           <table>
-            <thead><tr><th>Dates</th><th>Event</th><th className="hide-sm">Where</th><th style={{ width: '32%' }}>Checklist</th></tr></thead>
+            <thead><tr><th>Dates</th><th>Event</th><th className="hide-sm">Where</th><th style={{ width: '32%' }}>Checklist</th><th title="Shown on the members' calendar">Confirmed</th></tr></thead>
             <tbody>
               {rows.length ? rows.map(ev => {
                 const p = progress.get(ev.id)!;
@@ -60,9 +75,16 @@ export default function EventsPage() {
                       </div>
                       {missing.length > 0 && <div className="m" style={{ marginTop: 4 }}>To do: {missing.slice(0, 3).join(', ')}{missing.length > 3 ? ` +${missing.length - 3}` : ''}</div>}
                     </td>
+                    <td onClick={e => e.stopPropagation()}>
+                      <label className="switch" title={isSuper ? "Show on the members' calendar" : 'Only super admins can confirm events'}>
+                        <input type="checkbox" checked={ev.calendar_confirmed} disabled={!isSuper || busy === ev.id}
+                          onChange={e => setConfirmed(ev, e.target.checked)} aria-label={`Confirm ${ev.title} for the members' calendar`} />
+                        <span className="track"><span className="knob" /></span>
+                      </label>
+                    </td>
                   </tr>
                 );
-              }) : <tr><td colSpan={4} className="muted">No {filter === 'all' ? '' : filter} events.</td></tr>}
+              }) : <tr><td colSpan={5} className="muted">No {filter === 'all' ? '' : filter} events.</td></tr>}
             </tbody>
           </table>
         </div>
