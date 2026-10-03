@@ -69,20 +69,20 @@ const Navigation = () => {
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           className={`
-            pointer-events-auto flex items-center justify-between px-6 py-3 transition-all duration-500
+            pointer-events-auto grid grid-cols-[minmax(max-content,1fr)_auto] md:grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)] items-center gap-4 px-6 py-3 transition-all duration-500
             ${isScrolled 
-              ? 'w-full max-w-4xl rounded-full bg-white/5 border border-white/10 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]' 
+              ? 'w-full max-w-5xl rounded-full bg-white/5 border border-white/10 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]' 
               : 'w-full max-w-7xl bg-transparent border-transparent'
             }
           `}
         >
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
+          <Link to="/" className="flex items-center gap-3 group justify-self-start">
             <div className="relative">
               <img src="/logo.png" alt="IEEE SSCS Logo" className="w-8 h-8 object-contain relative z-10 transition-transform group-hover:scale-110" />
               <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
-            <span className="font-heading font-bold text-lg hidden sm:block">
+            <span className="font-heading font-bold text-lg hidden sm:block whitespace-nowrap">
               <span className="text-primary tracking-tight">IEEE</span>
               <span className="text-foreground tracking-tight"> SSCS</span>
             </span>
@@ -94,7 +94,7 @@ const Navigation = () => {
               <button
                 key={link.name}
                 onClick={() => handleNavClick(link.href)}
-                className="px-4 py-2 text-sm font-medium text-foreground/70 hover:text-primary transition-all rounded-full hover:bg-white/5 relative overflow-hidden group"
+                className="px-3 lg:px-4 py-2 text-sm font-medium whitespace-nowrap text-foreground/70 hover:text-primary transition-all rounded-full hover:bg-white/5 relative overflow-hidden group"
               >
                 <span className="relative z-10">{link.name}</span>
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -103,7 +103,7 @@ const Navigation = () => {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 justify-self-end">
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
