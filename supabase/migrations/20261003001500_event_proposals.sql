@@ -28,7 +28,8 @@ SET search_path = public
 AS $$
 BEGIN
   IF public.club_jwt_email() = '' OR public.is_club_super_admin() THEN
-    RETURN COALESCE(NEW, OLD);
+    IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+    RETURN NEW;
   END IF;
 
   IF TG_OP = 'INSERT' THEN
