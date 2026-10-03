@@ -8,8 +8,8 @@ import {
   createDriveFolder, deleteDriveFolder, DRIVE_BUCKET, DRIVE_QUOTA, fetchDriveFiles, fetchDriveFolders, fetchStorageUsage,
   fmtBytes, STORAGE_PLAN_BYTES,
 } from '../api';
-import { fmtShort } from '../calendarLogic';
 import DriveFiles from '../DriveFiles';
+import EventFolderPicker from '../EventFolderPicker';
 import { useIsSuperAdmin } from '../SuperAdminOnly';
 
 const errMsg = (err: unknown) => (err as { message?: string })?.message || 'Something went wrong.';
@@ -65,10 +65,11 @@ export default function DrivePage() {
     const ids = new Set(all.filter(f => f.event_id).map(f => f.event_id as string));
     return events.filter(e => ids.has(e.id)).sort((a, b) => b.start_date.localeCompare(a.start_date));
   }, [all, events]);
-  const otherEvents = useMemo(
-    () => events.filter(e => !eventsWithFiles.includes(e)).sort((a, b) => b.start_date.localeCompare(a.start_date)),
-    [events, eventsWithFiles],
-  );
+  const fileCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const f of all) if (f.event_id) m.set(f.event_id, (m.get(f.event_id) ?? 0) + 1);
+    return m;
+  }, [all]);
 
   const q = query.trim().toLowerCase();
   const shown = q ? all.filter(f => f.name.toLowerCase().includes(q)) : all.filter(f => inPlace(f, place));
@@ -146,10 +147,7 @@ export default function DrivePage() {
               <Ticket size={15} /> <span>{e.title}</span> <small>{count({ kind: 'event', id: e.id })}</small>
             </button>
           ))}
-          <select className="inp" aria-label="Open an event's folder" value="" onChange={e => { if (e.target.value) { setQuery(''); setPlace({ kind: 'event', id: e.target.value }); } }}>
-            <option value="">{eventsWithFiles.length ? 'Another event…' : 'Open an event folder…'}</option>
-            {otherEvents.map(e => <option key={e.id} value={e.id}>{e.title} · {fmtShort(e.start_date)}</option>)}
-          </select>
+          <EventFolderPicker events={events} counts={fileCounts} onPick={id => { setQuery(''); setPlace({ kind: 'event', id }); }} />
         </aside>
 
         <section className="panel drv-main">
