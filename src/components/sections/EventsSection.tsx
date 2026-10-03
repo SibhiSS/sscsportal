@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Minus, ExternalLink } from 'lucide-react';
 import HolographicCard from '@/components/ui/HolographicCard';
-import RevealText from '@/components/ui/RevealText';
+import ScrambleText from '@/components/fx/ScrambleText';
 
 export interface PastEvent {
   id: string;
@@ -68,7 +68,7 @@ const EventsSection = () => {
             Archive
           </span>
           <h2 className="font-heading text-4xl font-bold text-foreground">
-            <RevealText text="Past Events" />
+            <ScrambleText text="Past Events" />
           </h2>
         </motion.div>
 

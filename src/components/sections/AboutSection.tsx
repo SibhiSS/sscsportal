@@ -2,7 +2,7 @@
 import { motion } from 'framer-motion';
 
 import HolographicCard from '@/components/ui/HolographicCard';
-import RevealText from '@/components/ui/RevealText';
+import ScrambleText from '@/components/fx/ScrambleText';
 
 const AboutSection = () => {
   return (
@@ -19,7 +19,7 @@ const AboutSection = () => {
             About Us
           </span>
           <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground">
-            <RevealText text="About the Club" />
+            <ScrambleText text="About the Club" />
           </h2>
           <div className="max-w-6xl mx-auto px-4 mt-6">
             <p className="font-heading text-xs md:text-base text-muted-foreground border-l-2 border-primary/50 pl-4 py-2 bg-primary/5 rounded-r-lg text-left">

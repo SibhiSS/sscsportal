@@ -1,6 +1,6 @@
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
-import RevealText from '@/components/ui/RevealText';
+import ScrambleText from '@/components/fx/ScrambleText';
 import { MouseEvent } from 'react';
 
 interface Domain {
@@ -134,7 +134,7 @@ const DomainsSection = () => {
               Expertise
             </motion.span>
             <h2 className="mt-4 font-heading text-4xl md:text-5xl font-bold tracking-tight text-white">
-              <RevealText text="Technical Domains" />
+              <ScrambleText text="Technical Domains" />
             </h2>
             <p className="mt-6 text-sm md:text-base text-muted-foreground max-w-lg">
               Pushing the boundaries of semiconductor innovation through rigorous research and practical application across the entire stack.

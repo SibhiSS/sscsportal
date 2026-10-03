@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Mail, MapPin, Linkedin, Instagram, MessageCircle } from 'lucide-react';
-import RevealText from '@/components/ui/RevealText';
+import ScrambleText from '@/components/fx/ScrambleText';
 
 const socialLinks = [
   { icon: Linkedin, href: 'https://www.linkedin.com/company/ieee-sscs-vitc/', label: 'LinkedIn' },
@@ -23,7 +23,7 @@ const ContactSection = () => {
             Connect
           </span>
           <h2 className="font-heading text-4xl md:text-5xl font-bold text-foreground">
-            <RevealText text="Get in Touch" />
+            <ScrambleText text="Get in Touch" />
           </h2>
         </motion.div>
 

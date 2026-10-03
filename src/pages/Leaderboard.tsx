@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Search, Trophy } from 'lucide-react';
 import HolographicCard from '@/components/ui/HolographicCard';
-import RevealText from '@/components/ui/RevealText';
+import ScrambleText from '@/components/fx/ScrambleText';
 import TechGridBackground from '@/components/ui/TechGridBackground';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeaderboard } from '@/hooks/use-leaderboard';
@@ -91,7 +91,7 @@ const Leaderboard = () => {
               </span>
             </motion.div>
             <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight">
-              <RevealText text="Leaderboard" />
+              <ScrambleText text="Leaderboard" />
             </h1>
             <p className="text-sm text-muted-foreground mt-4">
               Points come from event roles and approved contributions. Leads aren't ranked.

@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion';
 import { ChevronDown, Instagram } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import TechGridBackground from '@/components/ui/TechGridBackground';
 import GlitchText from '@/components/ui/GlitchText';
+import RotatingWord from '@/components/fx/RotatingWord';
+import AsciiReveal from '@/components/fx/AsciiReveal';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/ieee_sscs_vitcc/';
+const DESIGN_WORDS = ['circuits', 'chips', 'systems', 'the future'];
 
 const HeroSection = () => {
   const scrollToSection = (href: string) => {
@@ -16,6 +18,20 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-transparent">
+      {/* The club as ASCII art; the pointer reveals the real photo in blocks */}
+      <motion.div
+        className="absolute inset-0"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.2, delay: 0.4 }}
+        style={{
+          maskImage: 'radial-gradient(ellipse 75% 70% at 50% 55%, black 35%, transparent 80%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 75% 70% at 50% 55%, black 35%, transparent 80%)',
+        }}
+      >
+        <AsciiReveal src="/team-photo.jpg" focusY={0.62} className="h-full w-full" />
+      </motion.div>
+
       {/* Content Container */}
 
       {/* 3. Main Content Container (No more 'box' container to avoid coinciding boxes) */}
@@ -97,6 +113,9 @@ const HeroSection = () => {
               <h2 className="text-xl md:text-3xl font-heading text-foreground/90 font-light tracking-wide italic">
                 Think Silicon. Think SSCS
               </h2>
+              <p className="font-heading text-base md:text-xl text-foreground/80 tracking-wide">
+                We design <RotatingWord words={DESIGN_WORDS} className="italic text-primary" />
+              </p>
               <p className="text-sm md:text-lg text-muted-foreground/80 max-w-2xl mx-auto leading-relaxed">
                 Empowering the next generation of analog and digital circuit designers through hands-on technical excellence and industry-bridging research.
               </p>

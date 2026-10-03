@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import HolographicCard from '@/components/ui/HolographicCard';
-import RevealText from '@/components/ui/RevealText';
+import ScrambleText from '@/components/fx/ScrambleText';
 import { useLeaderboard } from '@/hooks/use-leaderboard';
 
 const TOP_N = 10;
@@ -23,7 +23,7 @@ const LeaderboardSection = () => {
             Recognition
           </span>
           <h2 className="font-heading text-4xl font-bold text-foreground">
-            <RevealText text="Top Contributors" />
+            <ScrambleText text="Top Contributors" />
           </h2>
         </motion.div>
 

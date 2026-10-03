@@ -87,8 +87,20 @@ export default {
           "0%": { opacity: "0", transform: "translateY(30px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        marquee: {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
+        flicker: {
+          "0%, 100%": { opacity: "1" },
+          "45%": { opacity: "0.85" },
+          "50%": { opacity: "0.55" },
+          "55%": { opacity: "0.9" },
+        },
       },
       animation: {
+        marquee: "marquee var(--marquee-duration, 30s) linear infinite",
+        flicker: "flicker 3.5s steps(1, end) infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.6s ease-out forwards",

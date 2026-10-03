@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
+const BOOT_LINES = ['initializing silicon…', 'routing interconnects…', 'loading IEEE SSCS…'];
+
 const StartupPreloader = ({ onComplete }: { onComplete: () => void }) => {
     const [isDone, setIsDone] = useState(false);
 
@@ -142,6 +144,29 @@ const StartupPreloader = ({ onComplete }: { onComplete: () => void }) => {
                         Think Silicon. Think SSCS
                     </span>
                 </motion.div>
+
+                {/* Boot log: each line types out, then reports ok */}
+                <div className="absolute -bottom-36 left-1/2 -translate-x-1/2 w-max space-y-1 font-mono text-[10px] md:text-[11px] text-muted-foreground/70">
+                    {BOOT_LINES.map((line, i) => (
+                        <div key={line} className="flex gap-2">
+                            <motion.span
+                                initial={{ clipPath: 'inset(0 100% 0 0)' }}
+                                animate={{ clipPath: 'inset(0 0% 0 0)' }}
+                                transition={{ duration: 0.3, delay: 0.25 + i * 0.5, ease: 'linear' }}
+                            >
+                                <span className="text-primary/70">&gt;</span> {line}
+                            </motion.span>
+                            <motion.span
+                                className="text-emerald-400/80"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.1, delay: 0.6 + i * 0.5 }}
+                            >
+                                ok
+                            </motion.span>
+                        </div>
+                    ))}
+                </div>
             </motion.div>
         </motion.div>
     );
