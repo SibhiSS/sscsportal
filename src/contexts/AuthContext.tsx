@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
-import { User as SupabaseUser } from '@supabase/supabase-js';
+import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 type Role = 'super_admin' | 'admin' | 'member';
 
@@ -40,6 +40,9 @@ const DEV_ADMIN = {
   role: 'super_admin' as const,
 };
 
+/** sessionStorage key: the page to return to after the Google sign-in round trip. */
+export const AFTER_LOGIN_KEY = 'sscs_after_login';
+
 // Create context
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -60,7 +63,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Monitor Supabase Auth State
   useEffect(() => {
-    const validateAndSetUser = async (session: any) => {
+    const validateAndSetUser = async (session: Session | null) => {
+      try {
+        await resolveUser(session);
+      } catch {
+        console.error('[Auth] Could not resolve the signed-in user.');
+        setUser(null);
+      } finally {
+        // Whatever happened, stop "loading": a stuck flag leaves /admin on a blank screen.
+        setLoading(false);
+      }
+    };
+
+    const resolveUser = async (session: Session | null) => {
       if (import.meta.env.DEV && localStorage.getItem('sscs_local_bypass') === 'true') {
         setUser(DEV_ADMIN);
         setLoading(false);
@@ -114,7 +129,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUser(null);
       }
-      setLoading(false);
     };
 
     // Check active sessions and sets the user
@@ -137,12 +151,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
       .catch(() => clearStaleSession());
 
-    // Listen for changes on auth state (logged in, signed out, etc.)
+    // Listen for changes on auth state (logged in, signed out, etc.).
+    // The role lookup is another Supabase call, and awaiting one inside this callback can
+    // deadlock supabase-js, so it runs on the next tick instead.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      validateAndSetUser(session);
+      setTimeout(() => validateAndSetUser(session), 0);
     });
 
-    return () => subscription.unsubscribe();
+    // Last resort: never sit on the loading screen for more than a few seconds.
+    const giveUp = window.setTimeout(() => setLoading(false), 10000);
+
+    return () => {
+      subscription.unsubscribe();
+      window.clearTimeout(giveUp);
+    };
   }, []);
 
   const mapSupabaseUser = (sbUser: SupabaseUser): User => {
@@ -155,8 +177,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signInWithGoogle = async () => {
-    setLoading(true);
     setError(null);
+    // Come back to this page after Google (e.g. /admin), not just the home page.
+    // Stored here rather than in redirectTo, which Supabase only honours for allow-listed URLs.
+    try { sessionStorage.setItem(AFTER_LOGIN_KEY, window.location.pathname + window.location.search); } catch { /* storage blocked */ }
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -172,7 +196,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // FIX #13: Use generic message to prevent auth error enumeration.
       console.error('[Auth] Sign-in failed. Cause suppressed for security.');
       setError('Sign in failed. Please use your VIT email address and try again.');
-      setLoading(false);
     }
   };
 

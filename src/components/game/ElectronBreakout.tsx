@@ -12,24 +12,37 @@ import { drawBinary, drawTile, tileLayout, TILE_ROWS, type TileLayout } from './
  * the wall can never be cleared. Every 25 hits (then every 50) without a miss
  * sets off FEVER MODE.
  *
+ * Power-ups float up from broken tiles; catch them with the gate. MULTI splits
+ * every electron into three, and stacks (x3, x9, x27...). PIERCE smashes straight
+ * through tiles, BLAST blows a hole in the wall under the gate, 2x doubles points.
+ *
  * Controls: pointer / touch drag, or ←/→ (A/D). Space launches and pauses,
  * Esc quits. Pauses itself when scrolled away or the tab is hidden.
  */
 
 type Phase = 'ready' | 'playing' | 'paused';
-type PowerKind = 'wide' | 'laser' | 'multi';
+type PowerKind = 'wide' | 'laser' | 'multi' | 'pierce' | 'blast' | 'double';
 
-const POWER_LABEL: Record<PowerKind, string> = { wide: 'WIDE', laser: 'LASER', multi: 'MULTI' };
-const POWER_SECONDS: Record<PowerKind, number> = { wide: 9, laser: 5, multi: 7 };
-const POWER_KINDS: PowerKind[] = ['wide', 'laser', 'multi'];
-const POWER_DROP_CHANCE = 0.16;
+const POWER_LABEL: Record<PowerKind, string> = { wide: 'WIDE', laser: 'LASER', multi: 'MULTI', pierce: 'PIERCE', blast: 'BLAST', double: '2× POINTS' };
+/** The letter printed on each capsule, so you can see what's coming. */
+const POWER_GLYPH: Record<PowerKind, string> = { wide: 'W', laser: 'L', multi: '×3', pierce: 'P', blast: 'B', double: '2×' };
+// BLAST is instant, so it has no timer.
+const POWER_SECONDS: Record<PowerKind, number> = { wide: 9, laser: 5, multi: 8, pierce: 6, blast: 0, double: 10 };
+const POWER_KINDS: PowerKind[] = ['wide', 'laser', 'multi', 'pierce', 'blast', 'double'];
+// MULTI turns up most often: it's the one that stacks.
+const POWER_WEIGHTS: Record<PowerKind, number> = { wide: 2, laser: 2, multi: 3, pierce: 2, blast: 2, double: 2 };
+const POWER_DROP_CHANCE = 0.3;
+const POWER_DROUGHT = 5;     // seconds without a drop before the next broken tile is sure to drop one
+const MAX_CAPSULES = 4;      // on screen at once, so a 27-electron storm doesn't bury the gate
 
 // The site's crimson family, used everywhere colour shows up.
 const ACCENT = '#dc143c';
 const PALETTE = ['#dc143c', '#ff3b5c', '#ff6b81', '#ff8a65', '#ffb199', '#ff4d9a'];
 // Fever runs hotter: crimson through magenta, orange and gold.
 const FEVER_PALETTE = ['#ff1744', '#f50057', '#ff4081', '#ff6e40', '#ffab40', '#ffd166'];
-const POWER_COLOR: Record<PowerKind, string> = { wide: '#ff6b81', laser: '#dc143c', multi: '#ffb199' };
+const POWER_COLOR: Record<PowerKind, string> = {
+  wide: '#ff6b81', laser: '#dc143c', multi: '#ffb199', pierce: '#ff8a65', blast: '#ffd166', double: '#ff4d9a',
+};
 const TRAIL_COLOR = '#ff4d6d';
 
 const TILE_POINTS = 10;
@@ -38,7 +51,7 @@ const FEVER_EVERY = 50;
 const FEVER_SECONDS = 8;
 const FEVER_MULT = 3;
 const MIN_ALIVE = 0.35;      // the wall never drops below this share of tiles
-const MAX_BALLS = 6;
+const MULTI_SPLIT = 0.45;    // radians between an electron and each of its two copies
 const TRAIL = 18;
 const BEST_KEY = 'sscs-breakout-best';
 
@@ -54,6 +67,12 @@ const hexA = (hex: string, a: number) => {
   return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
 };
 const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)];
+const pickPower = (): PowerKind => {
+  const total = POWER_KINDS.reduce((n, k) => n + POWER_WEIGHTS[k], 0);
+  let roll = Math.random() * total;
+  for (const k of POWER_KINDS) { roll -= POWER_WEIGHTS[k]; if (roll < 0) return k; }
+  return 'multi';
+};
 /** Colour for a regrown tile: a crimson → coral sweep across the strip. */
 const sweepColor = (col: number, cols: number) => PALETTE[Math.min(4, Math.floor((col / Math.max(1, cols - 1)) * 4.999))];
 const praise = (combo: number) =>
@@ -109,7 +128,11 @@ const ElectronBreakout = ({ onScore, onCombo, onExit }: ElectronBreakoutProps) =
     let flash = 0;
     let flashColor = ACCENT;
     let beamTick = 0;
-    const timers: Record<PowerKind, number> = { wide: 0, laser: 0, multi: 0 };
+    let sinceDrop = 0;         // seconds since the last power-up dropped
+    let shedIn = 0;            // when MULTI ends, extra electrons pop one at a time
+    let shake = 0;             // seconds of screen shake left
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const timers: Record<PowerKind, number> = { wide: 0, laser: 0, multi: 0, pierce: 0, blast: 0, double: 0 };
     let tiles: Tile[] = [];
     let balls: Ball[] = [];
     let capsules: Capsule[] = [];
@@ -126,11 +149,27 @@ const ElectronBreakout = ({ onScore, onCombo, onExit }: ElectronBreakoutProps) =
       return timers.wide > 0 ? w * 1.6 : w;
     };
     const activeKinds = () => POWER_KINDS.filter(k => timers[k] > 0);
+    // Phones get fewer electrons: each one is drawn with glows and trails.
+    const maxBalls = () => (W < 600 ? 12 : 27);
     const colors = () => (fever > 0 ? FEVER_PALETTE : PALETTE);
     const newBall = (x: number, y: number, vx: number, vy: number): Ball =>
       ({ x, y, vx, vy, trail: [], hue: Math.floor(Math.random() * FEVER_PALETTE.length) });
-    /** One electron, plus two while Multi runs and one more during fever. */
-    const wantedBalls = () => Math.min(MAX_BALLS, 1 + (timers.multi > 0 ? 2 : 0) + (fever > 0 ? 1 : 0));
+    /** A copy of b, turned by `turn` radians. */
+    const cloneBall = (b: Ball, turn: number) => {
+      const c = Math.cos(turn), s = Math.sin(turn);
+      return newBall(b.x, b.y, b.vx * c - b.vy * s, b.vx * s + b.vy * c);
+    };
+    /** MULTI: every electron splits into three, up to the cap. Catching another one splits them all again. */
+    const splitBalls = () => {
+      const born: Ball[] = [];
+      for (const b of balls) {
+        for (const turn of [-MULTI_SPLIT, MULTI_SPLIT]) {
+          if (balls.length + born.length >= maxBalls()) break;
+          born.push(cloneBall(b, turn));
+        }
+      }
+      balls.push(...born);
+    };
 
     const buildWall = () => {
       tiles = [];
@@ -201,8 +240,10 @@ const ElectronBreakout = ({ onScore, onCombo, onExit }: ElectronBreakoutProps) =
       fever = FEVER_SECONDS;
       feverTitle = 1.8;
       flash = 1; flashColor = '#ff1744';
-      // A shockwave from every electron.
+      shake = Math.max(shake, 0.35);
+      // A shockwave from every electron, and one more electron for the duration.
       for (const b of balls) rings.push({ x: b.x, y: b.y, life: 1.2, max: Math.max(W, H), color: '#ffd166' });
+      if (balls.length < maxBalls()) balls.push(cloneBall(balls[0], MULTI_SPLIT));
     };
 
     /** Bring one broken tile back, never on top of an electron. Regrown tiles carry the sweep colour. */
@@ -224,17 +265,20 @@ const ElectronBreakout = ({ onScore, onCombo, onExit }: ElectronBreakoutProps) =
       while (tiles.filter(t => t.alive).length < floor && guard-- > 0) if (!regrowOne()) break;
     };
 
-    const breakTile = (t: Tile) => {
+    const breakTile = (t: Tile, canDrop = true) => {
       t.alive = false;
       t.bits = randomBits();
       const rc = tileRect(t);
       const cx = rc.x + rc.w / 2;
       spray(cx, rc.y + rc.h / 2, fever > 0 ? pick(FEVER_PALETTE) : t.tint ?? TRAIL_COLOR);
-      if (Math.random() < POWER_DROP_CHANCE) capsules.push({ x: cx, y: rc.y, kind: pick(POWER_KINDS) });
+      if (canDrop && capsules.length < MAX_CAPSULES && (Math.random() < POWER_DROP_CHANCE || sinceDrop > POWER_DROUGHT)) {
+        capsules.push({ x: cx, y: rc.y, kind: pickPower() });
+        sinceDrop = 0;
+      }
 
       setCombo(combo + 1);
       if (combo >= FEVER_COMBO && (combo - FEVER_COMBO) % FEVER_EVERY === 0) startFever();
-      const gained = TILE_POINTS * combo * (fever > 0 ? FEVER_MULT : 1);
+      const gained = TILE_POINTS * combo * (fever > 0 ? FEVER_MULT : 1) * (timers.double > 0 ? 2 : 1);
       addPoints(gained);
       const word = praise(combo);
       if (word) popup(cx, rc.y - 10, `+${gained} ${word}`, fever > 0 ? pick(FEVER_PALETTE) : '#ff6b81');
@@ -245,10 +289,32 @@ const ElectronBreakout = ({ onScore, onCombo, onExit }: ElectronBreakoutProps) =
       keepWallUp();
     };
 
+    /** BLAST: blow out every tile in the columns under the gate, with a shockwave. */
+    const blast = (x: number) => {
+      const reach = Math.max(tl.tileW * 1.6, 120);
+      const hit = tiles.filter(t => t.alive && Math.abs(tileRect(t).x + tl.tileW / 2 - x) <= reach);
+      // Drops are off for the blast itself, or one catch would shower the field.
+      for (const t of hit) breakTile(t, false);
+      rings.push({ x, y: tl.top, life: 1.2, max: Math.max(W, H) * 0.6, color: POWER_COLOR.blast });
+      shake = Math.max(shake, 0.45);
+      for (let i = 0; i < 4; i++) spray(x + (Math.random() - 0.5) * reach * 2, tl.top + 10, POWER_COLOR.blast, 14, 260);
+    };
+
     const activate = (kind: PowerKind) => {
-      timers[kind] = POWER_SECONDS[kind];
       flash = 0.9; flashColor = POWER_COLOR[kind];
       spray(paddle.cx, paddle.y, POWER_COLOR[kind], 18);
+      if (kind === 'blast') {
+        popup(paddle.cx, paddle.y + 44, POWER_LABEL.blast, POWER_COLOR.blast, true);
+        blast(paddle.cx);
+        return;
+      }
+      timers[kind] = POWER_SECONDS[kind];
+      if (kind === 'multi') {
+        splitBalls();
+        shake = Math.max(shake, 0.2);
+        popup(paddle.cx, paddle.y + 44, `MULTI ×${balls.length}`, POWER_COLOR.multi, balls.length >= 9);
+        return;
+      }
       popup(paddle.cx, paddle.y + 44, POWER_LABEL[kind], POWER_COLOR[kind]);
     };
 
@@ -304,6 +370,7 @@ const ElectronBreakout = ({ onScore, onCombo, onExit }: ElectronBreakoutProps) =
         const cy = Math.max(rc.y, Math.min(b.y, rc.y + rc.h));
         const dx = b.x - cx, dy = b.y - cy;
         if (dx * dx + dy * dy > r * r) continue;
+        if (timers.pierce > 0) { breakTile(t); continue; } // straight through, no bounce
         if (cx === b.x) {
           const below = b.y > rc.y + rc.h / 2;
           b.vy = below ? Math.abs(b.vy) : -Math.abs(b.vy);
@@ -348,19 +415,22 @@ const ElectronBreakout = ({ onScore, onCombo, onExit }: ElectronBreakoutProps) =
       if (state !== 'playing') return;
 
       flash = Math.max(0, flash - dt * 1.4);
+      shake = Math.max(0, shake - dt);
+      sinceDrop += dt;
       fever = Math.max(0, fever - dt);
       feverTitle = Math.max(0, feverTitle - dt);
       for (const k of POWER_KINDS) timers[k] = Math.max(0, timers[k] - dt);
 
-      // Electron count follows Multi and fever: add copies of the first, drop extras when they end.
-      const want = wantedBalls();
-      while (balls.length < want) {
-        const src = balls[0];
-        const turn = (balls.length % 2 ? -1 : 1) * 0.5;
-        const c = Math.cos(turn), s = Math.sin(turn);
-        balls.push(newBall(src.x, src.y, src.vx * c - src.vy * s, src.vx * s + src.vy * c));
+      // Once MULTI runs out, the extra electrons pop one at a time down to one (two during fever).
+      const floor = fever > 0 ? 2 : 1;
+      if (timers.multi <= 0 && balls.length > floor) {
+        shedIn -= dt;
+        if (shedIn <= 0) {
+          shedIn = 0.12;
+          const b = balls.pop()!;
+          spray(b.x, b.y, POWER_COLOR.multi, 8, 0);
+        }
       }
-      if (balls.length > want) balls = balls.slice(0, want);
 
       // Steady regrowth on top of the floor; quicker during fever so there's always something to hit.
       regrowIn -= dt;
@@ -425,11 +495,16 @@ const ElectronBreakout = ({ onScore, onCombo, onExit }: ElectronBreakoutProps) =
     };
 
     const ballTrailColor = (b: Ball, i: number) =>
-      fever > 0 ? FEVER_PALETTE[(b.hue + Math.floor(clock * 10) + i) % FEVER_PALETTE.length] : TRAIL_COLOR;
+      fever > 0 ? FEVER_PALETTE[(b.hue + Math.floor(clock * 10) + i) % FEVER_PALETTE.length]
+      : timers.pierce > 0 ? POWER_COLOR.pierce : TRAIL_COLOR;
 
     const draw = () => {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
+      if (shake > 0 && !reduceMotion) {
+        const k = Math.min(1, shake / 0.3) * (W < 600 ? 5 : 9);
+        ctx.translate((Math.random() - 0.5) * k, (Math.random() - 0.5) * k);
+      }
 
       // ---- the room lights up: a soft red edge glow while playing; in fever, orbiting heat ----
       if (state !== 'ready') {
@@ -512,13 +587,19 @@ const ElectronBreakout = ({ onScore, onCombo, onExit }: ElectronBreakoutProps) =
       }
       ctx.globalAlpha = 1;
 
-      // Power-up bars
+      // Power-up capsules, each with its letter, pulsing so they catch the eye
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 11px ui-monospace, Menlo, Consolas, monospace';
       for (const c of capsules) {
         const col = POWER_COLOR[c.kind];
-        ctx.shadowColor = col; ctx.shadowBlur = 16;
+        const pulse = 1 + 0.08 * Math.sin(clock * 12 + c.x);
+        const w = 40 * pulse, h = 16 * pulse;
+        ctx.shadowColor = col; ctx.shadowBlur = 18;
         ctx.fillStyle = col;
-        ctx.fillRect(c.x - 16, c.y - 5, 32, 10);
+        ctx.beginPath(); ctx.roundRect(c.x - w / 2, c.y - h / 2, w, h, h / 2); ctx.fill();
         ctx.shadowBlur = 0;
+        ctx.fillStyle = '#140308';
+        ctx.fillText(POWER_GLYPH[c.kind], c.x, c.y + 0.5);
       }
 
       // Gate: a bold, glowing bar. Red under the laser, rose when wide, hot colours in fever.
@@ -609,7 +690,9 @@ const ElectronBreakout = ({ onScore, onCombo, onExit }: ElectronBreakoutProps) =
       ctx.font = 'bold 10px ui-monospace, Menlo, Consolas, monospace';
       ctx.textAlign = 'left';
       let lx = paddle.cx - pw / 2;
-      const labels = [...activeKinds().map(k => ({ text: `${POWER_LABEL[k]} ${timers[k].toFixed(1)}s`, color: POWER_COLOR[k] })),
+      const labels = [...activeKinds().map(k => ({
+        text: `${k === 'multi' ? `MULTI ×${balls.length}` : POWER_LABEL[k]} ${timers[k].toFixed(1)}s`, color: POWER_COLOR[k],
+      })),
         ...(fever > 0 ? [{ text: `FEVER ${fever.toFixed(1)}s`, color: pick(FEVER_PALETTE) }] : [])];
       for (const l of labels) {
         ctx.fillStyle = l.color;

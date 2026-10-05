@@ -1,5 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { AFTER_LOGIN_KEY, AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/sonner';
 import Index from '@/pages/Index';
 import Team from '@/pages/Team';
@@ -11,7 +11,7 @@ import NotFound from '@/pages/NotFound';
 import Me from '@/pages/Me';
 import './App.css';
 
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StartupPreloader from '@/components/ui/StartupPreloader';
 
@@ -49,9 +49,30 @@ function SiteCursor() {
   return isAdminPath(pathname) ? null : <CustomCursor />;
 }
 
+/** Google sends everyone back to the home page; this takes them on to where they signed in from (e.g. /admin). */
+function ReturnAfterLogin() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (!user) return;
+    let to: string | null = null;
+    try { to = sessionStorage.getItem(AFTER_LOGIN_KEY); sessionStorage.removeItem(AFTER_LOGIN_KEY); } catch { /* storage blocked */ }
+    // Same-site paths only.
+    if (to && to.startsWith('/') && !to.startsWith('//') && to !== pathname) navigate(to, { replace: true });
+    // Only when someone signs in, not on every page change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+  return null;
+}
+
+const returningToAdmin = () => {
+  try { return isAdminPath(sessionStorage.getItem(AFTER_LOGIN_KEY) ?? ''); } catch { return false; }
+};
+
 function App() {
-  // The intro animation is for visitors, not for admins opening the panel.
-  const [showPreloader, setShowPreloader] = useState(() => !isAdminPath(window.location.pathname));
+  // The intro animation is for visitors, not for admins opening the panel (or coming back to it from Google).
+  const [showPreloader, setShowPreloader] = useState(() => !isAdminPath(window.location.pathname) && !returningToAdmin());
 
   return (
     <AuthProvider>
@@ -69,6 +90,7 @@ function App() {
             <SpeedInsights />
             <Router>
               <SiteCursor />
+              <ReturnAfterLogin />
               <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center"><LogoSpinner size="md" /></div>}>
               <Routes>
                 <Route path="/" element={<Index />} />

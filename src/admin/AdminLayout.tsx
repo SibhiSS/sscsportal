@@ -6,6 +6,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/sonner';
 import TechGridBackground from '@/components/ui/TechGridBackground';
+import LogoSpinner from '@/components/ui/LogoSpinner';
 import { AdminDataProvider, useAdminData } from './AdminData';
 import { findContributionByCode } from './api';
 import NotificationBell from './NotificationBell';
@@ -39,7 +40,17 @@ function useAdminBodyClass() {
 
 function Gate({ children }: { children: React.ReactNode }) {
   const { user, loading, error, signInWithGoogle, loginAsLocalAdmin, logout } = useAuth();
-  if (loading) return <div className="adm center-card"><TechGridBackground /><div className="muted">Loading…</div></div>;
+  if (loading) {
+    return (
+      <div className="adm center-card">
+        <TechGridBackground />
+        <div className="stack" style={{ alignItems: 'center', gap: 14 }}>
+          <LogoSpinner size="md" />
+          <div className="muted">Checking your sign-in…</div>
+        </div>
+      </div>
+    );
+  }
   if (!user) {
     return (
       <div className="adm center-card">
@@ -186,6 +197,16 @@ function Shell() {
   const { pathname } = useLocation();
   useEffect(() => setNavOpen(false), [pathname]);
 
+  // Rail tooltips are drawn outside the rail, so they still show when its icons scroll.
+  const [tip, setTip] = useState<{ label: string; x: number; y: number } | null>(null);
+  const tipProps = (label: string) => ({
+    onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
+      const r = e.currentTarget.getBoundingClientRect();
+      setTip({ label, x: r.right + 14, y: r.top + r.height / 2 });
+    },
+    onMouseLeave: () => setTip(null),
+  });
+
   return (
     <div className={`adm adm-app${navOpen ? ' nav-open' : ''}`}>
       <TechGridBackground />
@@ -195,10 +216,12 @@ function Shell() {
           <img src="/logo.png" alt="" />
           <div className="lbl">IEEE <span>SSCS</span></div>
         </Link>
+        {/* Super admins get more links than a short screen can fit; this part scrolls, the brand and footer stay put. */}
+        <div className="adm-side-scroll" onScroll={() => setTip(null)}>
         <div className="adm-nav-label">Menu</div>
         <nav className="adm-nav">
           {NAV.filter(n => isSuper || !n.superOnly).map(({ to, label, icon: Icon, end }) => (
-            <NavLink key={to} to={to} end={end} data-tip={label} aria-label={label} className={({ isActive }) => (isActive ? 'active' : '')}>
+            <NavLink key={to} to={to} end={end} aria-label={label} {...tipProps(label)} className={({ isActive }) => (isActive ? 'active' : '')}>
               <span className="ic"><Icon /></span><span className="lbl">{label}</span>
               {to === '/admin/approvals' && pendingCount > 0 && <span className="adm-badge" aria-label={`${pendingCount} waiting`}>{pendingCount}</span>}
               {to === '/admin/proposals' && isSuper && waitingProposals > 0 && <span className="adm-badge" aria-label={`${waitingProposals} waiting`}>{waitingProposals}</span>}
@@ -210,13 +233,14 @@ function Shell() {
             <div className="adm-nav-label">Account</div>
             <nav className="adm-nav">
               {ACCOUNT_NAV.filter(n => isSuper || !n.superOnly).map(({ to, label, icon: Icon }) => (
-                <NavLink key={to} to={to} data-tip={label} aria-label={label} className={({ isActive }) => (isActive ? 'active' : '')}>
+                <NavLink key={to} to={to} aria-label={label} {...tipProps(label)} className={({ isActive }) => (isActive ? 'active' : '')}>
                   <span className="ic"><Icon /></span><span className="lbl">{label}</span>
                 </NavLink>
               ))}
             </nav>
           </>
         )}
+        </div>
         <div className="adm-side-foot">
           <div className="avatar" title={user?.displayName || user?.email || ''}>{initials(user?.displayName || user?.email || '')}</div>
           <div className="who lbl">
@@ -226,6 +250,7 @@ function Shell() {
           <button className="circ" onClick={logout} title="Sign out" aria-label="Sign out"><LogOut size={15} /></button>
         </div>
       </aside>
+      {tip && <div className="adm-rail-tip" style={{ left: tip.x, top: tip.y }} role="tooltip">{tip.label}</div>}
 
       <div className="adm-main">
         <header className="adm-top">
