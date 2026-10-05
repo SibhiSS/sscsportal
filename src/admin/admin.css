@@ -479,6 +479,9 @@ a.tile:hover { background: var(--cell); }
 .adm { background: transparent; position: relative; }
 .adm-app, .center-card { position: relative; z-index: 1; }
 .adm-app > .fixed, .center-card > .fixed { z-index: 0; }
+/* The background above is positioned, so it paints over anything that isn't:
+   lift the sign-in box / spinner above it, or the gate shows only the background. */
+.center-card > :not(.fixed) { position: relative; z-index: 1; }
 .adm-side, .adm-main { position: relative; z-index: 1; }
 
 .adm .board, .adm .panel, .adm .tile, .adm .profile, .adm .check-card, .adm .subcard,
