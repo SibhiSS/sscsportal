@@ -118,3 +118,22 @@ export interface EventActivity {
   action: string;
   created_at: string;
 }
+
+/** A club meet; attending earns 1 point online, 2 offline. */
+export interface ClubMeet {
+  id: string;
+  title: string;
+  meet_date: string;
+  is_online: boolean;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface MeetAttendance {
+  id: string;
+  meet_id: string;
+  member_id: string;
+  marked_by: string | null;
+  created_at: string;
+}

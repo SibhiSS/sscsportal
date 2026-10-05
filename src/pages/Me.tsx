@@ -564,9 +564,9 @@ const Me = () => {
       )}
 
       <section className="space-y-4 pb-8">
-        <h2 className="text-xl font-bold">Events</h2>
+        <h2 className="text-xl font-bold">Events & club meets</h2>
         {attendance.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No attendance marked yet. Admins mark it after each event.</p>
+          <p className="text-muted-foreground text-sm">No attendance marked yet. Admins mark it after each event or club meet.</p>
         ) : (
           <div className="space-y-3">
             {attendance.map(a => (

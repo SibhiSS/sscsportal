@@ -822,3 +822,28 @@ a.tile:hover { background: var(--cell); }
 .act-log .what { color: var(--text-soft); }
 .act-log time { color: var(--text-dim); font-size: 12px; white-space: nowrap; }
 @media (max-width: 640px) { .act-log li { grid-template-columns: 1fr; gap: 2px; } }
+
+/* Club meets */
+.seg { display: inline-flex; padding: 3px; gap: 3px; border-radius: 12px; border: 1px solid var(--line-2); background: rgba(0, 0, 0, .2); }
+.seg button { border: none; background: none; color: var(--text-soft); font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 9px; white-space: nowrap; }
+.seg button.on { background: var(--accent); color: #fff; }
+.fld .lbl { font-size: 12px; color: var(--text-soft); font-weight: 600; }
+.mt-form { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto auto; gap: 14px; align-items: end; }
+.mt-list { display: flex; flex-direction: column; gap: 10px; }
+.mt-card { border: 1px solid var(--line); border-radius: 16px; background: var(--cell); }
+.mt-card.open { border-color: var(--line-2); }
+.mt-head { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 14px; border: none; background: none; color: inherit; text-align: left; }
+.mt-head .chev { color: var(--text-dim); transition: transform .15s; }
+.mt-card.open .mt-head .chev { transform: rotate(180deg); }
+.mt-date { width: 48px; flex: none; border-radius: 12px; background: rgba(255, 59, 92, .12); display: flex; flex-direction: column; align-items: center; padding: 5px 0; }
+.mt-date b { font-size: 18px; line-height: 1.1; }
+.mt-date span { font-size: 10.5px; color: var(--text-soft); text-transform: uppercase; }
+.mt-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.mt-meta b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mt-meta .muted { font-size: 12.5px; }
+.mt-count { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text-soft); min-width: 40px; }
+.mt-body { padding: 0 14px 14px; border-top: 1px solid var(--line); padding-top: 14px; }
+.mt-edit { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+.mt-edit input { width: auto; flex: 1 1 180px; }
+.mt-edit input[type=date] { flex: 0 1 170px; }
+@media (max-width: 760px) { .mt-form { grid-template-columns: 1fr; } .mt-head .tag { display: none; } }

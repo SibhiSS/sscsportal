@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type {
-  AdminContribution, AttendanceRow, BucketUsage, BudgetItem, CalendarEntry, EventActivity, ClubEvent, DriveFile, DriveFolder, RosterMember, Venue, VenueBooking,
+  AdminContribution, AttendanceRow, BucketUsage, BudgetItem, CalendarEntry, ClubMeet, EventActivity, MeetAttendance, ClubEvent, DriveFile, DriveFolder, RosterMember, Venue, VenueBooking,
 } from '@/types/admin';
 import type { ContributionType, EventProposal, LeaderboardRow, TeamMember } from '@/types/club';
 import { prepareProofImage, SITE_MEDIA_BUCKET } from '@/lib/club';
@@ -339,6 +339,29 @@ export const deleteBudgetItem = async (id: string) =>
 export const fetchEventActivity = async (eventId: string) =>
   check(await supabase.from('event_activity').select('*').eq('event_id', eventId)
     .order('created_at', { ascending: false }).limit(200)) as EventActivity[];
+
+// ---- club meets (1 point online, 2 offline) -------------------------------------------
+
+export const meetPoints = (online: boolean) => (online ? 1 : 2);
+
+export const fetchMeets = async () =>
+  check(await supabase.from('club_meets').select('*').order('meet_date', { ascending: false }).order('created_at', { ascending: false })) as ClubMeet[];
+
+export const fetchMeetAttendance = async () =>
+  fetchAll<MeetAttendance>((from, to) => supabase.from('meet_attendance').select('*').range(from, to));
+
+export const createMeet = async (m: Pick<ClubMeet, 'title' | 'meet_date' | 'is_online'> & { created_by: string | null }) =>
+  check(await supabase.from('club_meets').insert(m).select().single()) as ClubMeet;
+
+export const updateMeet = async (id: string, p: Partial<Pick<ClubMeet, 'title' | 'meet_date' | 'is_online' | 'notes'>>) =>
+  check(await supabase.from('club_meets').update(p).eq('id', id).select().single()) as ClubMeet;
+
+export const deleteMeet = async (id: string) => check(await supabase.from('club_meets').delete().eq('id', id));
+
+export const markMeet = async (meet_id: string, member_id: string, marked_by: string | null) =>
+  check(await supabase.from('meet_attendance').insert({ meet_id, member_id, marked_by }).select().single()) as MeetAttendance;
+
+export const unmarkMeet = async (id: string) => check(await supabase.from('meet_attendance').delete().eq('id', id));
 
 // ---- approvals ---------------------------------------------------------------------
 
