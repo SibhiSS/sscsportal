@@ -16,6 +16,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import StartupPreloader from '@/components/ui/StartupPreloader';
 
 import CustomCursor from '@/components/ui/CustomCursor';
+import BroadcastCenter from '@/components/broadcasts/BroadcastCenter';
+import { BroadcastProvider } from '@/lib/broadcasts';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 
 import { Analytics } from '@vercel/analytics/react';
@@ -27,6 +29,7 @@ const ProposalsPage = lazy(() => import('@/admin/pages/ProposalsPage'));
 const ProposalDetail = lazy(() => import('@/admin/pages/ProposalDetail'));
 const DrivePage = lazy(() => import('@/admin/pages/DrivePage'));
 const MeetsPage = lazy(() => import('@/admin/pages/MeetsPage'));
+const BroadcastsPage = lazy(() => import('@/admin/pages/BroadcastsPage'));
 const AdminLayout = lazy(() => import('@/admin/AdminLayout'));
 const Overview = lazy(() => import('@/admin/pages/Overview'));
 const CalendarPage = lazy(() => import('@/admin/pages/CalendarPage'));
@@ -76,6 +79,7 @@ function App() {
 
   return (
     <AuthProvider>
+      <BroadcastProvider>
       <AnimatePresence mode="wait">
         {showPreloader ? (
           <StartupPreloader key="preloader" onComplete={() => setShowPreloader(false)} />
@@ -113,6 +117,7 @@ function App() {
                   <Route path="proposals/:id" element={<ProposalDetail />} />
                   <Route path="drive" element={<DrivePage />} />
                   <Route path="meets" element={<MeetsPage />} />
+                  <Route path="broadcasts" element={<SuperAdminOnly><BroadcastsPage /></SuperAdminOnly>} />
                   <Route path="website" element={<SuperAdminOnly><WebsitePage /></SuperAdminOnly>} />
                   <Route path="team" element={<SuperAdminOnly><TeamPage /></SuperAdminOnly>} />
                   <Route path="settings" element={<SuperAdminOnly><SettingsPage /></SuperAdminOnly>} />
@@ -121,10 +126,12 @@ function App() {
               </Routes>
               </Suspense>
               <Toaster />
+              <BroadcastCenter />
             </Router>
           </motion.div>
         )}
       </AnimatePresence>
+      </BroadcastProvider>
     </AuthProvider>
   );
 }

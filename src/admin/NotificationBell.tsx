@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, CheckSquare, Lightbulb, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { Bell, CheckSquare, Lightbulb, Megaphone, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBroadcasts } from '@/lib/broadcasts';
 import { useAdminData } from './AdminData';
 import { useIsSuperAdmin } from './SuperAdminOnly';
 
@@ -11,7 +12,7 @@ const REFRESH_MS = 60_000;
 const readSeen = () => { try { return localStorage.getItem(SEEN_KEY) ?? ''; } catch { return ''; } };
 const writeSeen = (v: string) => { try { localStorage.setItem(SEEN_KEY, v); } catch { /* private mode */ } };
 
-type Note = { key: string; to: string; icon: typeof Bell; text: string; sub?: string; unread: boolean };
+type Note = { key: string; to: string; icon: typeof Bell; text: string; sub?: string; unread: boolean; onOpen?: () => void };
 
 /**
  * The bell in the admin top bar. Each role sees what it can act on:
@@ -22,6 +23,7 @@ export default function NotificationBell() {
   const { user } = useAuth();
   const isSuper = useIsSuperAdmin();
   const { pendingCount, proposals, reload } = useAdminData();
+  const broadcasts = useBroadcasts();
   const [open, setOpen] = useState(false);
   const [seen, setSeen] = useState(readSeen);
   const ref = useRef<HTMLDivElement>(null);
@@ -43,6 +45,13 @@ export default function NotificationBell() {
 
   const notes = useMemo<Note[]>(() => {
     const out: Note[] = [];
+    // Messages from super admins, newest first; unread until opened.
+    for (const b of broadcasts.items.slice(0, 5)) {
+      out.push({
+        key: `b:${b.id}`, to: '', icon: Megaphone, unread: !b.seen_at,
+        text: b.title, sub: 'Message from the board', onOpen: () => broadcasts.open(b.id),
+      });
+    }
     if (isSuper) {
       const waiting = proposals.filter(p => p.status === 'pending');
       for (const p of waiting.slice(0, 5)) {
@@ -70,7 +79,7 @@ export default function NotificationBell() {
       });
     }
     return out.slice(0, 12);
-  }, [isSuper, proposals, pendingCount, user?.email, seen]);
+  }, [isSuper, proposals, pendingCount, user?.email, seen, broadcasts]);
 
   const unread = notes.filter(n => n.unread).length;
 
@@ -91,7 +100,12 @@ export default function NotificationBell() {
       {open && (
         <div className="adm-bell-pop" role="menu">
           <div className="adm-bell-head">Notifications</div>
-          {notes.length ? notes.map(n => (
+          {notes.length ? notes.map(n => n.onOpen ? (
+            <button key={n.key} type="button" className={`adm-note${n.unread ? ' unread' : ''}`} onClick={() => { setOpen(false); n.onOpen!(); }} role="menuitem">
+              <span className="ic"><n.icon size={15} /></span>
+              <span className="tx"><b>{n.text}</b>{n.sub && <small>{n.sub}</small>}</span>
+            </button>
+          ) : (
             <Link key={n.key} to={n.to} className={`adm-note${n.unread ? ' unread' : ''}`} onClick={() => setOpen(false)} role="menuitem">
               <span className="ic"><n.icon size={15} /></span>
               <span className="tx"><b>{n.text}</b>{n.sub && <small>{n.sub}</small>}</span>

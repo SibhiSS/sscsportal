@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  CalendarDays, CheckSquare, Coffee, Globe, HardDrive, LayoutDashboard, Lightbulb, LogIn, LogOut, MapPin, Menu, Search, Settings, ShieldAlert, Ticket, UserSquare, Users,
+  CalendarDays, CheckSquare, Coffee, Globe, HardDrive, LayoutDashboard, Lightbulb, LogIn, LogOut, MapPin, Megaphone, Menu, Search, Settings, ShieldAlert, Ticket, UserSquare, Users,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/sonner';
@@ -23,6 +23,7 @@ const NAV = [
   { to: '/admin/meets', label: 'Club meets', icon: Coffee },
   { to: '/admin/proposals', label: 'Proposals', icon: Lightbulb },
   { to: '/admin/drive', label: 'Drive', icon: HardDrive },
+  { to: '/admin/broadcasts', label: 'Broadcasts', icon: Megaphone, superOnly: true },
   { to: '/admin/website', label: 'Website', icon: Globe, superOnly: true },
   { to: '/admin/team', label: 'Team', icon: UserSquare, superOnly: true },
 ];

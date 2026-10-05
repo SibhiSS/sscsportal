@@ -707,6 +707,7 @@ a.tile:hover { background: var(--cell); }
 .adm-bell-pop { position: absolute; right: 0; top: calc(100% + 10px); width: min(360px, calc(100vw - 32px)); max-height: 70vh; overflow: auto; z-index: 70; background: rgba(14, 14, 16, .97); border: 1px solid var(--line-2); border-radius: 16px; box-shadow: 0 24px 60px rgba(0, 0, 0, .6); padding: 6px; }
 .adm-bell-head { font-size: 12px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .08em; padding: 10px 12px 8px; }
 .adm-note { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; color: var(--text); text-decoration: none; font-size: 13px; }
+button.adm-note { width: 100%; border: none; background: none; text-align: left; cursor: pointer; font-family: inherit; }
 .adm-note:hover { background: rgba(255, 255, 255, .05); }
 .adm-note .ic { width: 28px; height: 28px; flex: none; border-radius: 9px; display: grid; place-items: center; background: rgba(255, 255, 255, .06); color: var(--text-soft); }
 .adm-note.unread .ic { background: var(--accent); color: #fff; }
@@ -869,3 +870,75 @@ a.tile:hover { background: var(--cell); }
 .mt-edit input { width: auto; flex: 1 1 180px; }
 .mt-edit input[type=date] { flex: 0 1 170px; }
 @media (max-width: 760px) { .mt-form { grid-template-columns: 1fr; } .mt-head .tag { display: none; } }
+
+/* ---------------------------------------------------------------- broadcasts */
+.bc-compose { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 26px; align-items: start; }
+.bc-form { display: flex; flex-direction: column; gap: 16px; }
+.bc-form .ph { margin: 0; }
+.bc-count { float: right; color: var(--text-dim); font-weight: 500; }
+.bc-seg-wrap { flex-wrap: wrap; }
+.seg button.on.bc-seg-info { background: #2b8f80; }
+.seg button.on.bc-seg-important { background: #b8901f; }
+.bc-check { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text-soft); cursor: pointer; }
+.bc-check input { accent-color: var(--accent); width: 15px; height: 15px; }
+.bc-when { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.bc-form .primary { display: inline-flex; align-items: center; gap: 7px; }
+
+.bc-preview { position: sticky; top: 16px; }
+.bc-preview-lbl { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+.bc-preview-stage {
+  border-radius: 18px; border: 1px dashed var(--line-2); padding: 22px 16px; min-height: 220px;
+  background: radial-gradient(ellipse at center, rgba(60, 6, 18, .45), rgba(0, 0, 0, .55));
+  display: flex; align-items: center; justify-content: center;
+}
+.bc-preview-banner { align-items: flex-end; }
+.bc-preview-toast { align-items: flex-end; justify-content: flex-end; }
+.bc-pv-banner, .bc-pv-toast { display: flex; flex-direction: column; gap: 3px; min-width: 0; font-size: 13px; }
+.bc-pv-banner {
+  width: 100%; padding: 12px 14px; border-radius: 14px; background: rgba(14, 12, 8, .9);
+  border: 1px solid rgba(242, 201, 76, .35); box-shadow: 0 0 22px rgba(242, 201, 76, .12);
+}
+.bc-pv-toast { width: min(100%, 300px); padding: 12px 14px; border-radius: 10px; background: #0a0a0a; border: 1px solid var(--line-2); }
+.bc-pv-banner b, .bc-pv-toast b { font-size: 13.5px; overflow-wrap: anywhere; }
+.bc-pv-banner span, .bc-pv-toast span { color: var(--text-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc-pv-toast span { white-space: normal; }
+
+.bc-list { display: flex; flex-direction: column; gap: 10px; }
+.bc-item { border: 1px solid var(--line); border-radius: 16px; background: rgba(0, 0, 0, .18); overflow: hidden; }
+.bc-item.open { border-color: var(--line-2); }
+.bc-item-head { width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: none; background: none; text-align: left; cursor: pointer; }
+.bc-item-head:hover { background: rgba(255, 255, 255, .03); }
+.bc-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.bc-dot-info { background: #5cc8b6; } .bc-dot-important { background: #f2c94c; }
+.bc-dot-critical { background: #ff3b5c; box-shadow: 0 0 10px #ff3b5c; }
+.bc-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.bc-item-main b { font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc-item-main small, .bc-reach small { color: var(--text-soft); font-size: 12px; }
+.bc-reach { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; width: 110px; flex: none; }
+.bc-bar { width: 100%; height: 5px; border-radius: 99px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+.bc-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), #ff6a85); transition: width .4s; }
+.bc-chev { color: var(--text-dim); transition: transform .2s; flex: none; }
+.bc-item.open .bc-chev { transform: rotate(180deg); }
+.bc-item-body { padding: 4px 16px 16px 39px; }
+.bc-item-text { color: var(--text-soft); font-size: 13.5px; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }
+.bc-item-text a { color: var(--accent); }
+.bc-receipts { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.bc-receipts > div { max-height: 280px; overflow-y: auto; }
+.bc-rc-head { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
+.bc-person { display: flex; align-items: center; gap: 9px; padding: 5px 0; font-size: 13px; }
+.bc-person.dim { opacity: .65; }
+.bc-av { width: 24px; height: 24px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 10px; font-weight: 700; background: rgba(255, 255, 255, .08); }
+.bc-pn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc-person small { color: var(--text-dim); font-size: 11.5px; white-space: nowrap; }
+.bc-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+
+@media (max-width: 900px) {
+  .bc-compose { grid-template-columns: 1fr; }
+  .bc-preview { position: static; }
+}
+@media (max-width: 600px) {
+  .bc-when, .bc-receipts { grid-template-columns: 1fr; }
+  .bc-reach { width: 64px; }
+  .bc-item-head .tag { display: none; }
+  .bc-item-body { padding-left: 16px; }
+}

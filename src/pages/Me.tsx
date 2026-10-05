@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, Award, CalendarCheck, Clock, ExternalLink, ImagePlus, LogIn, LogOut, Search, Send, Trash2,
+  ArrowLeft, Award, CalendarCheck, Clock, ExternalLink, ImagePlus, LogIn, LogOut, Megaphone, Search, Send, Trash2,
   Trophy, UserX, X,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { PRIORITY_LABELS, useBroadcasts } from '@/lib/broadcasts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -58,6 +59,43 @@ const isHttpUrl = (value: string) => {
     return false;
   }
 };
+
+const PRIORITY_DOT: Record<keyof typeof PRIORITY_LABELS, string> = {
+  critical: 'bg-red-500 shadow-[0_0_10px_rgb(239_68_68)]',
+  important: 'bg-amber-400',
+  info: 'bg-teal-400',
+};
+
+/** Messages from the board that are live right now; unread ones carry a dot. */
+function Messages() {
+  const { items, open } = useBroadcasts();
+  if (!items.length) return null;
+  const unread = items.filter(b => !b.seen_at).length;
+  return (
+    <HolographicCard className="p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Megaphone className="w-4 h-4 text-primary" />
+        <h2 className="text-lg font-bold">Messages from the board</h2>
+        {unread > 0 && <span className="ml-auto text-xs font-bold text-primary">{unread} new</span>}
+      </div>
+      <ul className="divide-y divide-white/5">
+        {items.map(b => (
+          <li key={b.id}>
+            <button type="button" onClick={() => open(b.id)}
+              className="w-full flex items-center gap-3 py-3 text-left group">
+              <span className={`w-2 h-2 rounded-full flex-none ${PRIORITY_DOT[b.priority]}`} aria-label={PRIORITY_LABELS[b.priority]} />
+              <span className="flex-1 min-w-0">
+                <span className={`block truncate group-hover:text-primary transition-colors ${b.seen_at ? 'text-muted-foreground' : 'font-semibold'}`}>{b.title}</span>
+                {b.body && <span className="block truncate text-xs text-muted-foreground">{b.body}</span>}
+              </span>
+              <span className="text-xs text-muted-foreground flex-none">{formatDate(b.starts_at)}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </HolographicCard>
+  );
+}
 
 const Shell = ({ children }: { children: React.ReactNode }) => (
   <div className="min-h-screen bg-black text-foreground relative overflow-hidden">
@@ -359,6 +397,8 @@ const Me = () => {
             : 'Your membership is marked inactive, so you can’t submit new contributions. Your history is below.'}
         </HolographicCard>
       )}
+
+      <Messages />
 
       {/* Tabs: log something new, or look back at what was submitted */}
       {canEarn && (
