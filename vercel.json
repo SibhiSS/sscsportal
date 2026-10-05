@@ -1,6 +1,7 @@
 {
     "routes": [
         { "handle": "filesystem" },
+        { "src": "/assets/(.*)", "status": 404 },
         { "src": "/(.*)", "dest": "/", "status": 200 }
     ],
     "headers": [

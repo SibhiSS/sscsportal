@@ -11,13 +11,15 @@ import NotFound from '@/pages/NotFound';
 import Me from '@/pages/Me';
 import './App.css';
 
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StartupPreloader from '@/components/ui/StartupPreloader';
 
 import CustomCursor from '@/components/ui/CustomCursor';
 import BroadcastCenter from '@/components/broadcasts/BroadcastCenter';
 import { BroadcastProvider } from '@/lib/broadcasts';
+import { lazyPage } from '@/lib/lazyPage';
+import AppErrorBoundary from '@/components/AppErrorBoundary';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 
 import { Analytics } from '@vercel/analytics/react';
@@ -25,24 +27,24 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // The admin panel loads only when someone opens it, so visitors (most of them on
 // phones) don't download it with the public site.
-const ProposalsPage = lazy(() => import('@/admin/pages/ProposalsPage'));
-const ProposalDetail = lazy(() => import('@/admin/pages/ProposalDetail'));
-const DrivePage = lazy(() => import('@/admin/pages/DrivePage'));
-const MeetsPage = lazy(() => import('@/admin/pages/MeetsPage'));
-const BroadcastsPage = lazy(() => import('@/admin/pages/BroadcastsPage'));
-const AdminLayout = lazy(() => import('@/admin/AdminLayout'));
-const Overview = lazy(() => import('@/admin/pages/Overview'));
-const CalendarPage = lazy(() => import('@/admin/pages/CalendarPage'));
-const EventsPage = lazy(() => import('@/admin/pages/EventsPage'));
-const EventDetail = lazy(() => import('@/admin/pages/EventDetail'));
-const VenuesPage = lazy(() => import('@/admin/pages/VenuesPage'));
-const MembersPage = lazy(() => import('@/admin/pages/MembersPage'));
-const MemberCard = lazy(() => import('@/admin/pages/MemberCard'));
-const ApprovalsPage = lazy(() => import('@/admin/pages/ApprovalsPage'));
-const SettingsPage = lazy(() => import('@/admin/pages/SettingsPage'));
-const WebsitePage = lazy(() => import('@/admin/pages/WebsitePage'));
-const TeamPage = lazy(() => import('@/admin/pages/TeamPage'));
-const SuperAdminOnly = lazy(() => import('@/admin/SuperAdminOnly'));
+const ProposalsPage = lazyPage(() => import('@/admin/pages/ProposalsPage'));
+const ProposalDetail = lazyPage(() => import('@/admin/pages/ProposalDetail'));
+const DrivePage = lazyPage(() => import('@/admin/pages/DrivePage'));
+const MeetsPage = lazyPage(() => import('@/admin/pages/MeetsPage'));
+const BroadcastsPage = lazyPage(() => import('@/admin/pages/BroadcastsPage'));
+const AdminLayout = lazyPage(() => import('@/admin/AdminLayout'));
+const Overview = lazyPage(() => import('@/admin/pages/Overview'));
+const CalendarPage = lazyPage(() => import('@/admin/pages/CalendarPage'));
+const EventsPage = lazyPage(() => import('@/admin/pages/EventsPage'));
+const EventDetail = lazyPage(() => import('@/admin/pages/EventDetail'));
+const VenuesPage = lazyPage(() => import('@/admin/pages/VenuesPage'));
+const MembersPage = lazyPage(() => import('@/admin/pages/MembersPage'));
+const MemberCard = lazyPage(() => import('@/admin/pages/MemberCard'));
+const ApprovalsPage = lazyPage(() => import('@/admin/pages/ApprovalsPage'));
+const SettingsPage = lazyPage(() => import('@/admin/pages/SettingsPage'));
+const WebsitePage = lazyPage(() => import('@/admin/pages/WebsitePage'));
+const TeamPage = lazyPage(() => import('@/admin/pages/TeamPage'));
+const SuperAdminOnly = lazyPage(() => import('@/admin/SuperAdminOnly'));
 
 const isAdminPath = (path: string) => path === '/admin' || path.startsWith('/admin/');
 
@@ -78,6 +80,7 @@ function App() {
   const [showPreloader, setShowPreloader] = useState(() => !isAdminPath(window.location.pathname) && !returningToAdmin());
 
   return (
+    <AppErrorBoundary>
     <AuthProvider>
       <BroadcastProvider>
       <AnimatePresence mode="wait">
@@ -86,7 +89,9 @@ function App() {
         ) : (
           <motion.div
             key="main-content"
-            initial={{ opacity: 0 }}
+            // The admin panel appears at once: if this fade never ran (background
+            // tab, throttled frames) the sign-in box would sit invisible at opacity 0.
+            initial={isAdminPath(window.location.pathname) ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
@@ -133,6 +138,7 @@ function App() {
       </AnimatePresence>
       </BroadcastProvider>
     </AuthProvider>
+    </AppErrorBoundary>
   );
 }
 

@@ -21,12 +21,13 @@ interface ScrambleTextProps {
 const ScrambleText = ({ text, className = '', duration = 900, delay = 0 }: ScrambleTextProps) => {
   const reduceMotion = useReducedMotion();
   const ref = useRef<HTMLSpanElement>(null);
-  const [display, setDisplay] = useState(() =>
-    reduceMotion ? text : text.replace(/\S/g, randomGlyph),
-  );
+  // How many characters have locked in; the rest show noise.
+  const [locked, setLocked] = useState(() => (reduceMotion ? text.length : 0));
+  const [, setFrame] = useState(0);
 
   useEffect(() => {
-    if (reduceMotion) { setDisplay(text); return; }
+    if (reduceMotion) { setLocked(text.length); return; }
+    setLocked(0);
     const el = ref.current;
     if (!el) return;
 
@@ -36,14 +37,10 @@ const ScrambleText = ({ text, className = '', duration = 900, delay = 0 }: Scram
       const start = performance.now();
       const tick = (now: number) => {
         const progress = Math.min(1, (now - start) / duration);
-        const locked = Math.floor(progress * text.length);
-        setDisplay(
-          text
-            .split('')
-            .map((ch, i) => (i < locked || ch === ' ' ? ch : randomGlyph()))
-            .join(''),
-        );
+        setLocked(Math.floor(progress * text.length));
+        setFrame(f => f + 1); // fresh noise every frame
         if (progress < 1) frame = requestAnimationFrame(tick);
+        else setLocked(text.length);
       };
       frame = requestAnimationFrame(tick);
     };
@@ -62,15 +59,33 @@ const ScrambleText = ({ text, className = '', duration = 900, delay = 0 }: Scram
     };
   }, [text, duration, delay, reduceMotion]);
 
+  // The real text is always laid out, so the heading wraps exactly as it will
+  // when decoded and never jumps to an extra line. Each unlocked letter is made
+  // transparent and a noise glyph is drawn centred over its own slot. Words stay
+  // unbreakable, so a line only breaks at a space, as it does in the final text.
+  let i = 0;
+  const words = text.split(/(\s+)/).map((part, w) => {
+    if (/^\s+$/.test(part)) { i += part.length; return part; }
+    return (
+      <span key={w} className="whitespace-nowrap">
+        {part.split('').map(ch => {
+          const idx = i++;
+          if (idx < locked) return <span key={idx}>{ch}</span>;
+          return (
+            <span key={idx} className="relative">
+              <span className="text-transparent">{ch}</span>
+              <span className="absolute left-1/2 top-0 -translate-x-1/2">{randomGlyph()}</span>
+            </span>
+          );
+        })}
+      </span>
+    );
+  });
+
   return (
-    <span ref={ref} className={`relative inline-block max-w-full ${className}`}>
+    <span ref={ref} className={`max-w-full ${className}`}>
       <span className="sr-only">{text}</span>
-      {/* The real text, invisible, holds the size; the noise is laid over it and
-          clipped sideways, since hex glyphs are wider than letters and would push
-          the heading off a phone screen while it decodes. Only sideways: clipping
-          vertically would cut off descenders like the tail of "p". */}
-      <span aria-hidden="true" className="invisible">{text}</span>
-      <span aria-hidden="true" className="absolute inset-0 overflow-x-clip">{display}</span>
+      <span aria-hidden="true">{words}</span>
     </span>
   );
 };
