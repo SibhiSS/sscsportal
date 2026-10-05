@@ -642,7 +642,9 @@ a.tile:hover { background: var(--cell); }
 /* ---------- small screens: the rail becomes a labelled drawer ---------- */
 @media (max-width: 980px) {
   .adm-app { grid-template-columns: 1fr; }
-  .adm-side { margin: 0; top: 0; height: 100vh; width: 260px; z-index: 50; border-radius: 0 24px 24px 0; align-items: stretch; padding: 22px 14px; background: rgba(12, 12, 14, .92); }
+  /* Fixed off-canvas drawer: re-stated here because the glass layer's `position: relative`
+     would otherwise leave the hidden rail in the page flow as a blank screen-tall row. */
+  .adm-side { position: fixed; inset: 0 auto 0 0; margin: 0; height: 100vh; height: 100dvh; width: min(260px, 82vw); z-index: 50; border-radius: 0 24px 24px 0; align-items: stretch; padding: 22px 14px; background: rgba(12, 12, 14, .92); }
   .adm-side .lbl { display: block; }
   .adm-nav-label { display: block; }
   .adm-brand { justify-content: flex-start; padding: 2px 10px 22px; }
