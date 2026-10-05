@@ -118,9 +118,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      validateAndSetUser(session);
-    });
+    // A stored session whose refresh token was revoked (signed out elsewhere, expired,
+    // project keys rotated) makes every refresh fail with "Invalid Refresh Token".
+    // Purge it locally so the user lands on a clean signed-out state instead of
+    // looping on failed refreshes.
+    const clearStaleSession = async () => {
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+      validateAndSetUser(null);
+    };
+
+    supabase.auth.getSession()
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          console.warn('[Auth] Stored session is invalid; signing out locally.');
+          return clearStaleSession();
+        }
+        validateAndSetUser(session);
+      })
+      .catch(() => clearStaleSession());
 
     // Listen for changes on auth state (logged in, signed out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
