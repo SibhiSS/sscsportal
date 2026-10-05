@@ -49,15 +49,26 @@ const Navigation = () => {
     };
   }, [location.pathname]);
 
+  // Lock the page behind the open mobile menu, and close the menu if the screen grows past the breakpoint.
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const close = () => { if (mq.matches) setIsMobileMenuOpen(false); };
+    mq.addEventListener('change', close);
+    return () => {
+      document.body.style.overflow = prev;
+      mq.removeEventListener('change', close);
+    };
+  }, [isMobileMenuOpen]);
+
   const navLinks = [
-    { name: 'About', href: '#about' },
     { name: 'Team', href: '/team' },
     { name: 'Leaderboard', href: '/leaderboard' },
-    { name: 'Domains', href: '#domains' },
     { name: 'Events', href: '#events' },
     { name: 'Calendar', href: '/calendar' },
     { name: 'Propose', href: '/proposals' },
-    { name: 'Contact', href: '#contact' },
   ];
 
   const handleNavClick = (href: string) => {
@@ -86,7 +97,7 @@ const Navigation = () => {
   return (
     <>
       <motion.div
-        className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none pt-6 px-6"
+        className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none pt-3 px-3 sm:pt-6 sm:px-6"
         animate={{ y: footerInView ? -140 : 0, opacity: footerInView ? 0 : 1 }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
         aria-hidden={footerInView || undefined}
@@ -95,9 +106,9 @@ const Navigation = () => {
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           className={`
-            pointer-events-auto grid grid-cols-[minmax(max-content,1fr)_auto] md:grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)] items-center gap-4 px-6 py-3 transition-[max-width,background-color,border-color,box-shadow,border-radius] duration-500
+            pointer-events-auto grid grid-cols-[minmax(max-content,1fr)_auto] lg:grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)] items-center gap-4 px-4 sm:px-6 py-2.5 sm:py-3 transition-[max-width,background-color,border-color,box-shadow,border-radius] duration-500
             ${isScrolled 
-              ? 'w-full max-w-5xl rounded-full bg-white/5 border border-white/10 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]' 
+              ? 'w-full max-w-6xl rounded-full bg-white/5 border border-white/10 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]' 
               : 'w-full max-w-7xl bg-transparent border-transparent'
             }
           `}
@@ -115,12 +126,12 @@ const Navigation = () => {
           </Link>
 
           {/* Desktop Nav Links */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => (
               <button
                 key={link.name}
                 onClick={() => handleNavClick(link.href)}
-                className="px-3 lg:px-4 py-2 text-sm font-medium whitespace-nowrap text-foreground/70 hover:text-primary transition-all rounded-full hover:bg-white/5 relative overflow-hidden group"
+                className="px-3 py-2 text-sm font-medium whitespace-nowrap text-foreground/70 hover:text-primary transition-all rounded-full hover:bg-white/5 relative overflow-hidden group"
               >
                 <span className="relative z-10">{link.name}</span>
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -198,8 +209,10 @@ const Navigation = () => {
 
             {/* Mobile Menu Button */}
             <button
-              className="md:hidden p-2 text-foreground hover:bg-white/10 rounded-full transition-colors"
+              className="lg:hidden p-2.5 -mr-1.5 text-foreground hover:bg-white/10 rounded-full transition-colors"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={isMobileMenuOpen}
             >
               {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -211,12 +224,12 @@ const Navigation = () => {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            className="fixed inset-0 z-40 md:hidden bg-black/60 backdrop-blur-2xl"
+            className="fixed inset-0 z-40 lg:hidden overflow-y-auto overscroll-contain bg-black/90 backdrop-blur-md"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
+            <div className="flex flex-col items-center justify-center min-h-full gap-5 px-6 pt-24 pb-10">
               {navLinks.map((link, idx) => (
                 <motion.button
                   key={link.name}
@@ -224,7 +237,7 @@ const Navigation = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.1 }}
                   onClick={() => handleNavClick(link.href)}
-                  className="font-heading text-3xl font-bold text-foreground hover:text-primary transition-colors"
+                  className="font-heading text-2xl sm:text-3xl font-bold text-foreground hover:text-primary transition-colors py-1"
                 >
                   {link.name}
                 </motion.button>

@@ -40,10 +40,10 @@ const HeroSection = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="relative py-20"
+          className="relative pt-28 pb-28 sm:py-20"
         >
           {/* Logo Background (Abstract Glassy Watermark - Pulsing) */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] md:w-[500px] md:h-[500px] pointer-events-none -z-10 select-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] sm:w-[400px] sm:h-[400px] md:w-[500px] md:h-[500px] pointer-events-none -z-10 select-none">
             <motion.div
               animate={{ 
                 scale: [1, 1.05, 1],
@@ -76,17 +76,17 @@ const HeroSection = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="flex items-center gap-5 mb-10"
+              className="flex items-center gap-3 sm:gap-5 mb-8 sm:mb-10"
             >
-              <div className="h-[1px] w-10 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-              <span className="text-[11px] md:text-sm text-primary/90 tracking-[0.35em] uppercase font-bold px-4 py-1 rounded-full border border-primary/10 bg-primary/5 backdrop-blur-sm">
+              <div className="h-[1px] w-6 sm:w-10 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+              <span className="text-[10px] sm:text-[11px] md:text-sm text-primary/90 tracking-[0.25em] sm:tracking-[0.35em] whitespace-nowrap uppercase font-bold px-4 py-1 rounded-full border border-primary/10 bg-primary/5 backdrop-blur-sm">
                 Design • Build • Iterate
               </span>
-              <div className="h-[1px] w-10 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+              <div className="h-[1px] w-6 sm:w-10 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
             </motion.div>
  
             {/* Main Title */}
-            <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 mb-8 font-heading text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight">
+            <div className="flex flex-wrap justify-center gap-x-3 sm:gap-x-5 gap-y-2 mb-6 sm:mb-8 font-heading text-[2.75rem] leading-none sm:text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -108,9 +108,9 @@ const HeroSection = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="space-y-4 mb-12"
+              className="space-y-3 sm:space-y-4 mb-10 sm:mb-12"
             >
-              <h2 className="text-xl md:text-3xl font-heading text-foreground/90 font-light tracking-wide italic">
+              <h2 className="text-lg sm:text-xl md:text-3xl font-heading text-foreground/90 font-light tracking-wide italic">
                 Think Silicon. Think SSCS
               </h2>
               <p className="font-heading text-base md:text-xl text-foreground/80 tracking-wide">
@@ -123,14 +123,14 @@ const HeroSection = () => {
 
             {/* Glassy CTA Buttons */}
             <motion.div
-              className="flex flex-col sm:flex-row items-center justify-center gap-6"
+              className="flex w-full flex-col sm:w-auto sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
             >
               <Button
                 size="lg"
-                className="px-10 h-14 bg-primary text-primary-foreground hover:bg-primary/90 font-heading rounded-full shadow-[0_0_20px_rgba(220,20,60,0.3)] transition-all hover:scale-105"
+                className="w-full sm:w-auto px-10 h-12 sm:h-14 bg-primary text-primary-foreground hover:bg-primary/90 font-heading rounded-full shadow-[0_0_20px_rgba(220,20,60,0.3)] transition-all hover:scale-105"
                 asChild
               >
                 <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
@@ -142,7 +142,7 @@ const HeroSection = () => {
               <Button
                 size="lg"
                 variant="outline"
-                className="px-10 h-14 border-white/10 text-foreground hover:bg-white/5 backdrop-blur-md rounded-full transition-all hover:border-primary/50"
+                className="w-full sm:w-auto px-10 h-12 sm:h-14 border-white/10 text-foreground hover:bg-white/5 backdrop-blur-md rounded-full transition-all hover:border-primary/50"
                 onClick={() => scrollToSection('#domains')}
               >
                 Explore Domains
@@ -154,7 +154,7 @@ const HeroSection = () => {
 
       {/* Scroll Indicator */}
       <motion.button
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 text-muted-foreground hover:text-primary transition-all p-3 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 group"
+        className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 text-muted-foreground hover:text-primary transition-all p-3 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 group"
         onClick={() => scrollToSection('#about')}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1, y: [0, 10, 0] }}

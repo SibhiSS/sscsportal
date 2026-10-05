@@ -35,13 +35,13 @@ const coordinators = [
   {
     name: 'Sangeetha R G',
     role: 'Faculty Coordinator',
-    image: '/sangeetha.png',
+    image: '/sangeetha.webp',
     description: 'Expert mentorship in technical direction and academic excellence for IEEE SSCS.'
   },
   {
     name: 'Hemanth C',
     role: 'Faculty Coordinator',
-    image: '/hemanth.png',
+    image: '/hemanth.webp',
     description: 'Guiding innovation and student engagement within the solid-state circuits domain.'
   }
 ];
@@ -50,31 +50,31 @@ const coreTeam2025 = [
   {
     name: 'E Abijay',
     role: 'Chairperson',
-    image: '/abijay.png',
+    image: '/abijay.webp',
     quote: 'Never Settle!'
   },
   {
     name: 'Kiran Kumar',
     role: 'Vice Chairperson',
-    image: '/kiran.png',
+    image: '/kiran.webp',
     quote: 'I create systems that redefine the best.'
   },
   {
     name: 'Manasa Grandhi',
     role: 'General Secretary',
-    image: '/manasa.png',
+    image: '/manasa.webp',
     quote: 'Troubles are just passing clouds.'
   },
   {
     name: 'Mrithubashini',
     role: 'General Secretary',
-    image: '/mrithubashini.png',
+    image: '/mrithubashini.webp',
     quote: "Let's see what happens."
   },
   {
     name: 'Arushi',
     role: 'Treasurer',
-    image: '/arushi.png',
+    image: '/arushi.webp',
     quote: 'Who wishes to fight must first count the cost.'
   }
 ];
@@ -83,25 +83,25 @@ const coreTeam2026: { name: string; role: string; image: string; quote: string; 
   {
     name: 'Sibhi',
     role: 'Chairperson',
-    image: '/sibhi.png',
+    image: '/sibhi.webp',
     quote: 'Click Me!!!'
   },
   {
     name: 'Goutham P',
     role: 'Vice Chairperson',
-    image: '/goutham.png',
+    image: '/goutham.webp',
     quote: 'SKY IS THE LIMIT'
   },
   {
     name: 'Ilangkumaran',
     role: 'General Secretary',
-    image: '/ilangkumaran.png',
+    image: '/ilangkumaran.webp',
     quote: "Big ideas don't need noise, they need action."
   },
   {
     name: 'Neyalakshmi',
     role: 'Treasurer',
-    image: '/neya.png',
+    image: '/neya.webp',
     quote: 'PEACE!'
   },
   {
@@ -122,49 +122,49 @@ const leads2025 = [
   {
     name: 'Shivaranjani',
     role: 'Technical Lead',
-    image: '/shivaranjani.png',
+    image: '/shivaranjani.webp',
     quote: "Life's a circuit—I'm still meeting setup and hold."
   },
   {
     name: 'Harshan',
     role: 'Technical Lead',
-    image: '/harshan.png',
+    image: '/harshan.webp',
     quote: 'Observe. Plan. Execute.'
   },
   {
     name: 'Ilangkumaran',
     role: 'Operations Lead',
-    image: '/ilangkumaran.png',
+    image: '/ilangkumaran.webp',
     quote: "Big ideas don't need noise, they need action."
   },
   {
     name: 'Sibhi S',
     role: 'Operations Lead',
-    image: '/sibhi.png',
+    image: '/sibhi.webp',
     quote: 'Click Me!!!'
   },
   {
     name: 'Neyalakshmi',
     role: 'Editorial Lead',
-    image: '/neya.png',
+    image: '/neya.webp',
     quote: 'PEACE!'
   },
   {
     name: 'Goutham P',
     role: 'Editorial Lead',
-    image: '/goutham.png',
+    image: '/goutham.webp',
     quote: 'SKY IS THE LIMIT'
   },
   {
     name: 'Priyadarshini',
     role: 'Design Lead',
-    image: '/priyadharshini.png',
+    image: '/priyadharshini.webp',
     quote: 'LOST IN A PASTEL SKY'
   },
   {
     name: 'Midhun P',
     role: 'Associate Design Lead',
-    image: '/midhun.png',
+    image: '/midhun.webp',
     quote: 'COOL TONE WARM CORE'
   }
 ];
@@ -181,7 +181,7 @@ const leads2026 = [
   { name: 'Tharun S', role: 'Associate Creative Lead', image: '/tharun.png', quote: '' },
   { name: 'Anjana Varma', role: 'Outreach & Partnerships Lead', image: '/anjana.png', quote: '' },
   { name: 'Karthikeyan D', role: 'Associate Outreach & Partnerships Lead', image: '/karthikeyan.png', quote: '' },
-  { name: 'P Midhun', role: 'Human Resource Lead', image: '/midhun.png', quote: 'COOL TONE WARM CORE' },
+  { name: 'P Midhun', role: 'Human Resource Lead', image: '/midhun.webp', quote: 'COOL TONE WARM CORE' },
   { name: 'K Srishtithaa', role: 'Associate Human Resource Lead', image: '/srishtithaa.png', quote: '' }
 ];
 
@@ -290,7 +290,7 @@ const Team = () => {
                                 Leadership
                             </span>
                         </motion.div>
-                        <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight">
+                        <h1 className="font-heading text-[1.75rem] leading-tight sm:text-4xl md:text-5xl font-bold tracking-tight">
                             <RevealText text="Faculty Coordinators" />
                         </h1>
                     </div>
@@ -339,7 +339,7 @@ const Team = () => {
                                 Leadership
                             </span>
                         </motion.div>
-                        <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight mb-8">
+                        <h1 className="font-heading text-[1.75rem] leading-tight sm:text-4xl md:text-5xl font-bold tracking-tight mb-8">
                             <RevealText text="Board" />
                         </h1>
                         <div className="flex flex-wrap justify-center gap-4">
@@ -405,7 +405,7 @@ const Team = () => {
                                 Expertise
                             </span>
                         </motion.div>
-                        <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight">
+                        <h1 className="font-heading text-[1.75rem] leading-tight sm:text-4xl md:text-5xl font-bold tracking-tight">
                             <RevealText text="Leads" />
                         </h1>
                     </div>

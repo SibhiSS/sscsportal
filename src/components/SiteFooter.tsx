@@ -76,7 +76,7 @@ const SiteFooter = () => {
         <div className="text-[#9b9b9f] text-[clamp(20px,2vw,32px)] leading-snug md:text-right">
           <button
             onClick={() => (playing ? stop() : setPlaying(true))}
-            className="pointer-events-auto font-medium text-white underline decoration-primary decoration-2 underline-offset-[6px] hover:text-primary transition-colors"
+            className="pointer-events-auto py-1 font-medium text-white underline decoration-primary decoration-2 underline-offset-[6px] hover:text-primary transition-colors"
           >
             {playing ? 'STOP' : 'PLAY'}
           </button>{' '}
@@ -94,7 +94,7 @@ const SiteFooter = () => {
               href="https://sibhi.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="pointer-events-auto text-white underline decoration-primary decoration-2 underline-offset-4 hover:text-primary transition-colors"
+              className="pointer-events-auto inline-block py-1.5 text-white underline decoration-primary decoration-2 underline-offset-4 hover:text-primary transition-colors"
             >
               Sibhi
             </a>
@@ -109,7 +109,7 @@ const SiteFooter = () => {
                 href={l.href}
                 target={l.href.startsWith('http') ? '_blank' : undefined}
                 rel="noopener noreferrer"
-                className="pointer-events-auto hover:text-white transition-colors"
+                className="pointer-events-auto inline-block py-2 hover:text-white transition-colors"
               >
                 {l.label}
               </a>

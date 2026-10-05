@@ -10,7 +10,7 @@ const socialLinks = [
 
 const ContactSection = () => {
   return (
-    <section id="contact" className="py-24 relative">
+    <section id="contact" className="py-16 md:py-24 relative">
       <div className="container mx-auto px-6">
         {/* Section Header */}
         <motion.div
@@ -22,7 +22,7 @@ const ContactSection = () => {
           <span className="text-xs text-primary tracking-[0.3em] uppercase mb-3 block font-medium">
             Connect
           </span>
-          <h2 className="font-heading text-4xl md:text-5xl font-bold text-foreground">
+          <h2 className="font-heading text-[1.75rem] leading-tight sm:text-4xl md:text-5xl font-bold text-foreground">
             <ScrambleText text="Get in Touch" />
           </h2>
         </motion.div>

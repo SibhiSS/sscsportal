@@ -80,7 +80,7 @@ const LeaderboardSection = () => {
   const tiedWith = top ? rows.filter(r => r.rank === top.rank).length - 1 : 0;
 
   return (
-    <section id="leaderboard" className="py-24 relative overflow-hidden">
+    <section id="leaderboard" className="py-16 md:py-24 relative overflow-hidden">
       <div className="container mx-auto px-6">
         <motion.div
           className="text-center mb-16 max-w-6xl mx-auto px-6"
@@ -91,7 +91,7 @@ const LeaderboardSection = () => {
           <span className="text-xs text-primary tracking-[0.3em] uppercase mb-3 block font-medium">
             Recognition
           </span>
-          <h2 className="font-heading text-4xl font-bold text-foreground">
+          <h2 className="font-heading text-[1.75rem] leading-tight sm:text-4xl font-bold text-foreground">
             <ScrambleText text="Top Contributors" />
           </h2>
         </motion.div>
@@ -147,7 +147,7 @@ const LeaderboardSection = () => {
             <div className="mt-6 pt-6 border-t border-white/5 flex justify-center">
               <Link
                 to="/leaderboard"
-                className="flex items-center gap-2 text-[10px] md:text-xs text-primary font-bold tracking-widest uppercase hover:text-primary/80 transition-colors group"
+                className="flex items-center gap-2 py-2 text-[11px] md:text-xs text-primary font-bold tracking-widest uppercase hover:text-primary/80 transition-colors group"
               >
                 View full leaderboard
                 <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />

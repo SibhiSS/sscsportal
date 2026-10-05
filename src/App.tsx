@@ -6,35 +6,40 @@ import Team from '@/pages/Team';
 import Leaderboard from '@/pages/Leaderboard';
 import MemberCalendar from '@/pages/Calendar';
 import Proposals from '@/pages/Proposals';
-import ProposalsPage from '@/admin/pages/ProposalsPage';
-import ProposalDetail from '@/admin/pages/ProposalDetail';
-import DrivePage from '@/admin/pages/DrivePage';
-import MeetsPage from '@/admin/pages/MeetsPage';
 import NotFound from '@/pages/NotFound';
+
 import Me from '@/pages/Me';
-import AdminLayout from '@/admin/AdminLayout';
-import Overview from '@/admin/pages/Overview';
-import CalendarPage from '@/admin/pages/CalendarPage';
-import EventsPage from '@/admin/pages/EventsPage';
-import EventDetail from '@/admin/pages/EventDetail';
-import VenuesPage from '@/admin/pages/VenuesPage';
-import MembersPage from '@/admin/pages/MembersPage';
-import MemberCard from '@/admin/pages/MemberCard';
-import ApprovalsPage from '@/admin/pages/ApprovalsPage';
-import SettingsPage from '@/admin/pages/SettingsPage';
-import WebsitePage from '@/admin/pages/WebsitePage';
-import TeamPage from '@/admin/pages/TeamPage';
-import SuperAdminOnly from '@/admin/SuperAdminOnly';
 import './App.css';
 
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StartupPreloader from '@/components/ui/StartupPreloader';
 
 import CustomCursor from '@/components/ui/CustomCursor';
+import LogoSpinner from '@/components/ui/LogoSpinner';
 
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
+
+// The admin panel loads only when someone opens it, so visitors (most of them on
+// phones) don't download it with the public site.
+const ProposalsPage = lazy(() => import('@/admin/pages/ProposalsPage'));
+const ProposalDetail = lazy(() => import('@/admin/pages/ProposalDetail'));
+const DrivePage = lazy(() => import('@/admin/pages/DrivePage'));
+const MeetsPage = lazy(() => import('@/admin/pages/MeetsPage'));
+const AdminLayout = lazy(() => import('@/admin/AdminLayout'));
+const Overview = lazy(() => import('@/admin/pages/Overview'));
+const CalendarPage = lazy(() => import('@/admin/pages/CalendarPage'));
+const EventsPage = lazy(() => import('@/admin/pages/EventsPage'));
+const EventDetail = lazy(() => import('@/admin/pages/EventDetail'));
+const VenuesPage = lazy(() => import('@/admin/pages/VenuesPage'));
+const MembersPage = lazy(() => import('@/admin/pages/MembersPage'));
+const MemberCard = lazy(() => import('@/admin/pages/MemberCard'));
+const ApprovalsPage = lazy(() => import('@/admin/pages/ApprovalsPage'));
+const SettingsPage = lazy(() => import('@/admin/pages/SettingsPage'));
+const WebsitePage = lazy(() => import('@/admin/pages/WebsitePage'));
+const TeamPage = lazy(() => import('@/admin/pages/TeamPage'));
+const SuperAdminOnly = lazy(() => import('@/admin/SuperAdminOnly'));
 
 const isAdminPath = (path: string) => path === '/admin' || path.startsWith('/admin/');
 
@@ -64,6 +69,7 @@ function App() {
             <SpeedInsights />
             <Router>
               <SiteCursor />
+              <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center"><LogoSpinner size="md" /></div>}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/team" element={<Team />} />
@@ -91,6 +97,7 @@ function App() {
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </Suspense>
               <Toaster />
             </Router>
           </motion.div>

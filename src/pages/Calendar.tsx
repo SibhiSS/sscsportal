@@ -142,7 +142,7 @@ const CalendarPage = () => {
 
       <div className="text-center mb-10">
         <span className="text-[10px] text-primary tracking-[0.4em] uppercase font-bold px-4 py-1 rounded-full border border-primary/20 bg-primary/5">Members</span>
-        <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight mt-4"><ScrambleText text="Club Calendar" /></h1>
+        <h1 className="font-heading text-[1.75rem] leading-tight sm:text-4xl md:text-5xl font-bold tracking-tight mt-4"><ScrambleText text="Club Calendar" /></h1>
         <p className="text-sm text-muted-foreground mt-3">
           {fmt(from)} {first.y} – {fmt(to)} {last.y} · confirmed events, holidays, exams and breaks
         </p>

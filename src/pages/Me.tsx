@@ -313,7 +313,7 @@ const Me = () => {
             Home
           </Link>
           <div>
-            <h1 className="text-3xl md:text-5xl font-bold font-heading tracking-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold font-heading tracking-tight break-words">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-primary to-primary/50">
                 {member?.full_name}
               </span>

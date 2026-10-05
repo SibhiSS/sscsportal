@@ -63,6 +63,12 @@
   
   html {
     background-color: #020202;
+    /* iOS Safari ignores overflow-x on <body>; clipping on <html> stops anything
+       wider than the screen from zooming the whole page out. */
+    overflow-x: hidden;
+    overflow-x: clip;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   
   body {
@@ -119,6 +125,21 @@
     scroll-behavior: smooth;
   }
 
+  /* Phones: the full-screen blended noise and watermark layers cost a lot of GPU
+     memory for an effect you can barely see on a small screen. */
+  @media (max-width: 767px), (hover: none) and (pointer: coarse) {
+    body::after,
+    body::before {
+      display: none;
+    }
+  }
+
+  /* No tap flash on the dark UI; links and buttons react to touch immediately. */
+  a, button, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
   ::selection {
     background: hsl(var(--primary) / 0.3);
     color: hsl(var(--foreground));
@@ -161,4 +182,13 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--primary) / 0.7);
+}
+
+/* 100vh on phones is the height with the address bar hidden, so "full screen"
+   sections end up taller than the screen and their content sits too low.
+   svh is the height you actually see; older browsers keep the vh value. */
+@supports (height: 100svh) {
+  .min-h-screen { min-height: 100svh; }
+  .h-screen { height: 100svh; }
+  .max-h-screen { max-height: 100svh; }
 }

@@ -63,9 +63,13 @@ const ScrambleText = ({ text, className = '', duration = 900, delay = 0 }: Scram
   }, [text, duration, delay, reduceMotion]);
 
   return (
-    <span ref={ref} className={className}>
+    <span ref={ref} className={`relative inline-block max-w-full ${className}`}>
       <span className="sr-only">{text}</span>
-      <span aria-hidden="true">{display}</span>
+      {/* The real text, invisible, holds the size; the noise is laid over it and
+          clipped, since hex glyphs are wider than letters and would push the
+          heading off a phone screen while it decodes. */}
+      <span aria-hidden="true" className="invisible">{text}</span>
+      <span aria-hidden="true" className="absolute inset-0 overflow-hidden">{display}</span>
     </span>
   );
 };

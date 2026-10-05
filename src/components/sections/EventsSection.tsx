@@ -100,7 +100,7 @@ const EventsSection = () => {
   });
 
   return (
-    <section id="events" className="py-24 relative overflow-hidden">
+    <section id="events" className="py-16 md:py-24 relative overflow-hidden">
       <div className="container mx-auto px-6">
         {/* Section Header */}
         <motion.div
@@ -112,7 +112,7 @@ const EventsSection = () => {
           <span className="text-xs text-primary tracking-[0.3em] uppercase mb-3 block font-medium">
             {upNext ? 'Events' : 'Archive'}
           </span>
-          <h2 className="font-heading text-4xl font-bold text-foreground">
+          <h2 className="font-heading text-[1.75rem] leading-tight sm:text-4xl font-bold text-foreground">
             <ScrambleText text={upNext ? 'Events' : 'Past Events'} />
           </h2>
         </motion.div>

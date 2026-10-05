@@ -3,6 +3,12 @@ import { useMemo } from 'react';
 // CSS keyframe animations run on the compositor thread — zero JS overhead.
 // These styles inject a tiny <style> tag once on mount.
 const cssAnimations = `
+/* Drift only on larger screens: on phones the blurred layers stay still, which
+   keeps scrolling smooth and GPU memory low. */
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .tg-blob-1 { animation: blobDrift1 25s ease-in-out infinite; will-change: transform; }
+  .tg-blob-2 { animation: blobDrift2 22s ease-in-out infinite; will-change: transform; }
+}
 @keyframes blobDrift1 {
   0%   { transform: translate(0px, 0px) scale(1); }
   33%  { transform: translate(50px, 20px) scale(1.2); }
@@ -90,18 +96,10 @@ const TechGridBackground = () => {
             {/* 1. Animated Blobs — CSS animation (compositor thread) */}
             <div className="absolute inset-0 pointer-events-none">
                 <div
-                    className="absolute top-[-20%] left-[-10%] w-[60vw] h-[60vw] bg-primary/10 rounded-full blur-[180px]"
-                    style={{
-                        animation: 'blobDrift1 25s ease-in-out infinite',
-                        willChange: 'transform',
-                    }}
+                    className="tg-blob-1 absolute top-[-10%] left-[-25%] w-[90vw] h-[90vw] md:top-[-20%] md:left-[-10%] md:w-[60vw] md:h-[60vw] bg-primary/10 rounded-full blur-[60px] md:blur-[180px]"
                 />
                 <div
-                    className="absolute bottom-[-20%] right-[-10%] w-[55vw] h-[55vw] bg-primary/[0.08] rounded-full blur-[160px]"
-                    style={{
-                        animation: 'blobDrift2 22s ease-in-out infinite',
-                        willChange: 'transform',
-                    }}
+                    className="tg-blob-2 absolute bottom-[-10%] right-[-25%] w-[85vw] h-[85vw] md:bottom-[-20%] md:right-[-10%] md:w-[55vw] md:h-[55vw] bg-primary/[0.08] rounded-full blur-[60px] md:blur-[160px]"
                 />
             </div>
 
@@ -118,8 +116,8 @@ const TechGridBackground = () => {
                 }}
             />
 
-            {/* 3. Lightweight CSS particles (replaces 15 Framer Motion ones) */}
-            <div className="absolute inset-0">
+            {/* 3. Lightweight CSS particles (replaces 15 Framer Motion ones). Desktop only. */}
+            <div className="absolute inset-0 hidden md:block motion-reduce:hidden">
                 {/* Static pulsing dots */}
                 {DOTS.map((dot, i) => (
                     <div
@@ -153,7 +151,7 @@ const TechGridBackground = () => {
             </div>
 
             {/* 4. Noise Overlay */}
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none hidden md:block"
                 style={{
                     backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
                 }}

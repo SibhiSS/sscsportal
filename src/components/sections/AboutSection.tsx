@@ -51,7 +51,7 @@ const AboutSection = () => {
   const stats = useClubStats();
 
   return (
-    <section id="about" className="py-24 relative">
+    <section id="about" className="py-16 md:py-24 relative">
       <div className="container mx-auto px-6">
         {/* Section Header */}
         <motion.div className="text-center mb-16" {...fadeUp()}>

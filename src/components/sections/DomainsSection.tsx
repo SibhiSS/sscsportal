@@ -161,7 +161,7 @@ const DomainCard = ({ domain, index }: { domain: Domain; index: number }) => {
 
 const DomainsSection = () => {
   return (
-    <section id="domains" className="relative py-32">
+    <section id="domains" className="relative py-16 md:py-32">
       {/* Smooth Background Glow (No clipping) */}
       <div 
         className="absolute -inset-y-32 inset-x-0 pointer-events-none opacity-40"
@@ -181,7 +181,7 @@ const DomainsSection = () => {
             >
               Expertise
             </motion.span>
-            <h2 className="mt-4 font-heading text-4xl md:text-5xl font-bold tracking-tight text-white">
+            <h2 className="mt-4 font-heading text-[1.75rem] leading-tight sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
               <ScrambleText text="Technical Domains" />
             </h2>
             <p className="mt-6 text-sm md:text-base text-muted-foreground max-w-lg">

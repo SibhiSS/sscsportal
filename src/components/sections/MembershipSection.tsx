@@ -49,7 +49,7 @@ const FAQ = [
 ];
 
 const MembershipSection = () => (
-  <section id="membership" className="py-24 relative">
+  <section id="membership" className="py-16 md:py-24 relative">
     <div className="container mx-auto px-6">
       <motion.div
         className="text-center mb-16 max-w-6xl mx-auto px-6"
@@ -60,7 +60,7 @@ const MembershipSection = () => (
         <span className="text-xs text-primary tracking-[0.3em] uppercase mb-3 block font-medium">
           Membership
         </span>
-        <h2 className="font-heading text-4xl font-bold text-foreground">
+        <h2 className="font-heading text-[1.75rem] leading-tight sm:text-4xl font-bold text-foreground">
           <ScrambleText text="How It Works" />
         </h2>
       </motion.div>

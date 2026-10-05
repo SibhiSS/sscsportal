@@ -176,7 +176,7 @@ const Proposals = () => {
 
           <div className="text-center mb-10">
             <span className="text-[10px] text-primary tracking-[0.4em] uppercase font-bold px-4 py-1 rounded-full border border-primary/20 bg-primary/5">Members & admins</span>
-            <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight mt-4"><ScrambleText text="Propose an Event" /></h1>
+            <h1 className="font-heading text-[1.75rem] leading-tight sm:text-4xl md:text-5xl font-bold tracking-tight mt-4"><ScrambleText text="Propose an Event" /></h1>
             <p className="text-sm text-muted-foreground mt-3 max-w-xl mx-auto">
               Have an idea? Tell us what it is, what it needs and when it could happen. A super admin reviews every proposal.
             </p>

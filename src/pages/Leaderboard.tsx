@@ -90,7 +90,7 @@ const Leaderboard = () => {
                 Recognition
               </span>
             </motion.div>
-            <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight">
+            <h1 className="font-heading text-[1.75rem] leading-tight sm:text-4xl md:text-5xl font-bold tracking-tight">
               <ScrambleText text="Leaderboard" />
             </h1>
             <p className="text-sm text-muted-foreground mt-4">
