@@ -31,7 +31,7 @@ export const PRIORITY_LABELS: Record<BroadcastPriority, string> = {
 export const AUDIENCE_LABELS: Record<BroadcastAudience, string> = {
   everyone: 'Everyone signed in',
   members: 'Members only',
-  admins: 'Admins only',
+  admins: 'Core team only',
 };
 
 type PgError = { message: string } | null;

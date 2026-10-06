@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { isCoreTeam } from '@/lib/roles';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, LogIn, UserX, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -60,7 +61,7 @@ const CalendarPage = () => {
 
   const load = async () => {
     try {
-      const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+      const isAdmin = isCoreTeam(user?.role);
       if (!isAdmin && !(await fetchMyMember())) { setStatus('not-member'); return; }
       setItems(await fetchMemberCalendar(from, to));
       setStatus('ready');

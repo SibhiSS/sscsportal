@@ -8,7 +8,7 @@ import {
   toDate, venueDay, venueName, type CalItem,
 } from '../calendarLogic';
 import EntryModal from '../EntryModal';
-import { useIsSuperAdmin } from '../SuperAdminOnly';
+import { useCanSeeVenues, useIsSuperAdmin } from '../SuperAdminOnly';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DOWS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -20,7 +20,9 @@ export default function CalendarPage() {
   const today = todayIso();
   const [selected, setSelected] = useState(params.get('d') || today);
   const [view, setView] = useState(() => { const d = toDate(params.get('d') || today); return { y: d.getFullYear(), m: d.getMonth() }; });
-  const [showVenues, setShowVenues] = useState(params.get('venues') === '1');
+  const canSeeVenues = useCanSeeVenues();
+  const [showVenuesPref, setShowVenues] = useState(params.get('venues') === '1');
+  const showVenues = canSeeVenues && showVenuesPref;
   const [venueFilter, setVenueFilter] = useState('all');
   const [listFilter, setListFilter] = useState<'all' | keyof typeof ENTRY_TYPES>('all');
   const [modal, setModal] = useState<{ editing: CalItem | null; date: string } | null>(null);
@@ -80,7 +82,7 @@ export default function CalendarPage() {
       <div className="top">
         <div>
           <h1>Club calendar</h1>
-          <div className="sub">Events, academic dates and venue availability for IEEE SSCS VIT Chennai.</div>
+          <div className="sub">Events, academic dates{canSeeVenues ? ' and venue availability' : ''} for IEEE SSCS VIT Chennai.</div>
         </div>
       </div>
 
@@ -96,7 +98,7 @@ export default function CalendarPage() {
             </div>
           </div>
 
-          <div className="toolbar">
+          {canSeeVenues && <div className="toolbar">
             <label className="switch">
               <input type="checkbox" checked={showVenues} onChange={e => setShowVenues(e.target.checked)} />
               <span className="track"><span className="knob" /></span>
@@ -109,7 +111,7 @@ export default function CalendarPage() {
                 ))}
               </div>
             )}
-          </div>
+          </div>}
 
           <div className="grid7">{DOWS.map(d => <div key={d} className="dow">{d}</div>)}</div>
           <div className={`grid7${showVenues ? ' vmode' : ''}`} style={{ marginTop: 4 }}>
@@ -125,7 +127,7 @@ export default function CalendarPage() {
               if (iso === selected) cls += ' selected';
 
               let badge: React.ReactNode = null;
-              if (hasEvent) {
+              if (hasEvent && canSeeVenues) {
                 const inPerson = ents.some(e => e.t === 'event' && !e.online);
                 if (!inPerson) badge = <span className="vdot online" title="Online event — no venue needed" />;
                 else {
@@ -187,9 +189,11 @@ export default function CalendarPage() {
           </div>
           <div className="legend">
             <span><span className="swatch" style={{ background: 'rgba(194,67,75,.3)', border: '1px solid rgba(224,101,108,.5)' }} />Planned club event</span>
-            <span><span className="vdot ok" />SSCS venue booked</span>
-            <span><span className="vdot no" />No venue booked yet</span>
-            <span><span className="vdot online" />Online event</span>
+            {canSeeVenues && <>
+              <span><span className="vdot ok" />SSCS venue booked</span>
+              <span><span className="vdot no" />No venue booked yet</span>
+              <span><span className="vdot online" />Online event</span>
+            </>}
             <span><span className="swatch" style={{ background: 'repeating-linear-gradient(135deg,rgba(255,255,255,.3) 0 2px,transparent 2px 5px)', border: '1px solid var(--line-2)' }} />Slanted lines = no events</span>
             <span><span className="swatch" style={{ background: 'rgba(212,180,74,.3)', border: '1px solid rgba(212,180,74,.55)' }} />CAT / FAT day</span>
           </div>
@@ -277,6 +281,7 @@ function DayDetail({ iso, showVenues, venueFilter, onAdd, onEdit, onDelete, onTo
 }) {
   const { venues, bookings, bookingMap, byDate } = useAdminData();
   const canEditBookings = useIsSuperAdmin();
+  const canSeeVenues = useCanSeeVenues();
   const ents = byDate.get(iso) ?? [];
   const blockers = ents.filter(e => NO_EVENT_TYPES.includes(e.t));
   const exam = blockers.find(e => e.t === 'exam');
@@ -284,7 +289,7 @@ function DayDetail({ iso, showVenues, venueFilter, onAdd, onEdit, onDelete, onTo
   const ourToday = ourBookingsOn(bookings, iso);
 
   const clash = (e: CalItem) => {
-    if (!e.venueId || e.online) return null;
+    if (!canSeeVenues || !e.venueId || e.online) return null;
     const vd = venueDay(bookingMap, e.venueId, iso);
     if (vd.s === 'free') return null;
     if (vd.s === 'ours' && vd.bl.every(b => b.is_ours)) {
@@ -317,7 +322,7 @@ function DayDetail({ iso, showVenues, venueFilter, onAdd, onEdit, onDelete, onTo
           {e.note && <div className="m" style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{e.note.length > 220 ? e.note.slice(0, 220) + '…' : e.note}</div>}
           {clash(e)}
           {e.t === 'event' && e.online && <div className="vstat online"><span className="ic" />Online event — no venue needed</div>}
-          {e.t === 'event' && !e.online && (ourToday.length
+          {canSeeVenues && e.t === 'event' && !e.online && (ourToday.length
             ? <div className="vstat ok"><span className="ic" />Venue booked: {ourToday.map(b => `${venueName(venues, b.venue_id)} · ${fmtTime(b.from_time)}–${fmtTime(b.to_time)}`).join(', ')}</div>
             : <div className="vstat no"><span className="ic" />No venue booked by SSCS for this day yet</div>)}
           <div className="meta"><span>{fmtRange(e.s, e.e)}</span><span>{dayCount(e.s, e.e) === 1 ? '1 day' : `${dayCount(e.s, e.e)} days`}</span></div>

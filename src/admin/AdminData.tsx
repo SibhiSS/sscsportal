@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { AttendanceRow, CalendarEntry, ClubEvent, RosterMember, Venue, VenueBooking } from '@/types/admin';
 import type { ContributionType, EventProposal, LeaderboardRow } from '@/types/club';
 import * as api from './api';
+import { useCanSeeVenues } from './SuperAdminOnly';
 import { indexBookings, indexByDate, toCalItems, type CalItem } from './calendarLogic';
 
 type Collection = 'venues' | 'bookings' | 'entries' | 'events' | 'settings' | 'roster' | 'attendance' | 'leaderboard' | 'pending' | 'proposals';
@@ -40,6 +41,8 @@ export const useAdminData = () => {
 };
 
 export function AdminDataProvider({ children }: { children: ReactNode }) {
+  // Leads can't read bookings (RLS); don't ask, so nothing reads an empty list as "all free".
+  const canSeeVenues = useCanSeeVenues();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -56,7 +59,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
 
   const loaders = useMemo<Record<Collection, () => Promise<void>>>(() => ({
     venues: async () => setVenues(await api.fetchVenues()),
-    bookings: async () => setBookings(await api.fetchBookings()),
+    bookings: async () => setBookings(canSeeVenues ? await api.fetchBookings() : []),
     entries: async () => setEntries(await api.fetchEntries()),
     events: async () => setEvents(await api.fetchEvents()),
     settings: async () => setSettings(await api.fetchSettings()),
@@ -73,7 +76,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
       console.warn('[admin] Proposals unavailable:', err?.message);
       return [];
     })),
-  }), []);
+  }), [canSeeVenues]);
 
   const reload = useCallback(async (...which: Collection[]) => {
     const list = which.length ? which : (Object.keys(loaders) as Collection[]);

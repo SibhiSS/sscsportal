@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { canOpenPanel } from '@/lib/roles';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, LogIn, LogOut, User as UserIcon, Award } from 'lucide-react';
@@ -166,10 +167,10 @@ const Navigation = () => {
                       <Award className="mr-3 h-4 w-4 text-primary" />
                       <span>My Contributions</span>
                     </DropdownMenuItem>
-                    {(user.role === 'super_admin' || user.role === 'admin') && (
+                    {canOpenPanel(user.role) && (
                       <DropdownMenuItem onClick={() => navigate('/admin')} className="rounded-xl focus:bg-white/10 cursor-pointer p-3">
                         <UserIcon className="mr-3 h-4 w-4 text-primary" />
-                        <span>Admin Dashboard</span>
+                        <span>{user.role === 'collaborator' ? 'Venue Availability' : 'Admin Dashboard'}</span>
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem onClick={logout} className="rounded-xl focus:bg-red-500/20 text-red-400 cursor-pointer p-3">
@@ -262,10 +263,10 @@ const Navigation = () => {
                     <Award className="w-4 h-4 mr-2" />
                     My Contributions
                   </Button>
-                  {(user.role === 'super_admin' || user.role === 'admin') && (
+                  {canOpenPanel(user.role) && (
                     <Button variant="outline" className="rounded-full px-8" onClick={() => { navigate('/admin'); setIsMobileMenuOpen(false); }}>
                       <UserIcon className="w-4 h-4 mr-2" />
-                      Admin Dashboard
+                      {user.role === 'collaborator' ? 'Venue Availability' : 'Admin Dashboard'}
                     </Button>
                   )}
                   <Button variant="outline" className="rounded-full px-8 border-red-500/30 text-red-400 hover:bg-red-500/10" onClick={() => { logout(); setIsMobileMenuOpen(false); }}>

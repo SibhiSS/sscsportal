@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { isCoreTeam } from '@/lib/roles';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Clock, Lightbulb, LogIn, UserX, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -53,7 +54,7 @@ const Proposals = () => {
   const load = async () => {
     if (!user) return;
     try {
-      const isAdmin = user.role === 'admin' || user.role === 'super_admin';
+      const isAdmin = isCoreTeam(user.role);
       if (!isAdmin && !(await fetchMyMember())) { setStatus('not-member'); return; }
       const [cal, vs, my] = await Promise.all([
         fetchMemberCalendar(today, addMonths(today, 12)),
@@ -156,7 +157,7 @@ const Proposals = () => {
     );
   }
 
-  const isAdmin = user.role === 'admin' || user.role === 'super_admin';
+  const isAdmin = isCoreTeam(user.role);
 
   return (
     <div className="min-h-screen relative text-foreground bg-[#050505]">

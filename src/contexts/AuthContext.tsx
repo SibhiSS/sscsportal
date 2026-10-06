@@ -1,8 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
-
-type Role = 'super_admin' | 'admin' | 'member';
+import { isRole, type Role } from '@/lib/roles';
 
 interface User {
   email: string;
@@ -107,11 +106,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.error('[Auth] Admin role lookup failed:', adminLookupError.message);
           }
 
-          // Only super_admin/admin carry privileges. Anything else in the table
-          // (legacy 'interviewer'/'viewer' rows) or no row at all is a plain member.
+          // Anything unknown in the table (legacy rows) or no row at all is a plain member.
           const dbRole = adminData?.role;
           const role: Role =
-            dbRole === 'super_admin' || dbRole === 'admin' ? dbRole
+            isRole(dbRole) && dbRole !== 'member' ? dbRole
             : isHardcodedAdmin ? 'super_admin'
             : 'member';
           const nextUser = {

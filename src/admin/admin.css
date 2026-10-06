@@ -968,3 +968,8 @@ button.adm-note { width: 100%; border: none; background: none; text-align: left;
   .bc-item-head .tag { display: none; }
   .bc-item-body { padding-left: 16px; }
 }
+
+/* Collaborators: one page, no side menu. */
+.adm-app.adm-collab { grid-template-columns: minmax(0, 1fr); }
+.adm-collab .adm-brand { padding: 0; font-size: 16px; }
+.adm-collab .adm-brand img { width: 28px; height: 28px; object-fit: contain; }

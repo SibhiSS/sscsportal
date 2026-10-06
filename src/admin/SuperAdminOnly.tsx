@@ -1,8 +1,12 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { canSeeVenueStatus } from '@/lib/roles';
 
 export const useIsSuperAdmin = () => useAuth().user?.role === 'super_admin';
+
+/** Board and super admins see venue free/busy status and bookings; leads don't. */
+export const useCanSeeVenues = () => canSeeVenueStatus(useAuth().user?.role);
 
 /** Wraps a page that only super admins may open. */
 export default function SuperAdminOnly({ children }: { children: ReactNode }) {

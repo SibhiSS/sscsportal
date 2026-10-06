@@ -8,7 +8,7 @@ import { acceptProposal, rejectProposal } from '../api';
 import {
   ENTRY_TYPES, fmtLong, fmtMed, fmtRange, fmtShort, fmtTime, initials, rangeDates, todayIso, venueName, venueRange,
 } from '../calendarLogic';
-import { useIsSuperAdmin } from '../SuperAdminOnly';
+import { useCanSeeVenues, useIsSuperAdmin } from '../SuperAdminOnly';
 
 const errMsg = (err: unknown) => (err as { message?: string })?.message || 'Something went wrong.';
 const TAG: Record<ProposalStatus, string> = { pending: 'pending', accepted: 'approved', rejected: 'rejected' };
@@ -19,6 +19,7 @@ export default function ProposalDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isSuper = useIsSuperAdmin();
+  const canSeeVenues = useCanSeeVenues();
   const {
     proposals, roster, leaderboard, attendance, coordinatorTypeId, events, venues, byDate, bookingMap, reload,
   } = useAdminData();
@@ -207,6 +208,7 @@ export default function ProposalDetail() {
           <div className="check-card">
             <div className="check-head"><MapPin size={16} /><h4>Venue check</h4></div>
             {!p.venue_id ? <p className="muted" style={{ margin: 0 }}>No preferred venue. Pick one on the event once it's accepted.</p>
+              : !canSeeVenues ? <p className="muted" style={{ margin: 0 }}>Preferred: {venueName(venues, p.venue_id)}. Board members check its availability.</p>
               : !venue ? <p className="muted" style={{ margin: 0 }}>{start ? `Pick valid dates to check ${venueName(venues, p.venue_id)}.` : `Preferred: ${venueName(venues, p.venue_id)}. Its availability is checked once dates are picked.`}</p>
               : venue.state === 'busy' ? (
                 <div className="vstat no"><span className="ic" />

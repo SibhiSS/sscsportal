@@ -11,6 +11,8 @@ import { AdminDataProvider, useAdminData } from './AdminData';
 import { findContributionByCode } from './api';
 import NotificationBell from './NotificationBell';
 import { fmtShort, initials } from './calendarLogic';
+import { ROLE_LABEL, canOpenPanel } from '@/lib/roles';
+import VenueAvailabilityPage from './pages/VenueAvailabilityPage';
 import './admin.css';
 
 const NAV = [
@@ -72,14 +74,14 @@ function Gate({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  if (user.role !== 'super_admin' && user.role !== 'admin') {
+  if (!canOpenPanel(user.role)) {
     return (
       <div className="adm center-card">
         <TechGridBackground />
         <div className="box">
           <ShieldAlert size={40} color="var(--busy)" />
           <h1>No access</h1>
-          <p>{user.email} isn't an admin. Ask a super admin to add you.</p>
+          <p>{user.email} doesn't have panel access. Ask a super admin to add you.</p>
           <div className="stack">
             <Link className="ghost" to="/">Back to the site</Link>
             <button className="ghost" onClick={logout}>Sign out</button>
@@ -246,7 +248,7 @@ function Shell() {
           <div className="avatar" title={user?.displayName || user?.email || ''}>{initials(user?.displayName || user?.email || '')}</div>
           <div className="who lbl">
             <b>{user?.displayName || user?.email}</b>
-            <span>{user?.role === 'super_admin' ? 'Super admin' : 'Admin'}</span>
+            <span>{user?.role ? ROLE_LABEL[user.role] : ''}</span>
           </div>
           <button className="circ" onClick={logout} title="Sign out" aria-label="Sign out"><LogOut size={15} /></button>
         </div>
@@ -275,13 +277,47 @@ function Shell() {
   );
 }
 
+/**
+ * Collaborators (people from other clubs) get one screen, venue availability,
+ * whatever /admin URL they open. Nothing from AdminDataProvider is loaded for them.
+ */
+function CollaboratorShell() {
+  const { user, logout } = useAuth();
+  return (
+    <div className="adm adm-app adm-collab">
+      <TechGridBackground />
+      <div className="adm-main">
+        <header className="adm-top">
+          <Link to="/" className="adm-brand" style={{ textDecoration: 'none' }} aria-label="IEEE SSCS home page" title="Back to the website">
+            <img src="/logo.png" alt="" />
+            <div className="lbl">IEEE <span>SSCS</span></div>
+          </Link>
+          <div className="adm-crumbs"><span>Venue availability</span></div>
+          <div style={{ flex: 1 }} />
+          <span className="muted" style={{ fontSize: 13 }}>{user?.email} · Collaborator</span>
+          <button className="circ" onClick={logout} title="Sign out" aria-label="Sign out"><LogOut size={15} /></button>
+        </header>
+        <main className="adm-page"><VenueAvailabilityPage /></main>
+      </div>
+    </div>
+  );
+}
+
+function RoleShell() {
+  const { user } = useAuth();
+  if (user?.role === 'collaborator') return <CollaboratorShell />;
+  return (
+    <AdminDataProvider>
+      <Shell />
+    </AdminDataProvider>
+  );
+}
+
 export default function AdminLayout() {
   useAdminBodyClass();
   return (
     <Gate>
-      <AdminDataProvider>
-        <Shell />
-      </AdminDataProvider>
+      <RoleShell />
     </Gate>
   );
 }

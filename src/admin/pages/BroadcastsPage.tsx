@@ -143,7 +143,7 @@ export default function BroadcastsPage() {
                   onClick={() => setForm(f => ({ ...f, audience: a }))}>{AUDIENCE_LABELS[a]}</button>
               ))}
             </div>
-            {people.length > 0 && <span className="note-sm" style={{ margin: 0 }}>Reaches about {reach(form.audience)} people on the roster and admin list.</span>}
+            {people.length > 0 && <span className="note-sm" style={{ margin: 0 }}>Reaches about {reach(form.audience)} people on the roster and core team.</span>}
           </div>
 
           <label className="bc-check">

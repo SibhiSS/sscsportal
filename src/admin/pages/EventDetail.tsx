@@ -12,7 +12,7 @@ import {
 import {
   eventChecklist, eventHasOurBooking, fmtLong, fmtRange, fmtShort, fmtTime, formWarnings, initials, venueName, venueRange,
 } from '../calendarLogic';
-import { useIsSuperAdmin } from '../SuperAdminOnly';
+import { useCanSeeVenues, useIsSuperAdmin } from '../SuperAdminOnly';
 import EventDriveFiles from '../EventDriveFiles';
 import BudgetCard from '../BudgetCard';
 import EventCompletion from '../EventCompletion';
@@ -145,6 +145,7 @@ export default function EventDetail() {
   } = useAdminData();
   const ev = events.find(e => e.id === id);
   const isSuper = useIsSuperAdmin();
+  const canSeeVenues = useCanSeeVenues();
 
   const [draft, setDraft] = useState({ title: '', start_date: '', end_date: '', description: '' });
   const [saving, setSaving] = useState(false);
@@ -326,13 +327,13 @@ export default function EventDetail() {
                 <button key={o.v.id} type="button" className={`vopt${ev.venue_id === o.v.id ? ' sel' : ''}`}
                   onClick={() => save({ venue_id: ev.venue_id === o.v.id ? null : o.v.id })}>
                   <span className="nm">{o.v.name}</span>
-                  <span className={`st ${o.state}`}>
+                  {canSeeVenues && <span className={`st ${o.state}`}>
                     {o.state === 'free' ? 'Free' : o.state === 'ours' ? '★ Booked by us' : `Taken ${o.othersOn.map(d => fmtShort(d.d)).join(', ')}`}
-                  </span>
+                  </span>}
                 </button>
               ))}
             </div>
-            {chosen && chosen.state === 'busy' && (
+            {canSeeVenues && chosen && chosen.state === 'busy' && (
               <div className="warn">{chosen.v.name} is booked by another club: {chosen.othersOn.flatMap(d => d.bl.filter(b => !b.is_ours).map(b => `${fmtShort(d.d)} ${fmtTime(b.from_time)}–${fmtTime(b.to_time)} ${b.event_name.slice(0, 40)}`)).join('; ')}</div>
             )}
           </div>
@@ -343,15 +344,15 @@ export default function EventDetail() {
           <div className="check-card">
             <div className="check-head"><Tick on={isDone('booked')} /><h4>Venue booked</h4></div>
             <Toggle checked={ev.venue_booked} onChange={v => save({ venue_booked: v })} label="We have booked the venue" />
-            {ourBookingsForEvent.length > 0 ? (
+            {!canSeeVenues ? null : ourBookingsForEvent.length > 0 ? (
               <div className="vstat ok"><span className="ic" />Our VTOP booking: {ourBookingsForEvent.map(b => `${fmtShort(b.booking_date)} ${fmtTime(b.from_time)}–${fmtTime(b.to_time)}`).join(', ')}</div>
             ) : (
               <div className="vstat no"><span className="ic" />{ev.venue_id ? `No booking marked as ours at ${venueName(venues, ev.venue_id)} on these dates.` : 'Pick a venue first.'}</div>
             )}
-            <p className="note-sm" style={{ marginTop: 10, marginBottom: 0 }}>
+            {canSeeVenues && <p className="note-sm" style={{ marginTop: 10, marginBottom: 0 }}>
               Ticks itself when a booking marked “ours” exists for this venue and date.
               {isSuper && <> <Link className="linkbtn" to="/admin/venues">Venue bookings</Link></>}
-            </p>
+            </p>}
           </div>
         )}
 

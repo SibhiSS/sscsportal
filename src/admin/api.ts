@@ -4,6 +4,7 @@ import type {
 } from '@/types/admin';
 import type { ContributionType, EventProposal, LeaderboardRow, TeamMember } from '@/types/club';
 import { prepareProofImage, SITE_MEDIA_BUCKET } from '@/lib/club';
+import { PANEL_ROLES, type PanelRole } from '@/lib/roles';
 import type { ImportRow } from './calendarLogic';
 
 // Admin data access. Every table here is admin-only under RLS.
@@ -42,6 +43,27 @@ export async function fetchBookings(): Promise<VenueBooking[]> {
   const rows = await fetchAll<VenueBooking>((from, to) =>
     supabase.from('venue_bookings').select('*').order('booking_date').order('from_time').range(from, to));
   return rows.map(b => ({ ...b, from_time: hhmm(b.from_time), to_time: hhmm(b.to_time) }));
+}
+
+// ---- venue availability (board + collaborators) --------------------------------
+// Collaborators can't read the venue tables; these functions give them names and
+// busy times only. Rows are shaped like VenueBooking so the calendar helpers work.
+
+export interface AvailabilityVenue { id: string; name: string; short_name: string }
+
+export const fetchAvailabilityVenues = async () =>
+  check(await supabase.rpc('availability_venues')) as AvailabilityVenue[];
+
+export const fetchVenueDataAsOf = async () =>
+  check(await supabase.rpc('venue_data_as_of')) as string | null;
+
+export async function fetchBusySlots(fromIso: string, toIso: string): Promise<VenueBooking[]> {
+  const rows = await fetchAll<{ venue_id: string; booking_date: string; from_time: string; to_time: string }>((from, to) =>
+    supabase.rpc('venue_busy_slots', { p_from: fromIso, p_to: toIso }).range(from, to));
+  return rows.map((b, i) => ({
+    id: `${b.venue_id}|${b.booking_date}|${i}`, venue_id: b.venue_id, booking_date: b.booking_date,
+    from_time: hhmm(b.from_time), to_time: hhmm(b.to_time), event_name: '', booked_by: null, phone: null, is_ours: false,
+  }));
 }
 
 export const addBooking = async (b: Omit<VenueBooking, 'id'>) =>
@@ -383,12 +405,14 @@ export async function reviewContribution(id: string, status: 'approved' | 'rejec
 
 // ---- settings: admins + contribution types ------------------------------------------
 
-export interface AdminRow { id: string; email: string; role: 'super_admin' | 'admin' | 'member'; created_at: string; added_by: string | null }
+export interface AdminRow { id: string; email: string; role: PanelRole; created_at: string; added_by: string | null }
 
-export const fetchAdmins = async () =>
-  check(await supabase.from('admins').select('id, email, role, created_at, added_by').in('role', ['super_admin', 'admin']).order('role', { ascending: false }).order('email')) as AdminRow[];
+export async function fetchAdmins() {
+  const rows = check(await supabase.from('admins').select('id, email, role, created_at, added_by').in('role', [...PANEL_ROLES]).order('email')) as AdminRow[];
+  return rows.sort((a, b) => PANEL_ROLES.indexOf(a.role) - PANEL_ROLES.indexOf(b.role));
+}
 
-export async function addAdmin(email: string, role: 'super_admin' | 'admin', addedBy: string) {
+export async function addAdmin(email: string, role: PanelRole, addedBy: string) {
   // A legacy row (old interviewer/viewer, now "member") may already exist for this email: promote it.
   // Case-insensitive exact match: escape LIKE wildcards ("_" is common in emails).
   const pattern = email.replace(/[\\%_]/g, c => '\\' + c);
@@ -397,7 +421,7 @@ export async function addAdmin(email: string, role: 'super_admin' | 'admin', add
   else check(await supabase.from('admins').insert({ email, role, added_by: addedBy }));
 }
 
-export const setAdminRole = async (id: string, role: 'super_admin' | 'admin') =>
+export const setAdminRole = async (id: string, role: PanelRole) =>
   check(await supabase.from('admins').update({ role }).eq('id', id));
 
 export const removeAdmin = async (id: string) =>
