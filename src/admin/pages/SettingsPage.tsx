@@ -200,7 +200,7 @@ function TypesSection() {
         <div key={group} style={{ marginTop: 18 }}>
           <div className="sec-lbl">{group}</div>
           <div className="tbl-wrap">
-            <table>
+            <table className="types-tbl">
               <thead><tr><th>Name</th><th style={{ width: 110 }}>Points</th><th style={{ width: 120 }}>Shown</th><th style={{ width: 170 }} /></tr></thead>
               <tbody>
                 {list.map(t => {
