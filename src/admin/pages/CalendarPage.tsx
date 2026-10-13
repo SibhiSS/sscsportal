@@ -5,10 +5,10 @@ import { useAdminData } from '../AdminData';
 import { deleteBooking, deleteEntry, deleteEvent, removeEventFile, setBookingOurs } from '../api';
 import {
   ENTRY_TYPES, NO_EVENT_TYPES, addDays, dayCount, fmtLong, fmtRange, fmtTime, isoDate, ourBookingsOn, todayIso,
-  toDate, venueDay, venueName, type CalItem,
+  availabilityVenues, toDate, venueDay, venueLabel, venueName, type CalItem,
 } from '../calendarLogic';
 import EntryModal from '../EntryModal';
-import { useIsSuperAdmin } from '../SuperAdminOnly';
+import { useIsExternal, useIsSuperAdmin } from '../SuperAdminOnly';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DOWS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -24,8 +24,9 @@ export default function CalendarPage() {
   const [venueFilter, setVenueFilter] = useState('all');
   const [listFilter, setListFilter] = useState<'all' | keyof typeof ENTRY_TYPES>('all');
   const [modal, setModal] = useState<{ editing: CalItem | null; date: string } | null>(null);
+  const readOnly = useIsExternal();
 
-  const activeVenues = useMemo(() => venues.filter(v => v.is_active), [venues]);
+  const activeVenues = useMemo(() => availabilityVenues(venues), [venues]);
 
   const selectDate = (iso: string, jump = false) => {
     setSelected(iso);
@@ -89,7 +90,7 @@ export default function CalendarPage() {
           <div className="cal-head">
             <div className="cal-title">{MONTHS[view.m]}, {view.y}</div>
             <div className="cal-nav">
-              <button className="add-btn" onClick={() => setModal({ editing: null, date: selected })}><span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Add</button>
+              {!readOnly && <button className="add-btn" onClick={() => setModal({ editing: null, date: selected })}><span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Add</button>}
               <button className="pill-btn" onClick={() => selectDate(today, true)}>Today</button>
               <button className="circ" onClick={() => shiftMonth(-1)} aria-label="Previous month">‹</button>
               <button className="circ" onClick={() => shiftMonth(1)} aria-label="Next month">›</button>
@@ -161,7 +162,7 @@ export default function CalendarPage() {
               return (
                 <div key={iso} className={cls} role="button" tabIndex={0} aria-label={fmtLong(iso)}
                   onClick={() => selectDate(iso)}
-                  onDoubleClick={() => setModal({ editing: null, date: iso })}
+                  onDoubleClick={() => { if (!readOnly) setModal({ editing: null, date: iso }); }}
                   onKeyDown={e => { if (e.key === 'Enter') selectDate(iso); }}>
                   {badge}
                   <div className="num">{toDate(iso).getDate()}</div>
@@ -215,6 +216,7 @@ export default function CalendarPage() {
           </div>
           <DayDetail
             iso={selected}
+            readOnly={readOnly}
             showVenues={showVenues}
             venueFilter={venueFilter}
             onAdd={() => setModal({ editing: null, date: selected })}
@@ -243,13 +245,15 @@ export default function CalendarPage() {
                   <td className="d"><button className="jump" onClick={() => { selectDate(e.s, true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>{fmtRange(e.s, e.e)}</button></td>
                   <td><span className={`tag ${e.t}`}>{ENTRY_TYPES[e.t]}</span></td>
                   <td>
-                    {e.kind === 'event' ? <Link to={`/admin/events/${e.id}`} style={{ textDecoration: 'none', fontWeight: 600 }}>{e.title}</Link> : e.title}
+                    {e.kind === 'event' && !readOnly ? <Link to={`/admin/events/${e.id}`} style={{ textDecoration: 'none', fontWeight: 600 }}>{e.title}</Link> : e.title}
                     {e.note && <div className="m">{e.note}</div>}
                   </td>
-                  <td className="hide-sm">{e.online ? <span style={{ color: 'var(--online)' }}>Online</span> : venueName(venues, e.venueId) || <span className="muted">—</span>}</td>
+                  <td className="hide-sm">{e.online ? <span style={{ color: 'var(--online)' }}>Online</span> : venueLabel(venues, e.venueId, e.room) || <span className="muted">—</span>}</td>
                   <td className="acts">
-                    <button className="mini-btn" onClick={() => setModal({ editing: e, date: e.s })}>Edit</button>{' '}
-                    <button className="mini-btn danger" onClick={() => removeItem(e)}>Delete</button>
+                    {!readOnly && <>
+                      <button className="mini-btn" onClick={() => setModal({ editing: e, date: e.s })}>Edit</button>{' '}
+                      <button className="mini-btn danger" onClick={() => removeItem(e)}>Delete</button>
+                    </>}
                   </td>
                 </tr>
               )) : <tr><td colSpan={5} className="muted">No entries.</td></tr>}
@@ -270,8 +274,8 @@ export default function CalendarPage() {
   );
 }
 
-function DayDetail({ iso, showVenues, venueFilter, onAdd, onEdit, onDelete, onToggleOurs, onRemoveBooking }: {
-  iso: string; showVenues: boolean; venueFilter: string;
+function DayDetail({ iso, readOnly, showVenues, venueFilter, onAdd, onEdit, onDelete, onToggleOurs, onRemoveBooking }: {
+  iso: string; readOnly: boolean; showVenues: boolean; venueFilter: string;
   onAdd: () => void; onEdit: (it: CalItem) => void; onDelete: (it: CalItem) => void;
   onToggleOurs: (id: string, ours: boolean) => void; onRemoveBooking: (id: string, label: string) => void;
 }) {
@@ -293,7 +297,7 @@ function DayDetail({ iso, showVenues, venueFilter, onAdd, onEdit, onDelete, onTo
     return <div className="warn">{venueName(venues, e.venueId)} is booked this day: {vd.bl.map(b => `${fmtTime(b.from_time)}–${fmtTime(b.to_time)} ${b.event_name.slice(0, 40)}`).join('; ')}</div>;
   };
 
-  const list = venueFilter === 'all' ? venues.filter(v => v.is_active) : venues.filter(v => v.id === venueFilter);
+  const list = venueFilter === 'all' ? availabilityVenues(venues) : venues.filter(v => v.id === venueFilter);
   const st = list.map(v => ({ v, ...venueDay(bookingMap, v.id, iso) }));
   const free = st.filter(x => x.s === 'free');
   const busy = st.filter(x => x.s !== 'free').sort((a, b) => (a.s === 'ours' ? 0 : 1) - (b.s === 'ours' ? 0 : 1));
@@ -313,7 +317,7 @@ function DayDetail({ iso, showVenues, venueFilter, onAdd, onEdit, onDelete, onTo
         <div key={e.key} className={`entry ${e.t}`} style={{ marginTop: 10 }}>
           <div className="bar" />
           <div className="t">{e.title}</div>
-          <div className="m">{ENTRY_TYPES[e.t]}{e.online ? ' · Online' : e.venueId ? ' · ' + venueName(venues, e.venueId) : ''}</div>
+          <div className="m">{ENTRY_TYPES[e.t]}{e.online ? ' · Online' : e.venueId ? ' · ' + venueLabel(venues, e.venueId, e.room) : ''}</div>
           {e.note && <div className="m" style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{e.note.length > 220 ? e.note.slice(0, 220) + '…' : e.note}</div>}
           {clash(e)}
           {e.t === 'event' && e.online && <div className="vstat online"><span className="ic" />Online event — no venue needed</div>}
@@ -321,14 +325,16 @@ function DayDetail({ iso, showVenues, venueFilter, onAdd, onEdit, onDelete, onTo
             ? <div className="vstat ok"><span className="ic" />Venue booked: {ourToday.map(b => `${venueName(venues, b.venue_id)} · ${fmtTime(b.from_time)}–${fmtTime(b.to_time)}`).join(', ')}</div>
             : <div className="vstat no"><span className="ic" />No venue booked by SSCS for this day yet</div>)}
           <div className="meta"><span>{fmtRange(e.s, e.e)}</span><span>{dayCount(e.s, e.e) === 1 ? '1 day' : `${dayCount(e.s, e.e)} days`}</span></div>
-          <div className="acts">
-            {e.kind === 'event' && <Link className="mini-btn" to={`/admin/events/${e.id}`}>Checklist</Link>}
-            <button className="mini-btn" onClick={() => onEdit(e)}>Edit</button>
-            <button className="mini-btn danger" onClick={() => onDelete(e)}>Delete</button>
-          </div>
+          {!readOnly && (
+            <div className="acts">
+              {e.kind === 'event' && <Link className="mini-btn" to={`/admin/events/${e.id}`}>Checklist</Link>}
+              <button className="mini-btn" onClick={() => onEdit(e)}>Edit</button>
+              <button className="mini-btn danger" onClick={() => onDelete(e)}>Delete</button>
+            </div>
+          )}
         </div>
       )) : (
-        <div className="muted" style={{ margin: '10px 0' }}>Nothing scheduled. <button className="linkbtn" onClick={onAdd}>Add something</button></div>
+        <div className="muted" style={{ margin: '10px 0' }}>Nothing scheduled.{!readOnly && <> <button className="linkbtn" onClick={onAdd}>Add something</button></>}</div>
       )}
 
       {showVenues && (

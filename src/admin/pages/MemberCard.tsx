@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { Award, CalendarCheck, Contact, Info, Layers, Pencil, RotateCcw, Trash2 } from 'lucide-react';
+import { Award, CalendarCheck, Contact, Info, Layers, Link2, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import { signProofImages } from '@/lib/club';
 import type { AdminContribution, RosterMember } from '@/types/admin';
 import { useAdminData } from '../AdminData';
-import { deleteContribution, fetchMemberContributions, removeFromRoster as apiRemoveFromRoster, reopenContribution, updateMember } from '../api';
-import { fmtMed, initials, isoDate } from '../calendarLogic';
+import {
+  deleteContribution, fetchMemberContributions, linkAttendanceMember, removeFromRoster as apiRemoveFromRoster, reopenContribution, updateMember,
+} from '../api';
+import { fmtMed, initials, isoDate, sameName } from '../calendarLogic';
 
 const errMsg = (err: unknown) => (err as { message?: string })?.message || 'Something went wrong.';
 const localDay = (ts: string) => { const d = new Date(ts); return isoDate(d.getFullYear(), d.getMonth(), d.getDate()); };
@@ -61,6 +63,20 @@ export default function MemberCard() {
     .map(a => ({ a, ev: events.find(e => e.id === a.event_id), type: typeById.get(a.type_id) }))
     .filter(x => x.ev)
     .sort((x, y) => y.ev!.start_date.localeCompare(x.ev!.start_date)), [attendance, events, id, typeById]);
+  // Coordinator slots added by name before they joined the roster, on events they aren't already marked on.
+  const unclaimed = useMemo(() => {
+    if (!m) return [];
+    const onEvents = new Set(attendance.filter(a => a.member_id === m.id).map(a => a.event_id));
+    return attendance
+      .filter(a => a.guest_name && sameName(a.guest_name, m.full_name) && !onEvents.has(a.event_id))
+      .map(a => ({ a, ev: events.find(e => e.id === a.event_id), type: typeById.get(a.type_id) }))
+      .filter(x => x.ev);
+  }, [attendance, events, m, typeById]);
+  const claim = async (rowId: string, title: string) => {
+    if (!m || !window.confirm(`Credit "${title}" (student coordinator) to ${m.full_name}?`)) return;
+    try { await linkAttendanceMember(rowId, m.id); await reload('attendance', 'leaderboard'); toast.success(`Credited to ${m.full_name}.`); }
+    catch (err) { toast.error(errMsg(err)); }
+  };
 
   const list = useMemo(() => contribs ?? [], [contribs]);
   const approved = list.filter(c => c.status === 'approved');
@@ -171,6 +187,23 @@ export default function MemberCard() {
               </div>
             </div>
           )) : <div className="muted">No {statusFilter === 'all' ? '' : statusFilter} contributions.</div>}
+
+          {unclaimed.length > 0 && (
+            <>
+              <div className="divider" style={{ margin: '26px 0 6px' }}>Coordinated before joining</div>
+              <p className="note-sm" style={{ margin: '0 0 6px' }}>Added as a student coordinator under this name while not on the roster. Credit the ones that were them.</p>
+              {unclaimed.map(({ a, ev, type }) => (
+                <div key={a.id} className="citem">
+                  <CalendarCheck size={18} color="var(--text-dim)" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <div className="body">
+                    <Link to={`/admin/events/${ev!.id}`} style={{ textDecoration: 'none' }}><b>{ev!.title}</b></Link>
+                    <div className="m">{type?.name ?? 'Student coordinator'} · {fmtMed(ev!.start_date)}{ev!.completed_at ? '' : ' · not completed yet'}</div>
+                  </div>
+                  <button className="mini-btn" onClick={() => claim(a.id, ev!.title)}><Link2 size={12} /> Credit</button>
+                </div>
+              ))}
+            </>
+          )}
 
           <div className="divider" style={{ margin: '26px 0 6px' }}>Events</div>
           {myEvents.length ? myEvents.map(({ a, ev, type }) => (

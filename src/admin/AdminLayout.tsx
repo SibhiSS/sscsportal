@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  CalendarDays, CheckSquare, Coffee, Globe, HardDrive, LayoutDashboard, Lightbulb, LogIn, LogOut, MapPin, Megaphone, Menu, Search, Settings, ShieldAlert, Ticket, UserSquare, Users,
+  CalendarDays, CheckSquare, Coffee, Globe, HardDrive, LayoutDashboard, Lightbulb, LogIn, LogOut, MapPin, Megaphone, Menu, Search, Settings, ShieldAlert, Ticket, Upload, UserSquare, Users,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/sonner';
@@ -13,9 +13,19 @@ import NotificationBell from './NotificationBell';
 import { fmtShort, initials } from './calendarLogic';
 import './admin.css';
 
-const NAV = [
+type NavItem = {
+  to: string; label: string; icon: typeof LayoutDashboard; end?: boolean;
+  superOnly?: boolean;
+  /** Shown to external users (who see nothing else). */
+  external?: boolean;
+  /** Shown only to external users. */
+  externalOnly?: boolean;
+};
+
+const NAV: NavItem[] = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
-  { to: '/admin/calendar', label: 'Calendar', icon: CalendarDays },
+  { to: '/admin/calendar', label: 'Calendar', icon: CalendarDays, external: true },
+  { to: '/admin/import', label: 'Import bookings', icon: Upload, external: true, externalOnly: true },
   { to: '/admin/events', label: 'Events', icon: Ticket },
   { to: '/admin/venues', label: 'Venues', icon: MapPin, superOnly: true },
   { to: '/admin/members', label: 'Members', icon: Users },
@@ -27,9 +37,11 @@ const NAV = [
   { to: '/admin/website', label: 'Website', icon: Globe, superOnly: true },
   { to: '/admin/team', label: 'Team', icon: UserSquare, superOnly: true },
 ];
-const ACCOUNT_NAV = [
+const ACCOUNT_NAV: NavItem[] = [
   { to: '/admin/settings', label: 'Settings', icon: Settings, superOnly: true },
 ];
+
+const ROLE_LABEL = { super_admin: 'Super admin', admin: 'Admin', external: 'External access' } as const;
 
 /** Admin pages use the normal cursor and no noise overlay (both belong to the public site). */
 function useAdminBodyClass() {
@@ -72,7 +84,7 @@ function Gate({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  if (user.role !== 'super_admin' && user.role !== 'admin') {
+  if (user.role !== 'super_admin' && user.role !== 'admin' && user.role !== 'external') {
     return (
       <div className="adm center-card">
         <TechGridBackground />
@@ -194,9 +206,11 @@ function Shell() {
   const { loading, error, pendingCount, proposals } = useAdminData();
   const waitingProposals = proposals.filter(p => p.status === 'pending').length;
   const isSuper = user?.role === 'super_admin';
+  const isExternal = user?.role === 'external';
   const [navOpen, setNavOpen] = useState(false);
   const { pathname } = useLocation();
   useEffect(() => setNavOpen(false), [pathname]);
+  const navItems = NAV.filter(n => (isExternal ? n.external : !n.externalOnly && (isSuper || !n.superOnly)));
 
   // Rail tooltips are drawn outside the rail, so they still show when its icons scroll.
   const [tip, setTip] = useState<{ label: string; x: number; y: number } | null>(null);
@@ -221,7 +235,7 @@ function Shell() {
         <div className="adm-side-scroll" onScroll={() => setTip(null)}>
         <div className="adm-nav-label">Menu</div>
         <nav className="adm-nav">
-          {NAV.filter(n => isSuper || !n.superOnly).map(({ to, label, icon: Icon, end }) => (
+          {navItems.map(({ to, label, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end} aria-label={label} {...tipProps(label)} className={({ isActive }) => (isActive ? 'active' : '')}>
               <span className="ic"><Icon /></span><span className="lbl">{label}</span>
               {to === '/admin/approvals' && pendingCount > 0 && <span className="adm-badge" aria-label={`${pendingCount} waiting`}>{pendingCount}</span>}
@@ -246,7 +260,7 @@ function Shell() {
           <div className="avatar" title={user?.displayName || user?.email || ''}>{initials(user?.displayName || user?.email || '')}</div>
           <div className="who lbl">
             <b>{user?.displayName || user?.email}</b>
-            <span>{user?.role === 'super_admin' ? 'Super admin' : 'Admin'}</span>
+            <span>{ROLE_LABEL[user?.role as keyof typeof ROLE_LABEL] ?? 'Admin'}</span>
           </div>
           <button className="circ" onClick={logout} title="Sign out" aria-label="Sign out"><LogOut size={15} /></button>
         </div>
@@ -257,8 +271,8 @@ function Shell() {
         <header className="adm-top">
           <button className="adm-menu-btn" onClick={() => setNavOpen(o => !o)} aria-label="Open menu"><Menu size={18} /></button>
           <Crumbs />
-          <GlobalSearch />
-          <NotificationBell />
+          {!isExternal && <GlobalSearch />}
+          {!isExternal && <NotificationBell />}
         </header>
         <main className="adm-page">
           {loading ? <div className="muted">Loading club data…</div>
@@ -268,7 +282,11 @@ function Shell() {
                 <p className="muted">{error}</p>
                 <p className="note-sm">If this is a fresh setup, run the SQL files in supabase/migrations/ in the Supabase SQL editor, in filename order.</p>
               </div>
-            ) : <Outlet />}
+            ) : isExternal && !navItems.some(n => pathname === n.to || pathname.startsWith(n.to + '/'))
+              ? <Navigate to="/admin/calendar" replace />
+              : !isExternal && pathname.startsWith('/admin/import')
+                ? <Navigate to="/admin/venues" replace />
+                : <Outlet />}
         </main>
       </div>
     </div>

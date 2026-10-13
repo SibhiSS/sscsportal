@@ -17,11 +17,11 @@ const Spotlight = ({ row, tiedWith, runnersUp }: { row: LeaderboardRow; tiedWith
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
-    className="h-full"
+    className="lg:self-start"
   >
-    <HolographicCard className="relative h-full overflow-hidden p-8">
+    <HolographicCard className="relative overflow-hidden p-8">
       <div aria-hidden="true" className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-primary/15 blur-3xl" />
-      <div className="relative flex h-full flex-col">
+      <div className="relative flex flex-col">
         <span className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
           <Trophy className="h-3.5 w-3.5" /> Top contributor
         </span>
@@ -54,7 +54,7 @@ const Spotlight = ({ row, tiedWith, runnersUp }: { row: LeaderboardRow; tiedWith
         )}
 
         {runnersUp.length > 0 && (
-          <div className="mt-auto pt-8">
+          <div className="mt-8 border-t border-white/5 pt-6">
             <p className="mb-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Also on the podium</p>
             <div className="space-y-2">
               {runnersUp.map(r => (

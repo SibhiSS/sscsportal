@@ -20,7 +20,7 @@ export default function MembersPage() {
   const standing = useMemo(() => new Map(leaderboard.map(r => [r.member_id, r])), [leaderboard]);
   const eventsBy = useMemo(() => {
     const m = new Map<string, number>();
-    for (const a of attendance) m.set(a.member_id, (m.get(a.member_id) ?? 0) + 1);
+    for (const a of attendance) if (a.member_id) m.set(a.member_id, (m.get(a.member_id) ?? 0) + 1);
     return m;
   }, [attendance]);
 

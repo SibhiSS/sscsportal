@@ -2,7 +2,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { supabase } from '@/lib/supabase';
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
-type Role = 'super_admin' | 'admin' | 'member';
+type Role = 'super_admin' | 'admin' | 'external' | 'member';
 
 interface User {
   email: string;
@@ -88,32 +88,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const isVitStudent = email?.endsWith('@vitstudent.ac.in');
         const isVitStaff = email?.endsWith('@vit.ac.in');
 
-        if (!isHardcodedAdmin && !isVitStudent && !isVitStaff) {
+        // Fetch Role from DB. `admins.email` is matched case-insensitively here because
+        // rows can be entered with inconsistent casing (e.g. pasted from a roster), while
+        // OAuth always returns the email lowercased — a byte-exact match would silently
+        // miss the row and downgrade a real admin to 'member'.
+        const { data: adminData, error: adminLookupError } = await supabase
+          .from('admins')
+          .select('role')
+          .ilike('email', email)
+          .maybeSingle();
+
+        if (adminLookupError) {
+          console.error('[Auth] Admin role lookup failed:', adminLookupError.message);
+        }
+
+        // Only super_admin/admin/external carry privileges. Anything else in the table
+        // (legacy 'interviewer'/'viewer' rows) or no row at all is a plain member.
+        const dbRole = adminData?.role;
+        const role: Role =
+          dbRole === 'super_admin' || dbRole === 'admin' || dbRole === 'external' ? dbRole
+          : isHardcodedAdmin ? 'super_admin'
+          : 'member';
+
+        // Anyone a super admin added to the panel may use any Google account
+        // (external users are often from outside VIT); everyone else needs a VIT one.
+        if (role === 'member' && !isVitStudent && !isVitStaff) {
           await supabase.auth.signOut();
           alert('Access Restricted: Please sign in with your VIT email address (@vitstudent.ac.in).');
           setUser(null);
         } else {
-          // Fetch Role from DB. `admins.email` is matched case-insensitively here because
-          // rows can be entered with inconsistent casing (e.g. pasted from a roster), while
-          // OAuth always returns the email lowercased — a byte-exact match would silently
-          // miss the row and downgrade a real admin to 'member'.
-          const { data: adminData, error: adminLookupError } = await supabase
-            .from('admins')
-            .select('role')
-            .ilike('email', email)
-            .maybeSingle();
-
-          if (adminLookupError) {
-            console.error('[Auth] Admin role lookup failed:', adminLookupError.message);
-          }
-
-          // Only super_admin/admin carry privileges. Anything else in the table
-          // (legacy 'interviewer'/'viewer' rows) or no row at all is a plain member.
-          const dbRole = adminData?.role;
-          const role: Role =
-            dbRole === 'super_admin' || dbRole === 'admin' ? dbRole
-            : isHardcodedAdmin ? 'super_admin'
-            : 'member';
           const nextUser = {
             ...mapSupabaseUser(session.user),
             role

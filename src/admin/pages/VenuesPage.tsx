@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/sonner';
 import type { Venue } from '@/types/admin';
 import { useAdminData } from '../AdminData';
-import { addBooking, deleteBooking, importBookings, saveSetting, saveVenue, setBookingOurs } from '../api';
-import { buildPrompt, fmtLong, fmtMed, fmtShort, fmtTime, parseImport, todayIso, venueName } from '../calendarLogic';
+import { addBooking, deleteBooking, saveVenue, setBookingOurs } from '../api';
+import { fmtLong, fmtMed, fmtShort, fmtTime, todayIso, venueName } from '../calendarLogic';
+import BookingImport from '../BookingImport';
 
 const errMsg = (err: unknown) => (err as { message?: string })?.message || 'Something went wrong.';
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 export default function VenuesPage() {
-  const { venues, bookings, settings, ourNames, reload } = useAdminData();
+  const { venues, bookings, settings, reload } = useAdminData();
   const navigate = useNavigate();
   const today = todayIso();
   const activeVenues = venues.filter(v => v.is_active);
@@ -38,47 +39,6 @@ export default function VenuesPage() {
       toast.success('Booking added.');
     } catch (err) { toast.error(errMsg(err)); }
     finally { setAdding(false); }
-  };
-
-  // ---- prompt + import ----
-  const [namesInput, setNamesInput] = useState(typeof settings.our_names === 'string' ? settings.our_names : '');
-  const [showPrompt, setShowPrompt] = useState(false);
-  const [copyMsg, setCopyMsg] = useState('');
-  const prompt = buildPrompt(venues, ourNames);
-  const saveNames = async () => {
-    try { await saveSetting('our_names', namesInput.trim()); await reload('settings'); }
-    catch (err) { toast.error(errMsg(err)); }
-  };
-  const copyPrompt = async () => {
-    try { await navigator.clipboard.writeText(prompt); setCopyMsg('Copied ✓'); }
-    catch { setShowPrompt(true); setCopyMsg('Copy blocked — select the prompt below and copy it'); }
-    setTimeout(() => setCopyMsg(''), 3000);
-  };
-
-  const [importText, setImportText] = useState('');
-  const [importResult, setImportResult] = useState<{ ok: boolean; lines: string[] } | null>(null);
-  const [importing, setImporting] = useState(false);
-  const runImport = async () => {
-    const { good, bad, notes } = parseImport(importText, venues, ourNames);
-    if (bad.length) { setImportResult({ ok: false, lines: [`Nothing imported — fix these ${bad.length} line(s) first:`, ...bad] }); return; }
-    if (!good.length) {
-      setImportResult({ ok: false, lines: notes.length ? ['No importable rows. Unclear rows flagged:', ...notes] : ['No rows found.'] });
-      return;
-    }
-    setImporting(true);
-    try {
-      const r = await importBookings(good);
-      await reload('bookings', 'settings');
-      setImportResult({
-        ok: true,
-        lines: [
-          `Imported ${r.imported} booking(s) across ${r.venue_days} venue-day(s); replaced ${r.replaced} older booking(s) on those days.`,
-          ...(notes.length ? [`Not imported — the AI flagged ${notes.length} unclear row(s). Check these on VTOP and add them by hand:`, ...notes] : []),
-        ],
-      });
-      setImportText('');
-    } catch (err) { setImportResult({ ok: false, lines: [errMsg(err)] }); }
-    finally { setImporting(false); }
   };
 
   // ---- all bookings table ----
@@ -172,41 +132,7 @@ export default function VenuesPage() {
             <div className="form-acts" style={{ marginTop: 14 }}><button type="submit" className="primary" disabled={adding}>{adding ? 'Adding…' : 'Add booking'}</button></div>
           </form>
 
-          <div className="subcard">
-            <div className="sec-lbl">From screenshots</div>
-            <div className="prompt-box adm-form">
-              <div className="note-sm">Copy this prompt, paste it into Claude or ChatGPT with your VTOP screenshots attached, then paste the rows it returns below.</div>
-              <div className="fld" style={{ marginBottom: 12 }}>
-                <label htmlFor="ourNames">Names that mean our club booked it (comma-separated)</label>
-                <input id="ourNames" value={namesInput} placeholder="Faculty coordinator's name as it appears on VTOP"
-                  onChange={e => setNamesInput(e.target.value)} onBlur={() => { if (namesInput.trim() !== (settings.our_names ?? '')) saveNames(); }} />
-              </div>
-              <div className="form-acts">
-                <button type="button" className="primary" onClick={copyPrompt}>Copy AI prompt</button>
-                <button type="button" className="ghost" onClick={() => setShowPrompt(s => !s)}>{showPrompt ? 'Hide prompt' : 'Show prompt'}</button>
-                <span className="asof">{copyMsg}</span>
-              </div>
-              {showPrompt && <pre className="fmt prompt-pre">{prompt}</pre>}
-            </div>
-            <div className="sec-lbl">Bulk import (paste rows)</div>
-            <div className="fmt">{`venue, date, from, to, event, booked by, phone, ours
-MG, 2027-02-20, 09:00, 17:00, Robotics Expo, R KUMAR, 9876543210
-Nethaji, 21.02.2027, 2:00 PM, 6:00 PM, Women Speaker Session, S DEVI, 9123456780, yes`}</div>
-            <div className="note-sm">
-              Venue: {activeVenues.map(v => v.short_name).join(', ')}. Last column <b>ours</b>: write <i>yes</i> if our club made the booking.
-              For every venue + date in the paste, existing bookings on that day are <b>replaced</b>, so a fresh snapshot also clears cancellations.
-            </div>
-            <textarea className="inp mono-area" value={importText} onChange={e => setImportText(e.target.value)} placeholder="Paste rows here…" aria-label="Rows to import" />
-            <div className="form-acts" style={{ marginTop: 10 }}>
-              <button type="button" className="primary" onClick={runImport} disabled={importing || !importText.trim()}>{importing ? 'Importing…' : 'Import'}</button>
-              <button type="button" className="ghost" onClick={() => { setImportText(''); setImportResult(null); }}>Clear</button>
-            </div>
-            {importResult && (
-              <div className={`imp-result ${importResult.ok ? 'ok' : 'bad'}`}>
-                {importResult.lines.map((l, i) => <div key={i}>{l}</div>)}
-              </div>
-            )}
-          </div>
+          <BookingImport />
         </div>
       </section>
 
@@ -256,7 +182,7 @@ Nethaji, 21.02.2027, 2:00 PM, 6:00 PM, Women Speaker Session, S DEVI, 9123456780
       <section className="panel">
         <div className="list-head">
           <h3 className="ph">Venues IEEE SSCS uses</h3>
-          <button className="add-btn" onClick={() => setVenueEdit({ v: { id: '', name: '', short_name: '', notes: null, is_active: true, sort_order: (venues.length + 1) * 10 }, isNew: true })}>
+          <button className="add-btn" onClick={() => setVenueEdit({ v: { id: '', name: '', short_name: '', notes: null, is_active: true, is_room: false, sort_order: (venues.length + 1) * 10 }, isNew: true })}>
             <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Add venue
           </button>
         </div>
@@ -272,7 +198,7 @@ Nethaji, 21.02.2027, 2:00 PM, 6:00 PM, Women Speaker Session, S DEVI, 9123456780
                     <td>{v.short_name}</td>
                     <td className="hide-sm">{v.notes ?? <span className="muted">—</span>}</td>
                     <td className="tnum">{up.filter(b => b.is_ours).length} / {up.length}</td>
-                    <td><span className={`tag ${v.is_active ? 'approved' : 'inactive'}`}>{v.is_active ? 'In use' : 'Hidden'}</span></td>
+                    <td><span className={`tag ${v.is_active ? 'approved' : 'inactive'}`}>{v.is_active ? 'In use' : 'Hidden'}</span>{v.is_room && <span className="tag neutral" style={{ marginLeft: 6 }}>Room</span>}</td>
                     <td className="acts"><button className="mini-btn" onClick={() => setVenueEdit({ v, isNew: false })}>Edit</button></td>
                   </tr>
                 );
@@ -300,6 +226,11 @@ Nethaji, 21.02.2027, 2:00 PM, 6:00 PM, Women Speaker Session, S DEVI, 9123456780
               <label className="switch"><input type="checkbox" checked={venueEdit.v.is_active}
                 onChange={e => setVenueEdit(s => s && ({ ...s, v: { ...s.v, is_active: e.target.checked } }))} />
                 <span className="track"><span className="knob" /></span><span>In use</span></label></div>
+            <div className="frow"><label>Kind</label>
+              <label className="switch"><input type="checkbox" checked={venueEdit.v.is_room}
+                onChange={e => setVenueEdit(s => s && ({ ...s, v: { ...s.v, is_room: e.target.checked } }))} />
+                <span className="track"><span className="knob" /></span>
+                <span>Room <small className="muted">— type a number per event; not shown in availability</small></span></label></div>
             <div className="modal-foot">
               <button type="button" className="ghost" onClick={() => setVenueEdit(null)}>Cancel</button>
               <button type="submit" className="primary">Save</button>

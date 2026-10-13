@@ -26,6 +26,8 @@ export interface CalItem {
   e: string;
   title: string;
   venueId: string | null;
+  /** Classroom or lab number for a room venue. */
+  room: string | null;
   online: boolean;
   note: string;
 }
@@ -55,11 +57,11 @@ export function toCalItems(events: ClubEvent[], entries: CalendarEntry[]): CalIt
   return [
     ...events.map(ev => ({
       key: 'ev:' + ev.id, kind: 'event' as const, id: ev.id, t: 'event' as const, s: ev.start_date, e: ev.end_date,
-      title: ev.title, venueId: ev.venue_id, online: ev.is_online, note: ev.description ?? '',
+      title: ev.title, venueId: ev.venue_id, room: ev.venue_room ?? null, online: ev.is_online, note: ev.description ?? '',
     })),
     ...entries.map(en => ({
       key: 'en:' + en.id, kind: 'entry' as const, id: en.id, t: en.entry_type, s: en.start_date, e: en.end_date,
-      title: en.title, venueId: null, online: false, note: en.note ?? '',
+      title: en.title, venueId: null, room: null, online: false, note: en.note ?? '',
     })),
   ];
 }
@@ -107,6 +109,15 @@ export const ourBookingsOn = (bookings: VenueBooking[], iso: string) => bookings
 export function venueName(venues: Venue[], id: string | null) {
   return (id && venues.find(v => v.id === id)?.name) || '';
 }
+
+/** The venue's name plus the typed room number, e.g. "Normal Classroom · AB1-204". */
+export function venueLabel(venues: Venue[], id: string | null, room: string | null | undefined) {
+  const name = venueName(venues, id);
+  return name && room ? `${name} · ${room}` : name;
+}
+
+/** Halls whose VTOP bookings the calendar tracks (rooms are left out). */
+export const availabilityVenues = (venues: Venue[]) => venues.filter(v => v.is_active && !v.is_room);
 
 /** Warnings for the add/edit form, same rules as the calendar file. */
 export function formWarnings(opts: {
@@ -218,7 +229,7 @@ export function parseImport(text: string, venues: Venue[], ourNames: string[]) {
 }
 
 export function buildPrompt(venues: Venue[], ourNames: string[]) {
-  const active = venues.filter(v => v.is_active);
+  const active = availabilityVenues(venues);
   return `Extract venue bookings from the attached VTOP booking screenshots. Output ONLY the rows below, inside one code block, with no explanation before or after.
 
 FORMAT — one booking per line, comma-separated, exactly 8 columns:
@@ -270,3 +281,9 @@ export function eventHasOurBooking(ev: ClubEvent, bookingMap: Map<string, VenueB
 
 export const initials = (name: string) =>
   name.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]!.toUpperCase()).join('') || '?';
+
+/** Same person's name, ignoring case and spacing (matches guest coordinators to roster members). */
+export const sameName = (a: string, b: string) => {
+  const norm = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
+  return norm(a) === norm(b);
+};

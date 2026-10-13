@@ -5,11 +5,15 @@ import { toast } from '@/components/ui/sonner';
 import type { ContributionType } from '@/types/club';
 import { useAdminData } from '../AdminData';
 import {
-  addAdmin, deleteType, fetchAdmins, fetchAllTypes, removeAdmin, saveType, setAdminRole, type AdminRow,
+  addAdmin, deleteType, fetchAdmins, fetchAllTypes, removeAdmin, saveType, setAdminRole, type AdminRow, type PanelRole,
 } from '../api';
 import { fmtMed, isoDate } from '../calendarLogic';
 
 const errMsg = (err: unknown) => (err as { message?: string })?.message || 'Something went wrong.';
+const ROLE_LABEL: Record<PanelRole, string> = { admin: 'Admin', super_admin: 'Super admin', external: 'External access' };
+const ROLE_TAG: Record<PanelRole, string> = { admin: 'neutral', super_admin: 'lead', external: 'neutral' };
+const RoleOptions = () => <>{(Object.keys(ROLE_LABEL) as PanelRole[]).map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</>;
+
 const localDay = (ts: string) => { const d = new Date(ts); return isoDate(d.getFullYear(), d.getMonth(), d.getDate()); };
 
 export default function SettingsPage() {
@@ -32,7 +36,7 @@ function AdminsSection() {
   const isSuper = user?.role === 'super_admin';
   const [admins, setAdmins] = useState<AdminRow[] | null>(null);
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'admin' | 'super_admin'>('admin');
+  const [role, setRole] = useState<PanelRole>('admin');
   const [busy, setBusy] = useState(false);
   const me = (user?.email ?? '').toLowerCase();
 
@@ -45,14 +49,14 @@ function AdminsSection() {
     e.preventDefault();
     const em = email.trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { toast.error('Enter a valid email.'); return; }
-    if (!/@(vitstudent\.ac\.in|vit\.ac\.in)$/.test(em) && !window.confirm(`${em} isn't a VIT address, and only VIT accounts can sign in. Add anyway?`)) return;
-    if ((admins ?? []).some(a => a.email.toLowerCase() === em)) { toast.error('Already an admin.'); return; }
+    if (!/@(vitstudent\.ac\.in|vit\.ac\.in)$/.test(em) && !window.confirm(`${em} isn't a VIT address. They will be able to sign in with this Google account as ${ROLE_LABEL[role]}. Add anyway?`)) return;
+    if ((admins ?? []).some(a => a.email.toLowerCase() === em)) { toast.error('Already on this list. Change their role in the table.'); return; }
     setBusy(true);
-    try { await addAdmin(em, role, me); setEmail(''); setRole('admin'); await load(); toast.success(`${em} can now use the admin panel.`); }
+    try { await addAdmin(em, role, me); setEmail(''); setRole('admin'); await load(); toast.success(role === 'external' ? `${em} can now see the calendar and import bookings.` : `${em} can now use the admin panel.`); }
     catch (err) { toast.error(errMsg(err)); }
     finally { setBusy(false); }
   };
-  const changeRole = async (a: AdminRow, r: 'admin' | 'super_admin') => {
+  const changeRole = async (a: AdminRow, r: PanelRole) => {
     if (a.email.toLowerCase() === me && r !== 'super_admin' && !window.confirm('Step down to admin? You will no longer be able to manage admins.')) return;
     try { await setAdminRole(a.id, r); await load(); if (a.email.toLowerCase() === me) toast.message('Your role changes the next time you sign in.'); }
     // Reload so the dropdown snaps back to the role the database kept.
@@ -68,7 +72,7 @@ function AdminsSection() {
   return (
     <section className="panel">
       <div className="list-head">
-        <h3 className="ph">Admins</h3>
+        <h3 className="ph">Who can sign in</h3>
       </div>
       <div className="tbl-wrap">
         <table>
@@ -80,11 +84,10 @@ function AdminsSection() {
                   <td><b>{a.email}</b>{a.email.toLowerCase() === me && <span className="tag neutral" style={{ marginLeft: 8 }}>You</span>}</td>
                   <td className="adm-form" style={{ width: 170 }}>
                     {isSuper ? (
-                      <select value={a.role} onChange={e => changeRole(a, e.target.value as 'admin' | 'super_admin')} aria-label={`Role for ${a.email}`}>
-                        <option value="admin">Admin</option>
-                        <option value="super_admin">Super admin</option>
+                      <select value={a.role} onChange={e => changeRole(a, e.target.value as PanelRole)} aria-label={`Role for ${a.email}`}>
+                        <RoleOptions />
                       </select>
-                    ) : <span className={`tag ${a.role === 'super_admin' ? 'lead' : 'neutral'}`}>{a.role === 'super_admin' ? 'Super admin' : 'Admin'}</span>}
+                    ) : <span className={`tag ${ROLE_TAG[a.role as PanelRole] ?? 'neutral'}`}>{ROLE_LABEL[a.role as PanelRole] ?? a.role}</span>}
                   </td>
                   <td className="hide-sm">{a.created_at ? fmtMed(localDay(a.created_at)) : '—'}{a.added_by && <div className="m">by {a.added_by}</div>}</td>
                   <td className="acts">{isSuper && <button className="mini-btn danger" onClick={() => remove(a)}><Trash2 size={12} /> Remove</button>}</td>
@@ -96,14 +99,13 @@ function AdminsSection() {
       {isSuper && (
         <form className="adm-form form-acts" onSubmit={add} style={{ marginTop: 16, alignItems: 'flex-end' }} autoComplete="off">
           <div className="fld" style={{ flex: 1, minWidth: 220 }}>
-            <label htmlFor="newAdmin">Add an admin</label>
+            <label htmlFor="newAdmin">Add someone</label>
             <input id="newAdmin" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@vitstudent.ac.in" required />
           </div>
           <div className="fld" style={{ width: 160 }}>
             <label htmlFor="newRole">Role</label>
-            <select id="newRole" value={role} onChange={e => setRole(e.target.value as 'admin' | 'super_admin')}>
-              <option value="admin">Admin</option>
-              <option value="super_admin">Super admin</option>
+            <select id="newRole" value={role} onChange={e => setRole(e.target.value as PanelRole)}>
+              <RoleOptions />
             </select>
           </div>
           <button type="submit" className="primary" disabled={busy}>{busy ? 'Adding…' : 'Add'}</button>
@@ -111,6 +113,7 @@ function AdminsSection() {
       )}
       <p className="note-sm" style={{ marginTop: 12, marginBottom: 0 }}>
         Admins use everything in this panel. Super admins can also manage this list. There is always at least one super admin.
+        External access sees only the calendar (read-only) and can import VTOP venue bookings; any Google account works for them.
       </p>
     </section>
   );

@@ -166,7 +166,7 @@ const Navigation = () => {
                       <Award className="mr-3 h-4 w-4 text-primary" />
                       <span>My Contributions</span>
                     </DropdownMenuItem>
-                    {(user.role === 'super_admin' || user.role === 'admin') && (
+                    {(user.role === 'super_admin' || user.role === 'admin' || user.role === 'external') && (
                       <DropdownMenuItem onClick={() => navigate('/admin')} className="rounded-xl focus:bg-white/10 cursor-pointer p-3">
                         <UserIcon className="mr-3 h-4 w-4 text-primary" />
                         <span>Admin Dashboard</span>
@@ -262,7 +262,7 @@ const Navigation = () => {
                     <Award className="w-4 h-4 mr-2" />
                     My Contributions
                   </Button>
-                  {(user.role === 'super_admin' || user.role === 'admin') && (
+                  {(user.role === 'super_admin' || user.role === 'admin' || user.role === 'external') && (
                     <Button variant="outline" className="rounded-full px-8" onClick={() => { navigate('/admin'); setIsMobileMenuOpen(false); }}>
                       <UserIcon className="w-4 h-4 mr-2" />
                       Admin Dashboard

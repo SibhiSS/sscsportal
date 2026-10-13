@@ -5,7 +5,7 @@ import type { ClubEvent } from '@/types/admin';
 import { useAdminData } from '../AdminData';
 import { updateEvent } from '../api';
 import { useIsSuperAdmin } from '../SuperAdminOnly';
-import { fmtRange, todayIso, venueName } from '../calendarLogic';
+import { fmtRange, todayIso, venueLabel } from '../calendarLogic';
 import EntryModal from '../EntryModal';
 import { useEventProgress } from '../useEventProgress';
 
@@ -67,7 +67,7 @@ export default function EventsPage() {
                   <tr key={ev.id} className="click" onClick={() => navigate(`/admin/events/${ev.id}`)}>
                     <td className="d">{fmtRange(ev.start_date, ev.end_date)}</td>
                     <td><b>{ev.title}</b></td>
-                    <td className="hide-sm">{ev.is_online ? <span style={{ color: 'var(--online)' }}>Online</span> : venueName(venues, ev.venue_id) || <span className="muted">Venue not decided</span>}</td>
+                    <td className="hide-sm">{ev.is_online ? <span style={{ color: 'var(--online)' }}>Online</span> : venueLabel(venues, ev.venue_id, ev.venue_room) || <span className="muted">Venue not decided</span>}</td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div className={`prog${p.done === p.total ? ' done' : ''}`} style={{ flex: 1 }}><i style={{ width: `${(p.done / p.total) * 100}%` }} /></div>

@@ -4,8 +4,46 @@
     {
       "name": "sscs-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 8080
+    },
+    {
+      "name": "sscs-dev-alt",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "8081",
+        "--strictPort"
+      ],
+      "port": 8081
+    },
+    {
+      "name": "sscs-dev-mobile",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "8083",
+        "--strictPort"
+      ],
+      "port": 8083
+    },
+    {
+      "name": "sscs-dev-mock",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--config",
+        "C:/Users/sibhi/AppData/Local/Temp/claude/D--ieee-sscs/7015ed52-4cd8-4266-9d22-bc75ee313603/scratchpad/vite.mock.config.ts",
+        "--port",
+        "8084",
+        "--strictPort"
+      ],
+      "port": 8084
     }
   ]
 }

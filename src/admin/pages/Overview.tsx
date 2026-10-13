@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminData } from '../AdminData';
-import { ENTRY_TYPES, NO_EVENT_TYPES, addDays, fmtRange, fmtShort, fmtTime, initials, todayIso, venueName } from '../calendarLogic';
+import { ENTRY_TYPES, NO_EVENT_TYPES, addDays, fmtRange, fmtShort, fmtTime, initials, todayIso, venueLabel, venueName } from '../calendarLogic';
 import { useEventProgress } from '../useEventProgress';
 import { useIsSuperAdmin } from '../SuperAdminOnly';
 
@@ -65,7 +65,7 @@ export default function Overview() {
                   <div className="t">{ev.title}</div>
                   <span className="tnum" style={{ fontWeight: 700, fontSize: 13 }}>{p.done}/{p.total}</span>
                 </div>
-                <div className="m">{fmtRange(ev.start_date, ev.end_date)} · {ev.is_online ? 'Online' : venueName(venues, ev.venue_id) || 'Venue not decided'}</div>
+                <div className="m">{fmtRange(ev.start_date, ev.end_date)} · {ev.is_online ? 'Online' : venueLabel(venues, ev.venue_id, ev.venue_room) || 'Venue not decided'}</div>
                 <div className={`prog${p.done === p.total ? ' done' : ''}`} style={{ marginTop: 10 }}><i style={{ width: `${(p.done / p.total) * 100}%` }} /></div>
                 {missing.length > 0 && <div className="m" style={{ marginTop: 8 }}>To do: {missing.join(', ')}</div>}
               </Link>

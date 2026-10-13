@@ -13,18 +13,22 @@ const errMsg = (err: unknown) => (err as { message?: string })?.message || 'Some
 /**
  * "Event completed successfully". Until a super admin marks it, the event's
  * coordinators, volunteers and attendees are listed but earn no points.
+ * `unlinked` counts coordinators not on the roster: they're credited once linked.
  */
-export default function EventCompletion({ ev, credited }: { ev: ClubEvent; credited: number }) {
+export default function EventCompletion({ ev, credited, unlinked = 0 }: { ev: ClubEvent; credited: number; unlinked?: number }) {
   const { user } = useAuth();
   const isSuper = useIsSuperAdmin();
   const { patchEvent, reload } = useAdminData();
   const [busy, setBusy] = useState(false);
   const started = ev.start_date <= todayIso();
   const people = `${credited} ${credited === 1 ? 'person' : 'people'}`;
+  const pendingNote = unlinked
+    ? ` ${unlinked} coordinator${unlinked === 1 ? " isn't" : "s aren't"} on the roster yet and get${unlinked === 1 ? 's' : ''} points once linked.`
+    : '';
 
   const set = async (done: boolean) => {
     const ask = done
-      ? `Mark "${ev.title}" as completed successfully?\n\nThis credits points to the ${people} marked on it (coordinators, volunteers, attendees).`
+      ? `Mark "${ev.title}" as completed successfully?\n\nThis credits points to the ${people} marked on it (coordinators, volunteers, attendees).${pendingNote}`
       : `Reopen "${ev.title}"?\n\nThe ${people} marked on it lose this event's points until it is completed again.`;
     if (!window.confirm(ask)) return;
     setBusy(true);
@@ -47,7 +51,7 @@ export default function EventCompletion({ ev, credited }: { ev: ClubEvent; credi
           <b>Completed successfully</b>
           <span>
             {legacy ? 'Counted as completed (it ended before this button existed)' : `On ${fmtMed(ev.completed_at.slice(0, 10))}`}
-            {isSuper && !legacy && ev.completed_by ? ` by ${ev.completed_by}` : ''} · points credited to {people}
+            {isSuper && !legacy && ev.completed_by ? ` by ${ev.completed_by}` : ''} · points credited to {people}{pendingNote}
           </span>
         </div>
         {isSuper && <button className="mini-btn" onClick={() => set(false)} disabled={busy}><RotateCcw size={13} /> Reopen</button>}
@@ -62,7 +66,7 @@ export default function EventCompletion({ ev, credited }: { ev: ClubEvent; credi
         <b>Not completed yet</b>
         <span>
           {credited
-            ? `${people} marked on this event will get their points once it's marked completed.`
+            ? `${people} marked on this event will get their points once it's marked completed.${pendingNote}`
             : 'Mark coordinators, volunteers and attendees below; they get points once the event is completed.'}
         </span>
       </div>

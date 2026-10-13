@@ -34,7 +34,7 @@ export const fetchVenues = async () =>
 export async function saveVenue(v: Venue, isNew: boolean) {
   if (isNew) check(await supabase.from('venues').insert(v));
   else check(await supabase.from('venues').update({
-    name: v.name, short_name: v.short_name, notes: v.notes, is_active: v.is_active, sort_order: v.sort_order,
+    name: v.name, short_name: v.short_name, notes: v.notes, is_active: v.is_active, sort_order: v.sort_order, is_room: v.is_room,
   }).eq('id', v.id));
 }
 
@@ -74,6 +74,12 @@ export const deleteEntry = async (id: string) =>
 
 export const fetchEvents = async () =>
   check(await supabase.from('events').select('*').order('start_date')) as ClubEvent[];
+
+/** External users can't read `events` (budgets, files): they get title, dates and venue only. */
+export async function fetchCalendarEvents(): Promise<ClubEvent[]> {
+  const rows = check(await supabase.rpc('club_calendar_events')) as Pick<ClubEvent, 'id' | 'title' | 'start_date' | 'end_date' | 'venue_id' | 'venue_room' | 'is_online'>[];
+  return rows.map(r => ({ ...r, description: null }) as ClubEvent);
+}
 
 export async function createEvent(e: Partial<ClubEvent> & Pick<ClubEvent, 'title' | 'start_date' | 'end_date'>) {
   return check(await supabase.from('events').insert(e).select('*').single()) as ClubEvent;
@@ -125,10 +131,18 @@ export const fetchAttendanceTypes = async () =>
 
 export const fetchAllAttendance = async () =>
   fetchAll<AttendanceRow>((from, to) =>
-    supabase.from('event_attendance').select('id, event_id, member_id, type_id').range(from, to));
+    supabase.from('event_attendance').select('id, event_id, member_id, guest_name, type_id').range(from, to));
 
 export const addAttendance = async (event_id: string, member_id: string, type_id: string, marked_by: string) =>
   check(await supabase.from('event_attendance').insert({ event_id, member_id, type_id, marked_by }));
+
+/** A student coordinator who isn't on the roster yet. */
+export const addGuestCoordinator = async (event_id: string, guest_name: string, type_id: string, marked_by: string) =>
+  check(await supabase.from('event_attendance').insert({ event_id, guest_name, type_id, marked_by }));
+
+/** Credit a guest coordinator's row to the roster member they turned out to be. */
+export const linkAttendanceMember = async (id: string, member_id: string) =>
+  check(await supabase.from('event_attendance').update({ member_id, guest_name: null }).eq('id', id));
 
 export const setAttendanceType = async (id: string, type_id: string) =>
   check(await supabase.from('event_attendance').update({ type_id }).eq('id', id));
@@ -383,12 +397,14 @@ export async function reviewContribution(id: string, status: 'approved' | 'rejec
 
 // ---- settings: admins + contribution types ------------------------------------------
 
-export interface AdminRow { id: string; email: string; role: 'super_admin' | 'admin' | 'member'; created_at: string; added_by: string | null }
+export type PanelRole = 'super_admin' | 'admin' | 'external';
+
+export interface AdminRow { id: string; email: string; role: PanelRole | 'member'; created_at: string; added_by: string | null }
 
 export const fetchAdmins = async () =>
-  check(await supabase.from('admins').select('id, email, role, created_at, added_by').in('role', ['super_admin', 'admin']).order('role', { ascending: false }).order('email')) as AdminRow[];
+  check(await supabase.from('admins').select('id, email, role, created_at, added_by').in('role', ['super_admin', 'admin', 'external']).order('role', { ascending: false }).order('email')) as AdminRow[];
 
-export async function addAdmin(email: string, role: 'super_admin' | 'admin', addedBy: string) {
+export async function addAdmin(email: string, role: PanelRole, addedBy: string) {
   // A legacy row (old interviewer/viewer, now "member") may already exist for this email: promote it.
   // Case-insensitive exact match: escape LIKE wildcards ("_" is common in emails).
   const pattern = email.replace(/[\\%_]/g, c => '\\' + c);
@@ -397,7 +413,7 @@ export async function addAdmin(email: string, role: 'super_admin' | 'admin', add
   else check(await supabase.from('admins').insert({ email, role, added_by: addedBy }));
 }
 
-export const setAdminRole = async (id: string, role: 'super_admin' | 'admin') =>
+export const setAdminRole = async (id: string, role: PanelRole) =>
   check(await supabase.from('admins').update({ role }).eq('id', id));
 
 export const removeAdmin = async (id: string) =>

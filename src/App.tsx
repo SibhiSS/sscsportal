@@ -38,6 +38,7 @@ const CalendarPage = lazyPage(() => import('@/admin/pages/CalendarPage'));
 const EventsPage = lazyPage(() => import('@/admin/pages/EventsPage'));
 const EventDetail = lazyPage(() => import('@/admin/pages/EventDetail'));
 const VenuesPage = lazyPage(() => import('@/admin/pages/VenuesPage'));
+const ImportPage = lazyPage(() => import('@/admin/pages/ImportPage'));
 const MembersPage = lazyPage(() => import('@/admin/pages/MembersPage'));
 const MemberCard = lazyPage(() => import('@/admin/pages/MemberCard'));
 const ApprovalsPage = lazyPage(() => import('@/admin/pages/ApprovalsPage'));
@@ -115,6 +116,7 @@ function App() {
                   <Route path="events" element={<EventsPage />} />
                   <Route path="events/:id" element={<EventDetail />} />
                   <Route path="venues" element={<SuperAdminOnly><VenuesPage /></SuperAdminOnly>} />
+                  <Route path="import" element={<ImportPage />} />
                   <Route path="members" element={<MembersPage />} />
                   <Route path="members/:id" element={<MemberCard />} />
                   <Route path="approvals" element={<ApprovalsPage />} />

@@ -12,6 +12,8 @@ export interface Venue {
   notes: string | null;
   is_active: boolean;
   sort_order: number;
+  /** Classroom, gallery or lab: pickable for events (with a typed room number), left out of venue availability. */
+  is_room: boolean;
 }
 
 export interface VenueBooking {
@@ -57,7 +59,10 @@ export interface RosterMember {
 export interface AttendanceRow {
   id: string;
   event_id: string;
-  member_id: string;
+  /** Null for a student coordinator who isn't on the roster yet (see guest_name). */
+  member_id: string | null;
+  /** Name of a coordinator not on the roster; earns no points until linked to a member. */
+  guest_name: string | null;
   type_id: string;
 }
 

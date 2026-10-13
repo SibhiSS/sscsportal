@@ -45,6 +45,8 @@ export interface ClubEvent {
   end_date: string;
   is_online: boolean;
   venue_id: string | null;
+  /** Classroom or lab number, typed in when the venue is a room (e.g. "AB1-204"). */
+  venue_room: string | null;
   venue_booked: boolean;
   poster_path: string | null;
   report_path: string | null;

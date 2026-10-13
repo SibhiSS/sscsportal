@@ -31,6 +31,8 @@ export default function EntryModal({ editing, defaultDate, defaultType = 'event'
   const [to, setTo] = useState(editing?.e ?? defaultDate);
   const [online, setOnline] = useState(editing?.online ?? false);
   const [venueId, setVenueId] = useState(editing?.venueId ?? '');
+  const [room, setRoom] = useState(editing?.room ?? '');
+  const roomVenue = venues.find(v => v.id === venueId && v.is_room);
   const [note, setNote] = useState(editing?.note ?? '');
   const [saving, setSaving] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
@@ -61,6 +63,7 @@ export default function EntryModal({ editing, defaultDate, defaultType = 'event'
         const fields = {
           title: t, start_date: from, end_date: end, is_online: effOnline,
           venue_id: effOnline ? null : (venueId || null), description: note.trim() || null,
+          venue_room: !effOnline && roomVenue ? room.trim() || null : null,
         };
         const saved = editing?.kind === 'event'
           ? await updateEvent(editing.id, fields)
@@ -144,6 +147,12 @@ export default function EntryModal({ editing, defaultDate, defaultType = 'event'
                 <option value="">Not decided</option>
                 {venues.filter(v => v.is_active || v.id === venueId).map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
               </select>
+            </div>
+          )}
+          {isEvent && !effOnline && roomVenue && (
+            <div className="frow"><label htmlFor="fRoom">{roomVenue.short_name} no.</label>
+              <input id="fRoom" maxLength={40} value={room} onChange={e => setRoom(e.target.value)}
+                placeholder={roomVenue.id === 'lab' ? 'e.g. AB2 Lab 3' : 'e.g. AB1-204'} />
             </div>
           )}
           <div className="frow top"><label htmlFor="fNote">{isEvent ? 'Details' : 'Note'}</label>

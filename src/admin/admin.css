@@ -58,7 +58,8 @@ body.adm-body button:not(:disabled), body.adm-body a, body.adm-body [role="butto
 body.adm-body label.chk, body.adm-body .day, body.adm-body tr.click, body.adm-body select { cursor: pointer !important; }
 body.adm-body input:not([type=checkbox]):not([type=file]), body.adm-body textarea { cursor: text !important; }
 body.adm-body::after { display: none !important; }
-body.adm-body { caret-color: auto; background: #020202; }
+/* Text caret only in fields: clicking a card or label should not leave a blinking cursor in it. */
+body.adm-body { caret-color: transparent; background: #020202; }
 .adm button, .adm input, .adm select, .adm textarea { font-family: inherit; color: inherit; }
 .adm button { cursor: pointer; }
 .adm a { color: inherit; }

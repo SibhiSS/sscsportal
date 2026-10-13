@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Check, Download, ExternalLink, Trash2, Upload, X } from 'lucide-react';
+import { Check, Download, ExternalLink, Link2, Trash2, Upload, UserPlus, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/sonner';
 import type { ClubEvent, RosterMember } from '@/types/admin';
 import { useAdminData } from '../AdminData';
 import {
-  addAttendance, deleteEvent, removeAttendance, removeEventFile, setAttendanceType, signEventFile, updateEvent,
+  addAttendance, addGuestCoordinator, deleteEvent, linkAttendanceMember, removeAttendance, removeEventFile, setAttendanceType, signEventFile, updateEvent,
   uploadEventFile, type EventFileKind,
 } from '../api';
 import {
-  eventChecklist, eventHasOurBooking, fmtLong, fmtRange, fmtShort, fmtTime, formWarnings, initials, venueName, venueRange,
+  eventChecklist, eventHasOurBooking, fmtLong, fmtRange, fmtShort, fmtTime, formWarnings, initials, sameName, venueLabel, venueName, venueRange,
 } from '../calendarLogic';
 import { useIsSuperAdmin } from '../SuperAdminOnly';
 import EventDriveFiles from '../EventDriveFiles';
@@ -34,8 +34,10 @@ function Toggle({ checked, onChange, label, disabled }: { checked: boolean; onCh
   );
 }
 
-/** Search the roster and pick someone. */
-export function MemberPicker({ exclude, onPick, placeholder }: { exclude: Set<string>; onPick: (m: RosterMember) => void; placeholder: string }) {
+/** Search the roster and pick someone. With onGuest, a name that isn't on the roster can be added as typed. */
+export function MemberPicker({ exclude, onPick, onGuest, placeholder }: {
+  exclude: Set<string | null>; onPick: (m: RosterMember) => void; onGuest?: (name: string) => void; placeholder: string;
+}) {
   const { roster } = useAdminData();
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
@@ -62,6 +64,13 @@ export function MemberPicker({ exclude, onPick, placeholder }: { exclude: Set<st
               <span className="m">{m.member_department ?? ''}{m.is_lead ? ' · Lead' : ''}</span>
             </button>
           )) : <div className="muted" style={{ padding: 8 }}>No matching active members.</div>}
+          {onGuest && q.trim() && (
+            <button type="button" onClick={() => { onGuest(q.trim().replace(/\s+/g, ' ')); setQ(''); setOpen(false); }}>
+              <span className="avatar" style={{ width: 24, height: 24, fontSize: 10 }}><UserPlus size={12} /></span>
+              Add “{q.trim()}”
+              <span className="m">Not on the roster</span>
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -147,6 +156,7 @@ export default function EventDetail() {
   const isSuper = useIsSuperAdmin();
 
   const [draft, setDraft] = useState({ title: '', start_date: '', end_date: '', description: '' });
+  const [room, setRoom] = useState('');
   const [saving, setSaving] = useState(false);
   const loadedFor = useRef<string | null>(null);
 
@@ -156,6 +166,7 @@ export default function EventDetail() {
     setDraft({
       title: ev.title, start_date: ev.start_date, end_date: ev.end_date, description: ev.description ?? '',
     });
+    setRoom(ev.venue_room ?? '');
   }, [ev]);
 
   const rows = useMemo(() => attendance.filter(a => a.event_id === id), [attendance, id]);
@@ -164,6 +175,7 @@ export default function EventDetail() {
   const others = rows.filter(a => a.type_id !== coordinatorTypeId);
   const onEvent = useMemo(() => new Set(rows.map(r => r.member_id)), [rows]);
   const nonCoordTypes = attendanceTypes.filter(t => t.id !== coordinatorTypeId);
+  const [linking, setLinking] = useState<string | null>(null);
 
   if (!ev) {
     return (
@@ -218,6 +230,24 @@ export default function EventDetail() {
     try { await addAttendance(ev.id, m.id, typeId, user?.email ?? ''); await reload('attendance', 'leaderboard'); }
     catch (err) { toast.error(errMsg(err)); }
   };
+  const markGuest = async (name: string) => {
+    if (!coordinatorTypeId) { toast.error('Attendance roles are missing — run the club panel migration.'); return; }
+    if (name.length > 100) { toast.error('That name is too long.'); return; }
+    if (coordinators.some(a => a.guest_name && sameName(a.guest_name, name))) { toast.error(`${name} is already a coordinator here.`); return; }
+    try {
+      await addGuestCoordinator(ev.id, name, coordinatorTypeId, user?.email ?? '');
+      await reload('attendance');
+      toast.success(`${name} added. Link them to the roster once they join to credit their points.`);
+    } catch (err) { toast.error(errMsg(err)); }
+  };
+  const link = async (rowId: string, m: RosterMember) => {
+    try {
+      await linkAttendanceMember(rowId, m.id);
+      await reload('attendance', 'leaderboard');
+      setLinking(null);
+      toast.success(ev.completed_at ? `Credited to ${m.full_name}; the coordinator points are on their total.` : `Linked to ${m.full_name}; they get the points once the event is completed.`);
+    } catch (err) { toast.error(errMsg(err)); }
+  };
   const changeRole = async (rowId: string, typeId: string) => {
     try { await setAttendanceType(rowId, typeId); await reload('attendance', 'leaderboard'); }
     catch (err) { toast.error(errMsg(err)); }
@@ -242,7 +272,7 @@ export default function EventDetail() {
           <h1>{ev.title}</h1>
           <div className="sub">
             {fmtLong(ev.start_date)}{ev.end_date !== ev.start_date ? ` – ${fmtLong(ev.end_date)}` : ''}
-            {' · '}{ev.is_online ? 'Online' : venueName(venues, ev.venue_id) || 'Venue not decided'}
+            {' · '}{ev.is_online ? 'Online' : venueLabel(venues, ev.venue_id, ev.venue_room) || 'Venue not decided'}
           </div>
         </div>
         <div className="form-acts">
@@ -265,7 +295,7 @@ export default function EventDetail() {
         </div>
       </div>
 
-      <EventCompletion ev={ev} credited={rows.length} />
+      <EventCompletion ev={ev} credited={rows.filter(r => r.member_id).length} unlinked={rows.length - rows.filter(r => r.member_id).length} />
 
       <div className="check-grid">
         {/* Basics */}
@@ -324,15 +354,26 @@ export default function EventDetail() {
             <div className="vopts">
               {venueOptions.map(o => (
                 <button key={o.v.id} type="button" className={`vopt${ev.venue_id === o.v.id ? ' sel' : ''}`}
-                  onClick={() => save({ venue_id: ev.venue_id === o.v.id ? null : o.v.id })}>
+                  onClick={() => save({ venue_id: ev.venue_id === o.v.id ? null : o.v.id, venue_room: null })}>
                   <span className="nm">{o.v.name}</span>
-                  <span className={`st ${o.state}`}>
-                    {o.state === 'free' ? 'Free' : o.state === 'ours' ? '★ Booked by us' : `Taken ${o.othersOn.map(d => fmtShort(d.d)).join(', ')}`}
+                  <span className={`st ${o.v.is_room ? 'free' : o.state}`}>
+                    {o.v.is_room ? 'Type the number' : o.state === 'free' ? 'Free' : o.state === 'ours' ? '★ Booked by us' : `Taken ${o.othersOn.map(d => fmtShort(d.d)).join(', ')}`}
                   </span>
                 </button>
               ))}
             </div>
-            {chosen && chosen.state === 'busy' && (
+            {chosen?.v.is_room && (
+              <div className="adm-form" style={{ marginTop: 12, maxWidth: 280 }}>
+                <div className="fld">
+                  <label htmlFor="evRoom">{chosen.v.short_name} number</label>
+                  <input id="evRoom" maxLength={40} value={room} placeholder={chosen.v.id === 'lab' ? 'e.g. AB2 Lab 3' : 'e.g. AB1-204'}
+                    onChange={e => setRoom(e.target.value)}
+                    onBlur={() => { if (room.trim() !== (ev.venue_room ?? '')) save({ venue_room: room.trim() || null }); }}
+                    onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+                </div>
+              </div>
+            )}
+            {chosen && !chosen.v.is_room && chosen.state === 'busy' && (
               <div className="warn">{chosen.v.name} is booked by another club: {chosen.othersOn.flatMap(d => d.bl.filter(b => !b.is_ours).map(b => `${fmtShort(d.d)} ${fmtTime(b.from_time)}–${fmtTime(b.to_time)} ${b.event_name.slice(0, 40)}`)).join('; ')}</div>
             )}
           </div>
@@ -362,7 +403,34 @@ export default function EventDetail() {
           </div>
           <div className="people" style={{ marginBottom: 10 }}>
             {coordinators.map(a => {
-              const m = memberById.get(a.member_id);
+              if (a.guest_name) {
+                const match = roster.find(r => r.member_status === 'active' && !onEvent.has(r.id) && sameName(r.full_name, a.guest_name!));
+                return (
+                  <div key={a.id} className="person" style={{ flexWrap: 'wrap' }}>
+                    <span className="avatar">{initials(a.guest_name)}</span>
+                    <div className="who">
+                      <b>{a.guest_name}</b>
+                      <span>Not on the roster · no points until linked</span>
+                    </div>
+                    {match ? (
+                      <button className="mini-btn" onClick={() => link(a.id, match)} title={`Credit to ${match.full_name} (${match.email})`}>
+                        <Link2 size={12} /> Credit {match.full_name.split(' ')[0]}
+                      </button>
+                    ) : (
+                      <button className="mini-btn" onClick={() => setLinking(linking === a.id ? null : a.id)} aria-expanded={linking === a.id}>
+                        <Link2 size={12} /> Link
+                      </button>
+                    )}
+                    <button className="circ" onClick={() => unmark(a.id)} aria-label="Remove coordinator"><X size={14} /></button>
+                    {linking === a.id && (
+                      <div style={{ flexBasis: '100%' }}>
+                        <MemberPicker exclude={onEvent} placeholder={`Find ${a.guest_name} on the roster…`} onPick={m => link(a.id, m)} />
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              const m = a.member_id ? memberById.get(a.member_id) : undefined;
               return (
                 <div key={a.id} className="person">
                   <span className="avatar">{initials(m?.full_name ?? '?')}</span>
@@ -375,8 +443,11 @@ export default function EventDetail() {
               );
             })}
           </div>
-          <MemberPicker exclude={onEvent} placeholder="Add a coordinator from the roster…" onPick={m => mark(m, coordinatorTypeId)} />
-          <p className="note-sm" style={{ marginTop: 8, marginBottom: 0 }}>Coordinators get the coordinator points once the event is marked completed (leads excepted).</p>
+          <MemberPicker exclude={onEvent} placeholder="Add a coordinator: search the roster or type a name…" onPick={m => mark(m, coordinatorTypeId)} onGuest={markGuest} />
+          <p className="note-sm" style={{ marginTop: 8, marginBottom: 0 }}>
+            Coordinators get the coordinator points once the event is marked completed (leads excepted).
+            Someone not on the roster can be added by name; link them once they join and the points are credited then.
+          </p>
         </div>
 
         {/* Poster */}
@@ -424,7 +495,7 @@ export default function EventDetail() {
           </div>
           <div className="people" style={{ marginBottom: 10 }}>
             {others.map(a => {
-              const m = memberById.get(a.member_id);
+              const m = a.member_id ? memberById.get(a.member_id) : undefined;
               return (
                 <div key={a.id} className="person adm-form">
                   <span className="avatar">{initials(m?.full_name ?? '?')}</span>

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { AttendanceRow, CalendarEntry, ClubEvent, RosterMember, Venue, VenueBooking } from '@/types/admin';
 import type { ContributionType, EventProposal, LeaderboardRow } from '@/types/club';
+import { useAuth } from '@/contexts/AuthContext';
 import * as api from './api';
 import { indexBookings, indexByDate, toCalItems, type CalItem } from './calendarLogic';
 
@@ -31,6 +32,9 @@ interface AdminDataValue {
   patchEvent: (ev: ClubEvent) => void;
 }
 
+/** All an external user may load: the calendar and the venue import. */
+const EXTERNAL_COLLECTIONS: Collection[] = ['venues', 'bookings', 'entries', 'events', 'settings'];
+
 const Ctx = createContext<AdminDataValue | null>(null);
 
 export const useAdminData = () => {
@@ -40,6 +44,7 @@ export const useAdminData = () => {
 };
 
 export function AdminDataProvider({ children }: { children: ReactNode }) {
+  const isExternal = useAuth().user?.role === 'external';
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -58,7 +63,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     venues: async () => setVenues(await api.fetchVenues()),
     bookings: async () => setBookings(await api.fetchBookings()),
     entries: async () => setEntries(await api.fetchEntries()),
-    events: async () => setEvents(await api.fetchEvents()),
+    events: async () => setEvents(await (isExternal ? api.fetchCalendarEvents() : api.fetchEvents())),
     settings: async () => setSettings(await api.fetchSettings()),
     roster: async () => setRoster(await api.fetchRoster()),
     attendance: async () => {
@@ -73,12 +78,13 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
       console.warn('[admin] Proposals unavailable:', err?.message);
       return [];
     })),
-  }), []);
+  }), [isExternal]);
 
   const reload = useCallback(async (...which: Collection[]) => {
-    const list = which.length ? which : (Object.keys(loaders) as Collection[]);
+    const all = isExternal ? EXTERNAL_COLLECTIONS : (Object.keys(loaders) as Collection[]);
+    const list = which.length ? which.filter(k => all.includes(k)) : all;
     await Promise.all(list.map(k => loaders[k]()));
-  }, [loaders]);
+  }, [loaders, isExternal]);
 
   useEffect(() => {
     reload()
