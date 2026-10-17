@@ -31,6 +31,7 @@ const ProposalsPage = lazyPage(() => import('@/admin/pages/ProposalsPage'));
 const ProposalDetail = lazyPage(() => import('@/admin/pages/ProposalDetail'));
 const DrivePage = lazyPage(() => import('@/admin/pages/DrivePage'));
 const MeetsPage = lazyPage(() => import('@/admin/pages/MeetsPage'));
+const GridMakerPage = lazyPage(() => import('@/admin/pages/GridMakerPage'));
 const BroadcastsPage = lazyPage(() => import('@/admin/pages/BroadcastsPage'));
 const AdminLayout = lazyPage(() => import('@/admin/AdminLayout'));
 const Overview = lazyPage(() => import('@/admin/pages/Overview'));
@@ -124,6 +125,7 @@ function App() {
                   <Route path="proposals/:id" element={<ProposalDetail />} />
                   <Route path="drive" element={<DrivePage />} />
                   <Route path="meets" element={<MeetsPage />} />
+                  <Route path="grid" element={<GridMakerPage />} />
                   <Route path="broadcasts" element={<SuperAdminOnly><BroadcastsPage /></SuperAdminOnly>} />
                   <Route path="website" element={<SuperAdminOnly><WebsitePage /></SuperAdminOnly>} />
                   <Route path="team" element={<SuperAdminOnly><TeamPage /></SuperAdminOnly>} />
