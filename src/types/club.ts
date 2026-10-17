@@ -147,6 +147,7 @@ export interface TeamMember {
   role: string;
   quote: string | null;
   image: string | null;
+  image2: string | null;
   sort_order: number;
 }
 

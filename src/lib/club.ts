@@ -206,7 +206,7 @@ export async function fetchProposalVenues(): Promise<{ id: string; name: string 
 export async function fetchTeam(): Promise<TeamMember[]> {
   const { data, error } = await supabase
     .from('website_team')
-    .select('id, section, tenure, name, role, quote, image, sort_order')
+    .select('id, section, tenure, name, role, quote, image, image2, sort_order')
     .order('sort_order')
     .order('name');
   if (error) throw error;

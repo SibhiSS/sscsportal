@@ -227,9 +227,9 @@ export const addTeamMember = async (m: TeamMemberInput) =>
 export const updateTeamMember = async (id: string, p: Partial<TeamMemberInput>) =>
   check(await supabase.from('website_team').update(p).eq('id', id).select().single()) as TeamMember;
 
-export async function deleteTeamMember(m: Pick<TeamMember, 'id' | 'image'>) {
+export async function deleteTeamMember(m: Pick<TeamMember, 'id' | 'image' | 'image2'>) {
   check(await supabase.from('website_team').delete().eq('id', m.id));
-  await removeSiteImages([m.image]);
+  await removeSiteImages([m.image, m.image2]);
 }
 
 /** Saves the batch of new sort orders after a reorder. */

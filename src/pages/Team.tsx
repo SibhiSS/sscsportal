@@ -31,6 +31,34 @@ const ProfileImage = ({ src: ref, alt }: { src: string | null, alt: string }) =>
     );
 };
 
+/** Shows the photo; with a second photo, clicking flips the card between the two. */
+const FlipPhoto = ({ member }: { member: TeamMember }) => {
+    const [flipped, setFlipped] = useState(false);
+    if (!member.image2) return <ProfileImage src={member.image} alt={member.name} />;
+    return (
+        <button
+            type="button"
+            onClick={() => setFlipped(f => !f)}
+            aria-label={`Show the other photo of ${member.name}`}
+            className="w-full h-full [perspective:600px]"
+        >
+            <motion.div
+                className="relative w-full h-full"
+                style={{ transformStyle: 'preserve-3d' }}
+                animate={{ rotateY: flipped ? 180 : 0 }}
+                transition={{ duration: 0.6, ease: 'easeInOut' }}
+            >
+                <div className="absolute inset-0 [backface-visibility:hidden]">
+                    <ProfileImage src={member.image} alt={member.name} />
+                </div>
+                <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                    <ProfileImage src={member.image2} alt={member.name} />
+                </div>
+            </motion.div>
+        </button>
+    );
+};
+
 const coordinators = [
   {
     name: 'Sangeetha R G',
@@ -193,7 +221,7 @@ const FALLBACK: TeamMember[] = [
     ...leads2025.map(m => ({ ...m, section: 'lead' as const, tenure: '2025-26' })),
     ...coreTeam2026.map(m => ({ ...m, section: 'core' as const, tenure: '2026-27' })),
     ...leads2026.map(m => ({ ...m, section: 'lead' as const, tenure: '2026-27' })),
-].map((m, i) => ({ id: `fallback-${i}`, sort_order: i, name: m.name, role: m.role, quote: m.quote || null, image: m.image, section: m.section, tenure: m.tenure }));
+].map((m, i) => ({ id: `fallback-${i}`, sort_order: i, name: m.name, role: m.role, quote: m.quote || null, image: m.image, image2: null, section: m.section, tenure: m.tenure }));
 
 const Team = () => {
     const [clicks, setClicks] = useState(0);
@@ -306,7 +334,7 @@ const Team = () => {
                                 <HolographicCard className="p-8 text-center h-full">
                                     <div className="flex flex-col items-center">
                                         <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 text-primary relative overflow-hidden border border-primary/20 mx-auto">
-                                            <ProfileImage src={coord.image} alt={coord.name} />
+                                            <FlipPhoto member={coord} />
                                         </div>
 
                                         <div className="mb-4">
@@ -372,7 +400,7 @@ const Team = () => {
                             >
                                 <HolographicCard className="p-6 text-center h-full flex flex-col items-center">
                                     <div className="w-24 h-24 rounded-2xl bg-white/5 grid place-items-center mb-6 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors mx-auto">
-                                        <ProfileImage src={member.image} alt={member.name} />
+                                        <FlipPhoto member={member} />
                                     </div>
 
                                     <div className="mb-4 flex-1">
@@ -431,7 +459,7 @@ const Team = () => {
                                         <div 
                                             className="w-20 h-20 rounded-2xl bg-white/5 grid place-items-center mb-6 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors mx-auto"
                                         >
-                                            <ProfileImage src={member.image} alt={member.name} />
+                                            <FlipPhoto member={member} />
                                             
                                             {/* Idea 3: Pulsing Circuit Heart */}
                                             {isSibhi && (

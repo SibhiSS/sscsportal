@@ -22,7 +22,7 @@ const nextTenure = (t: string) => {
   return `${y}-${String((y + 1) % 100).padStart(2, '0')}`;
 };
 
-type Draft = { id: string | null; section: TeamSection; name: string; role: string; quote: string; image: string | null };
+type Draft = { id: string | null; section: TeamSection; name: string; role: string; quote: string; image: string | null; image2: string | null };
 
 const Face = ({ src }: { src: string | null }) => {
   const [bad, setBad] = useState(false);
@@ -83,16 +83,17 @@ export default function TeamPage() {
 
   // ---- editor ----
   const [draft, setDraft] = useState<Draft | null>(null);
-  const [original, setOriginal] = useState<string | null>(null);   // image before this edit
+  const [originals, setOriginals] = useState<(string | null)[]>([]); // images before this edit
   const [uploaded, setUploaded] = useState<string[]>([]);          // uploaded during this edit
   const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [cropSlot, setCropSlot] = useState<'image' | 'image2'>('image');
   const [saving, setSaving] = useState(false);
 
   const openEditor = (section: TeamSection, m?: TeamMember) => {
     setDraft(m
-      ? { id: m.id, section, name: m.name, role: m.role, quote: m.quote ?? '', image: m.image }
-      : { id: null, section, name: '', role: '', quote: '', image: null });
-    setOriginal(m?.image ?? null);
+      ? { id: m.id, section, name: m.name, role: m.role, quote: m.quote ?? '', image: m.image, image2: m.image2 }
+      : { id: null, section, name: '', role: '', quote: '', image: null, image2: null });
+    setOriginals([m?.image ?? null, m?.image2 ?? null]);
     setUploaded([]);
   };
   const closeEditor = async (discard: boolean) => {
@@ -101,10 +102,11 @@ export default function TeamPage() {
     setDraft(null); setCropSrc(null); setUploaded([]);
   };
 
-  const pickFile = (files: FileList | null) => {
+  const pickFile = (files: FileList | null, slot: 'image' | 'image2') => {
     const f = files?.[0];
     if (!f) return;
     if (!f.type.startsWith('image/')) { toast.error(`${f.name} is not an image.`); return; }
+    setCropSlot(slot);
     setCropSrc(URL.createObjectURL(f));
   };
 
@@ -113,7 +115,7 @@ export default function TeamPage() {
     try {
       const path = await uploadTeamPhoto(blob);
       setUploaded(u => [...u, path]);
-      setDraft(d => d && { ...d, image: path });
+      setDraft(d => d && { ...d, [cropSlot]: path });
       if (cropSrc?.startsWith('blob:')) URL.revokeObjectURL(cropSrc);
       setCropSrc(null);
     } catch (err) { toast.error(errMsg(err)); }
@@ -128,7 +130,7 @@ export default function TeamPage() {
     if (draft.section !== 'faculty' && !tenure) { toast.error('Pick a tenure first.'); return; }
     setSaving(true);
     try {
-      const fields = { name, role, quote: draft.quote.trim() || null, image: draft.image };
+      const fields = { name, role, quote: draft.quote.trim() || null, image: draft.image, image2: draft.image2 };
       if (draft.id) {
         await updateTeamMember(draft.id, fields);
       } else {
@@ -140,7 +142,7 @@ export default function TeamPage() {
         });
       }
       // Drop photos that ended up unused: the replaced original and any abandoned uploads.
-      await removeSiteImages([original, ...uploaded].filter(p => p && p !== draft.image));
+      await removeSiteImages([...originals, ...uploaded].filter(p => p && p !== draft.image && p !== draft.image2));
       await load();
       toast.success(draft.id ? 'Saved.' : `${name} added.`);
       setDraft(null); setUploaded([]);
@@ -217,21 +219,24 @@ export default function TeamPage() {
                 onCancel={() => { if (cropSrc.startsWith('blob:')) URL.revokeObjectURL(cropSrc); setCropSrc(null); }} />
             ) : (
               <form onSubmit={save}>
-                <div className="frow"><label>Photo</label>
-                  <div className="ws-images">
-                    <Face key={draft.image ?? 'none'} src={draft.image} />
-                    <label className="mini-btn ws-pick">
-                      {draft.image ? 'Replace' : 'Upload photo'}
-                      <input type="file" accept="image/*" hidden onChange={e => { pickFile(e.target.files); e.target.value = ''; }} />
-                    </label>
-                    {draft.image && (
-                      <>
-                        <button type="button" className="mini-btn" onClick={() => setCropSrc(siteMediaUrl(draft.image))}>Re-crop</button>
-                        <button type="button" className="mini-btn danger" onClick={() => setDraft(d => d && { ...d, image: null })}>Remove</button>
-                      </>
-                    )}
+                {([['image', 'Photo'], ['image2', 'Second photo']] as const).map(([slot, label]) => (
+                  <div className="frow" key={slot}><label>{label}</label>
+                    <div className="ws-images">
+                      <Face key={draft[slot] ?? 'none'} src={draft[slot]} />
+                      <label className="mini-btn ws-pick">
+                        {draft[slot] ? 'Replace' : 'Upload photo'}
+                        <input type="file" accept="image/*" hidden onChange={e => { pickFile(e.target.files, slot); e.target.value = ''; }} />
+                      </label>
+                      {draft[slot] && (
+                        <>
+                          <button type="button" className="mini-btn" onClick={() => { setCropSlot(slot); setCropSrc(siteMediaUrl(draft[slot])); }}>Re-crop</button>
+                          <button type="button" className="mini-btn danger" onClick={() => setDraft(d => d && { ...d, [slot]: null })}>Remove</button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
+                ))}
+                <div className="note-sm">The second photo is optional. On the Team page, clicking a photo flips between the two.</div>
 
                 <div className="frow"><label htmlFor="tmName">Name</label>
                   <input id="tmName" required maxLength={80} value={draft.name}
