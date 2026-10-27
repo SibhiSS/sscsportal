@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  CalendarDays, CheckSquare, Coffee, Globe, Grid3x3, HardDrive, LayoutDashboard, Lightbulb, LogIn, LogOut, MapPin, Megaphone, Menu, Search, Settings, ShieldAlert, Ticket, Upload, UserSquare, Users,
+  CalendarDays, CheckSquare, ClipboardList, Coffee, Globe, Grid3x3, HardDrive, LayoutDashboard, Lightbulb, LogIn, LogOut, MapPin, Megaphone, Menu, Search, Settings, ShieldAlert, Ticket, Upload, UserSquare, Users,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/sonner';
@@ -11,11 +11,14 @@ import { AdminDataProvider, useAdminData } from './AdminData';
 import { findContributionByCode } from './api';
 import NotificationBell from './NotificationBell';
 import { fmtShort, initials } from './calendarLogic';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import './admin.css';
 
 type NavItem = {
   to: string; label: string; icon: typeof LayoutDashboard; end?: boolean;
   superOnly?: boolean;
+  /** Only shown while the matching feature is switched on in Settings. */
+  feature?: 'recruitment' | 'grid';
   /** Shown to external users (who see nothing else). */
   external?: boolean;
   /** Shown only to external users. */
@@ -27,13 +30,14 @@ const NAV: NavItem[] = [
   { to: '/admin/calendar', label: 'Calendar', icon: CalendarDays, external: true },
   { to: '/admin/import', label: 'Import bookings', icon: Upload, external: true, externalOnly: true },
   { to: '/admin/events', label: 'Events', icon: Ticket },
-  { to: '/admin/venues', label: 'Venues', icon: MapPin, superOnly: true },
   { to: '/admin/members', label: 'Members', icon: Users },
+  // Recruitment (ATS) is its own full-page panel at /admin/recruitment, outside this layout. It and the grid maker are optional features.
+  { to: '/admin/recruitment', label: 'Recruitment', icon: ClipboardList, feature: 'recruitment' },
   { to: '/admin/approvals', label: 'Approvals', icon: CheckSquare },
   { to: '/admin/meets', label: 'Club meets', icon: Coffee },
   { to: '/admin/proposals', label: 'Proposals', icon: Lightbulb },
   { to: '/admin/drive', label: 'Drive', icon: HardDrive },
-  { to: '/admin/grid', label: 'Grid maker', icon: Grid3x3 },
+  { to: '/admin/grid', label: 'Grid maker', icon: Grid3x3, feature: 'grid' },
   { to: '/admin/broadcasts', label: 'Broadcasts', icon: Megaphone, superOnly: true },
   { to: '/admin/website', label: 'Website', icon: Globe, superOnly: true },
   { to: '/admin/team', label: 'Team', icon: UserSquare, superOnly: true },
@@ -70,7 +74,7 @@ function Gate({ children }: { children: React.ReactNode }) {
       <div className="adm center-card">
         <TechGridBackground />
         <div className="box">
-          <img src="/logo.png" alt="" width={44} height={44} style={{ objectFit: 'contain' }} />
+          <img src="/brand/aic-logo-icon.png" alt="" width={44} height={44} style={{ objectFit: 'contain'}} />
           <h1>Admin panel</h1>
           <p>Sign in with your VIT Google account.</p>
           {error && <p className="warn">{error}</p>}
@@ -211,7 +215,8 @@ function Shell() {
   const [navOpen, setNavOpen] = useState(false);
   const { pathname } = useLocation();
   useEffect(() => setNavOpen(false), [pathname]);
-  const navItems = NAV.filter(n => (isExternal ? n.external : !n.externalOnly && (isSuper || !n.superOnly)));
+  const flags = useFeatureFlags();
+  const navItems = NAV.filter(n => (isExternal ? n.external : !n.externalOnly && (isSuper || !n.superOnly) && (!n.feature || flags[n.feature])));
 
   // Rail tooltips are drawn outside the rail, so they still show when its icons scroll.
   const [tip, setTip] = useState<{ label: string; x: number; y: number } | null>(null);
@@ -228,9 +233,9 @@ function Shell() {
       <TechGridBackground />
       {navOpen && <div className="adm-scrim" onClick={() => setNavOpen(false)} aria-hidden="true" />}
       <aside className="adm-side">
-        <Link to="/" className="adm-brand" style={{ textDecoration: 'none' }} aria-label="IEEE SSCS home page" title="Back to the website">
-          <img src="/logo.png" alt="" />
-          <div className="lbl">IEEE <span>SSCS</span></div>
+        <Link to="/" className="adm-brand" style={{ textDecoration: 'none' }} aria-label="AI Club home page" title="Back to the website">
+          <img src="/brand/aic-logo-icon.png" alt="" />
+          <div className="lbl">AI <span>CLUB</span></div>
         </Link>
         {/* Super admins get more links than a short screen can fit; this part scrolls, the brand and footer stay put. */}
         <div className="adm-side-scroll" onScroll={() => setTip(null)}>
@@ -286,7 +291,7 @@ function Shell() {
             ) : isExternal && !navItems.some(n => pathname === n.to || pathname.startsWith(n.to + '/'))
               ? <Navigate to="/admin/calendar" replace />
               : !isExternal && pathname.startsWith('/admin/import')
-                ? <Navigate to="/admin/venues" replace />
+                ? <Navigate to="/admin/events" replace />
                 : <Outlet />}
         </main>
       </div>

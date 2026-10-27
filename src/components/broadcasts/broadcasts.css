@@ -8,7 +8,7 @@
   --bc-text: #f1f1f3;
   --bc-soft: #a7a7b0;
   --bc-dim: #6f6f78;
-  --bc-accent: #dc143c;
+  --bc-accent: #3187E8;
   --bc-accent-2: #ff3b5c;
   --bc-amber: #f2c94c;
   --bc-cyan: #5cc8b6;
@@ -53,7 +53,7 @@
 .bc-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .bc-signal {
   display: inline-flex; align-items: center; gap: 7px;
-  font-family: 'Orbitron', sans-serif; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--bc-soft);
+  font-family: 'Space Grotesk', sans-serif; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--bc-soft);
 }
 .bc-signal svg { color: var(--bc-c); animation: bc-pulse 1.6s ease-in-out infinite; }
 @keyframes bc-pulse { 50% { opacity: .35; } }
@@ -66,7 +66,7 @@
 .bc-tag-info { --bc-c: var(--bc-cyan); } .bc-tag-important { --bc-c: var(--bc-amber); } .bc-tag-critical { --bc-c: var(--bc-accent-2); }
 
 .bc-title {
-  margin: 0 0 12px; font-family: 'Michroma', sans-serif; font-weight: 400;
+  margin: 0 0 12px; font-family: 'Space Grotesk', sans-serif; font-weight: 400;
   font-size: clamp(18px, 4.6vw, 24px); line-height: 1.35; letter-spacing: .01em; overflow-wrap: anywhere;
 }
 .bc-body { color: #d6d6dc; font-size: 14.5px; line-height: 1.65; white-space: pre-line; overflow-wrap: anywhere; max-height: 50vh; overflow-y: auto; }
@@ -77,7 +77,7 @@
 .bc-meta { font-size: 12px; color: var(--bc-dim); }
 .bc-btn {
   border: none; border-radius: 999px; padding: 10px 22px; font-size: 13.5px; font-weight: 700; color: #fff; cursor: pointer;
-  background: var(--bc-accent); box-shadow: 0 0 22px rgba(220, 20, 60, .45); transition: background .15s, transform .15s;
+  background: var(--bc-accent); box-shadow: 0 0 22px rgba(49,135,232, .45); transition: background .15s, transform .15s;
 }
 .bc-btn:hover:not(:disabled) { background: #b80f31; transform: translateY(-1px); }
 .bc-btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }

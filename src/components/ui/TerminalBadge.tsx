@@ -3,7 +3,7 @@ const TerminalBadge = ({ children, status = "active" }: { children: React.ReactN
     const colorClass =
         status === "active" ? "text-primary border-primary/30 bg-primary/5" :
             status === "warning" ? "text-orange-400 border-orange-400/30 bg-orange-400/5" :
-                "text-muted-foreground border-white/10 bg-white/5";
+                "text-muted-foreground border-foreground/10 bg-white/70";
 
     return (
         <div className={`inline-flex items-center gap-2 px-3 py-1 text-xs font-mono rounded border ${colorClass}`}>

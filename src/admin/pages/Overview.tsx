@@ -35,7 +35,7 @@ export default function Overview() {
       <div className="top">
         <div>
           <h1>{greeting}{firstName ? `, ${firstName}` : ''}!</h1>
-          <div className="sub">Here's what's coming up for IEEE SSCS VIT Chennai.</div>
+          <div className="sub">Here's what's coming up for AI Club VIT Chennai.</div>
         </div>
       </div>
 
@@ -46,11 +46,8 @@ export default function Overview() {
           <div className="hint">{roster.filter(m => m.is_lead).length} leads</div></Link>
         <Link className="tile" to="/admin/approvals"><div className="lbl">Contributions to review</div><div className="val">{pendingCount}</div>
           <div className="hint">{pendingCount ? 'Waiting in Approvals' : 'All caught up'}</div></Link>
-        {isSuper
-          ? <Link className="tile" to="/admin/venues"><div className="lbl">Our venue bookings</div><div className="val">{ourUpcoming.length}</div>
+        <Link className="tile" to="/admin/calendar"><div className="lbl">Our venue bookings</div><div className="val">{ourUpcoming.length}</div>
           <div className="hint">{ourUpcoming[0] ? `Next: ${venueName(venues, ourUpcoming[0].venue_id)}, ${fmtShort(ourUpcoming[0].booking_date)}` : 'None upcoming'}</div></Link>
-          : <div className="tile"><div className="lbl">Our venue bookings</div><div className="val">{ourUpcoming.length}</div>
-          <div className="hint">{ourUpcoming[0] ? `Next: ${venueName(venues, ourUpcoming[0].venue_id)}, ${fmtShort(ourUpcoming[0].booking_date)}` : 'None upcoming'}</div></div>}
       </div>
 
       <div className="bk-grid">

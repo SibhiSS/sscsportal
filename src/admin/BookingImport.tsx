@@ -66,7 +66,7 @@ export default function BookingImport() {
               onChange={e => setNamesInput(e.target.value)} onBlur={() => { if (namesInput.trim() !== (settings.our_names ?? '')) saveNames(); }} />
           </div>
         ) : ourNames.length > 0 && (
-          <div className="note-sm">Bookings by {ourNames.join(', ')} are marked as booked by SSCS.</div>
+          <div className="note-sm">Bookings by {ourNames.join(', ')} are marked as booked by AI Club.</div>
         )}
         <div className="form-acts">
           <button type="button" className="primary" onClick={copyPrompt}>Copy AI prompt</button>

@@ -1,150 +1,180 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 
+/** How long the loader runs before the site appears (ms). */
+const DURATION = 3600;
+
+const LETTERS = 'AI CLUB'.split('');
+const TICKS = Array.from({ length: 36 }, (_, i) => i);
+// Eight glowing "circuit" spurs that grow out of the ring, as angles in degrees.
+const SPURS = [20, 65, 110, 155, 200, 245, 290, 335];
+
+/**
+ * Intro: the club logo appears inside glowing rings that draw themselves on, a dial of ticks lights
+ * up around it, circuit spurs grow out of the ring and carry pulses of light, ripples spread
+ * outwards while the wordmark appears and the bar fills. SVG and CSS only, no extra library.
+ */
 const StartupPreloader = ({ onComplete }: { onComplete: () => void }) => {
-    const [isDone, setIsDone] = useState(false);
+  const reduce = useReducedMotion();
+  const [progress, setProgress] = useState(0);
+  const duration = reduce ? 900 : DURATION;
 
-    useEffect(() => {
-        // Run sequence for 2.2 seconds before triggering exit
-        const timer = setTimeout(() => {
-            setIsDone(true);
-            setTimeout(onComplete, 500); // Wait for fade out
-        }, 2200);
-
-        return () => clearTimeout(timer);
-    }, [onComplete]);
-
-    // 6 pins per side
-    const pins = Array.from({ length: 6 });
-
-    // The order of rendering in the DOM defines the stagger order.
-    // By keeping them all inside one container, Framer staggerChildren lights them up sequentially.
-    const containerVariants = {
-        hidden: {},
-        visible: {
-            transition: { staggerChildren: 0.05 }
-        }
+  useEffect(() => {
+    const start = performance.now();
+    let frame = 0;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / duration);
+      setProgress(p);
+      if (p < 1) frame = requestAnimationFrame(tick);
+      else setTimeout(onComplete, 300);
     };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [onComplete, duration]);
 
-    const pinVariants = {
-        hidden: { backgroundColor: '#1a1a1a', boxShadow: '0 0 0 rgba(220,20,60,0)' },
-        visible: { 
-            backgroundColor: '#dc143c', 
-            boxShadow: '0 0 10px rgba(220,20,60,0.8)',
-            transition: { duration: 0.2 }
-        }
-    };
+  const d = (t: number) => (reduce ? 0 : t);
 
-    return (
-        <motion.div
-            initial={{ opacity: 1 }}
-            animate={{ opacity: isDone ? 0 : 1 }}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
-            className="fixed inset-0 z-[100] bg-[#050505] flex items-center justify-center overflow-hidden"
-        >
-            {/* The Microchip */}
-            <motion.div 
-                className="relative flex items-center justify-center"
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ 
-                    scale: isDone ? 1.5 : 1, 
-                    opacity: 1 
-                }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-            >
-                {/* Pins Container (Must be absolute and sit behind the core) */}
-                <motion.div 
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="absolute inset-0"
-                >
-                    {/* Top Pins */}
-                    <div className="absolute -top-3 left-0 w-full flex justify-between px-3">
-                        {pins.map((_, i) => (
-                            <motion.div key={`top-${i}`} variants={pinVariants} className="w-1.5 h-3 bg-zinc-800 rounded-t-sm" />
-                        ))}
-                    </div>
-                    {/* Bottom Pins */}
-                    <div className="absolute -bottom-3 left-0 w-full flex justify-between px-3">
-                        {pins.map((_, i) => (
-                            <motion.div key={`bottom-${i}`} variants={pinVariants} className="w-1.5 h-3 bg-zinc-800 rounded-b-sm" />
-                        ))}
-                    </div>
-                    {/* Left Pins */}
-                    <div className="absolute top-0 -left-3 h-full flex flex-col justify-between py-3">
-                        {pins.map((_, i) => (
-                            <motion.div key={`left-${i}`} variants={pinVariants} className="w-3 h-1.5 bg-zinc-800 rounded-l-sm" />
-                        ))}
-                    </div>
-                    {/* Right Pins */}
-                    <div className="absolute top-0 -right-3 h-full flex flex-col justify-between py-3">
-                        {pins.map((_, i) => (
-                            <motion.div key={`right-${i}`} variants={pinVariants} className="w-3 h-1.5 bg-zinc-800 rounded-r-sm" />
-                        ))}
-                    </div>
-                </motion.div>
+  return (
+    <motion.div
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden bg-[#F4F8FD]"
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.6 }}
+    >
+      <style>{`
+        .ldr-grid { background-image: linear-gradient(rgba(49,135,232,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(49,135,232,.07) 1px, transparent 1px); background-size: 44px 44px; mask-image: radial-gradient(circle at 50% 45%, #000, transparent 70%); -webkit-mask-image: radial-gradient(circle at 50% 45%, #000, transparent 70%); }
+        .ldr-halo { animation: ldr-halo 2.6s ease-in-out infinite; }
+        .ldr-orbit { animation: ldr-orbit 9s linear infinite; transform-origin: 50% 50%; }
+        .ldr-orbit-rev { animation: ldr-orbit 14s linear infinite reverse; transform-origin: 50% 50%; }
+        .ldr-ripple { animation: ldr-ripple 2.4s ease-out infinite; }
+        .ldr-run { stroke-dasharray: .18 .82; animation: ldr-run 1.6s linear infinite; animation-fill-mode: backwards; }
+        .ldr-logo { animation: ldr-float 3.2s ease-in-out infinite; animation-delay: 2s; }
+        @keyframes ldr-halo { 0%,100% { opacity: .5; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.06); } }
+        @keyframes ldr-orbit { to { transform: rotate(360deg); } }
+        @keyframes ldr-ripple { 0% { transform: scale(.6); opacity: .55; } 100% { transform: scale(1.25); opacity: 0; } }
+        @keyframes ldr-run { 0% { stroke-dashoffset: 1; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+        @keyframes ldr-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        @media (prefers-reduced-motion: reduce) { .ldr-halo, .ldr-orbit, .ldr-orbit-rev, .ldr-ripple, .ldr-run, .ldr-logo { animation: none !important; } }
+      `}</style>
 
-                {/* Center Core */}
-                <motion.div 
-                    className="relative z-10 w-24 h-24 md:w-32 md:h-32 bg-[#0a0a0a] border-2 border-primary/20 rounded-md flex items-center justify-center overflow-hidden"
-                    animate={{
-                        borderColor: isDone ? 'rgba(220,20,60,1)' : 'rgba(220,20,60,0.3)',
-                        boxShadow: isDone ? '0 0 40px rgba(220,20,60,0.6), inset 0 0 20px rgba(220,20,60,0.3)' : '0 0 0px rgba(220,20,60,0)'
-                    }}
-                    transition={{ delay: 1.2, duration: 0.5 }} // delay roughly until pins finish
-                >
-                    <img
-                        src="/logo.png"
-                        alt="IEEE SSCS"
-                        className="w-[60%] h-[60%] object-contain opacity-90 relative z-20"
-                    />
-                    
-                    {/* Core scan line */}
-                    <motion.div 
-                        className="absolute left-0 right-0 h-full w-full bg-gradient-to-b from-transparent via-primary/20 to-transparent z-10"
-                        animate={{ top: ['-100%', '100%'] }}
-                        transition={{ duration: 1.5, ease: "linear", repeat: Infinity }}
-                    />
+      <div className="ldr-grid pointer-events-none absolute inset-0" aria-hidden="true" />
 
-                    {/* Faint Grid Background inside chip */}
-                    <div 
-                        className="absolute inset-0 opacity-20 pointer-events-none"
-                        style={{
-                            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-                            backgroundSize: '8px 8px'
-                        }}
-                    />
-                </motion.div>
+      <div className="relative h-[300px] w-[300px] sm:h-[380px] sm:w-[380px]">
+        <div className="ldr-halo absolute inset-[10%] rounded-full bg-[radial-gradient(circle,rgba(49,135,232,.32),rgba(49,135,232,0)_68%)]" />
 
-                {/* Outer Glow Pulse */}
-                <motion.div 
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ 
-                        opacity: isDone ? [0, 0.5, 0] : 0, 
-                        scale: isDone ? 2 : 0.8 
-                    }}
-                    transition={{ duration: 1, ease: "easeOut", delay: 1.4 }}
-                    className="absolute inset-0 -z-10 rounded-full border border-primary/50 shadow-[0_0_50px_rgba(220,20,60,0.5)]"
+        {/* Ripples */}
+        {!reduce && [0, 0.8, 1.6].map(delay => (
+          <div key={delay} className="ldr-ripple absolute inset-[14%] rounded-full border border-[#3187E8]/50" style={{ animationDelay: `${2 + delay}s`, animationFillMode: 'backwards' }} />
+        ))}
+
+        <svg viewBox="0 0 400 400" className="absolute inset-0 overflow-visible" aria-hidden="true">
+          <defs>
+            <filter id="ldr-glow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="2.2" result="b" />
+              <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
+
+          {/* Dial of ticks lighting up in turn */}
+          <g stroke="#3187E8" strokeLinecap="round" strokeWidth="2">
+            {TICKS.map(i => (
+              <motion.line
+                key={i}
+                x1="200" y1="14" x2="200" y2="24"
+                transform={`rotate(${i * 10} 200 200)`}
+                initial={{ opacity: reduce ? 0.55 : 0 }}
+                animate={{ opacity: [0, 1, 0.45] }}
+                transition={{ duration: 0.9, delay: d(0.2 + i * 0.035), times: [0, 0.4, 1] }}
+              />
+            ))}
+          </g>
+
+          {/* Two rings draw themselves on */}
+          <g fill="none" filter="url(#ldr-glow)" strokeLinecap="round">
+            <motion.circle
+              cx="200" cy="200" r="168" stroke="#3187E8" strokeWidth="3" transform="rotate(-90 200 200)"
+              initial={{ pathLength: reduce ? 1 : 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.5, delay: d(0.3), ease: 'easeInOut' }}
+            />
+            <motion.circle
+              cx="200" cy="200" r="150" stroke="#69ACFF" strokeWidth="1.6" strokeDasharray="3 7" transform="rotate(-90 200 200)"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: d(1) }}
+            />
+          </g>
+
+          {/* Circuit spurs grow out from the ring and carry a pulse of light */}
+          <g fill="none" strokeLinecap="round" filter="url(#ldr-glow)">
+            {SPURS.map((deg, i) => (
+              <g key={deg} transform={`rotate(${deg} 200 200)`}>
+                <motion.path
+                  d="M200 32 V10 L212 -2 H236" stroke="#3187E8" strokeWidth="2.4"
+                  initial={{ pathLength: reduce ? 1 : 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.7, delay: d(1.2 + i * 0.1) }}
                 />
+                {!reduce && (
+                  <path d="M200 32 V10 L212 -2 H236" pathLength={1} stroke="#CFE6FF" strokeWidth="1.8" className="ldr-run" style={{ animationDelay: `${2.3 + i * 0.15}s` }} />
+                )}
+                <motion.circle
+                  cx="236" cy="-2" r="4" fill="#3187E8" stroke="none"
+                  initial={{ scale: reduce ? 1 : 0 }} animate={{ scale: 1 }} style={{ transformOrigin: '236px -2px', transformBox: 'fill-box' }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 14, delay: d(1.8 + i * 0.1) }}
+                />
+              </g>
+            ))}
+          </g>
 
-                {/* Tagline Wipe Animation */}
-                <motion.div 
-                    className="absolute -bottom-16 left-1/2 -translate-x-1/2 whitespace-nowrap"
-                    initial={{ clipPath: "polygon(0 0, 0 0, 0 100%, 0% 100%)", opacity: 0 }}
-                    animate={{ 
-                        clipPath: isDone ? "polygon(0 0, 0 0, 0 100%, 0% 100%)" : "polygon(0 0, 100% 0, 100% 100%, 0 100%)",
-                        opacity: 1 
-                    }}
-                    transition={{ duration: 1.2, delay: 0.8, ease: "easeInOut" }}
-                >
-                    <span className="font-heading text-primary/80 tracking-[0.2em] uppercase text-xs font-bold drop-shadow-[0_0_8px_rgba(220,20,60,0.5)]">
-                        Think Silicon. Think SSCS
-                    </span>
-                </motion.div>
-            </motion.div>
+          {/* Orbiting dots */}
+          <g className="ldr-orbit"><circle cx="200" cy="30" r="5" fill="#3187E8" style={{ filter: 'drop-shadow(0 0 8px rgba(49,135,232,.95))' }} /></g>
+          <g className="ldr-orbit-rev"><circle cx="200" cy="50" r="3.5" fill="#69ACFF" style={{ filter: 'drop-shadow(0 0 6px rgba(105,172,255,.9))' }} /></g>
+        </svg>
+
+        {/* The logo icon */}
+        <motion.div
+          className="absolute inset-[24%] flex items-center justify-center"
+          initial={{ opacity: reduce ? 1 : 0, scale: reduce ? 1 : 0.8, filter: reduce ? 'blur(0px)' : 'blur(10px)' }}
+          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+          transition={{ duration: 1, delay: d(0.9), ease: 'easeOut' }}
+        >
+          <img
+            src="/brand/aic-logo-icon.png"
+            alt="AI Club VIT Chennai"
+            className="ldr-logo h-full w-full object-contain drop-shadow-[0_10px_24px_rgba(49,135,232,0.45)]"
+            draggable={false}
+          />
         </motion.div>
-    );
+      </div>
+
+      {/* Wordmark */}
+      <div className="mt-2 text-center" aria-hidden="true">
+        <div className="flex justify-center font-display text-[34px] font-extrabold uppercase leading-none tracking-tight text-[#0B1726] sm:text-[42px]">
+          {LETTERS.map((ch, i) => (
+            <motion.span
+              key={i}
+              initial={{ opacity: reduce ? 1 : 0, y: reduce ? 0 : 14, filter: reduce ? 'blur(0px)' : 'blur(6px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ duration: 0.5, delay: d(2.2 + i * 0.06) }}
+            >
+              {ch === ' ' ? ' ' : ch}
+            </motion.span>
+          ))}
+        </div>
+        <motion.p
+          className="mt-2 font-heading text-[12px] font-semibold tracking-[0.45em] text-[#0B1726]"
+          initial={{ opacity: reduce ? 1 : 0 }} animate={{ opacity: 1 }} transition={{ delay: d(2.7), duration: 0.6 }}
+        >
+          VIT CHENNAI
+        </motion.p>
+      </div>
+
+      {/* Progress */}
+      <div className="mt-8 h-[3px] w-60 overflow-hidden rounded-full bg-[#14283D]/10">
+        <div
+          className="h-full origin-left rounded-full bg-[#3187E8] shadow-[0_0_12px_rgba(49,135,232,.9)]"
+          style={{ transform: `scaleX(${progress})` }}
+        />
+      </div>
+      <p className="mt-3 font-mono text-[11px] tracking-[0.3em] text-[#0B1726]/55">
+        {progress < 1 ? 'INITIALISING' : 'READY'} · {Math.round(progress * 100)}%
+      </p>
+    </motion.div>
+  );
 };
 
 export default StartupPreloader;

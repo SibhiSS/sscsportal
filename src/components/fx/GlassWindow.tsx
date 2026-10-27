@@ -28,7 +28,7 @@ const GlassWindow = ({ title, children, bounds, className = '', startClosed = fa
     return (
       <button
         onClick={() => { setOpen(true); raise(); }}
-        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 font-mono text-[11px] text-muted-foreground backdrop-blur-xl hover:border-primary/40 hover:text-foreground transition-colors"
+        className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-white/70 px-3 py-1.5 font-mono text-[11px] text-muted-foreground backdrop-blur-xl hover:border-primary/40 hover:text-foreground transition-colors"
       >
         <span className="h-2 w-2 rounded-full bg-primary/70" />
         {title}
@@ -46,9 +46,9 @@ const GlassWindow = ({ title, children, bounds, className = '', startClosed = fa
       style={{ zIndex: z }}
       initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={`relative rounded-xl border border-white/10 bg-[#0b0b0b]/70 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl ${className}`}
+      className={`relative rounded-xl border border-foreground/10 bg-[#0b0b0b]/70 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl ${className}`}
     >
-      <div className="flex cursor-grab items-center gap-2 border-b border-white/5 px-3 py-2 active:cursor-grabbing select-none">
+      <div className="flex cursor-grab items-center gap-2 border-b border-foreground/5 px-3 py-2 active:cursor-grabbing select-none">
         <button
           aria-label={`Close ${title}`}
           onPointerDown={e => e.stopPropagation()}

@@ -7,6 +7,7 @@ import type { TeamMember } from '@/types/club';
 import HolographicCard from '@/components/ui/HolographicCard';
 import RevealText from '@/components/ui/RevealText';
 import TechGridBackground from '@/components/ui/TechGridBackground';
+import Navigation from '@/components/Navigation';
 
 const ProfileImage = ({ src: ref, alt }: { src: string | null, alt: string }) => {
     const [error, setError] = useState(false);
@@ -14,8 +15,8 @@ const ProfileImage = ({ src: ref, alt }: { src: string | null, alt: string }) =>
 
     if (error || !src) {
         return (
-            <div className="w-full h-full bg-white/5 flex items-center justify-center">
-                <User className="w-10 h-10 text-primary drop-shadow-[0_0_12px_rgba(220,20,60,0.8)]" />
+            <div className="w-full h-full bg-white flex items-center justify-center">
+                <User className="w-10 h-10 text-primary drop-shadow-[0_0_12px_rgba(49,135,232,0.8)]" />
             </div>
         );
     }
@@ -61,166 +62,52 @@ const FlipPhoto = ({ member }: { member: TeamMember }) => {
 
 const coordinators = [
   {
-    name: 'Sangeetha R G',
+    name: 'Dr. Dhavakumar P',
     role: 'Faculty Coordinator',
-    image: '/sangeetha.webp',
-    description: 'Expert mentorship in technical direction and academic excellence for IEEE SSCS.'
+    image: '/dhavakumar.jpg',
+    description: "Guiding the club's direction and student growth in artificial intelligence."
   },
   {
-    name: 'Hemanth C',
+    name: 'Dr. M. Sivabalakrishnan',
     role: 'Faculty Coordinator',
-    image: '/hemanth.webp',
-    description: 'Guiding innovation and student engagement within the solid-state circuits domain.'
+    image: '/sivabalakrishnan.jpg',
+    description: 'Mentoring projects, research and innovation across the AI Club community.'
   }
 ];
 
-const coreTeam2025 = [
-  {
-    name: 'E Abijay',
-    role: 'Chairperson',
-    image: '/abijay.webp',
-    quote: 'Never Settle!'
-  },
-  {
-    name: 'Kiran Kumar',
-    role: 'Vice Chairperson',
-    image: '/kiran.webp',
-    quote: 'I create systems that redefine the best.'
-  },
-  {
-    name: 'Manasa Grandhi',
-    role: 'General Secretary',
-    image: '/manasa.webp',
-    quote: 'Troubles are just passing clouds.'
-  },
-  {
-    name: 'Mrithubashini',
-    role: 'General Secretary',
-    image: '/mrithubashini.webp',
-    quote: "Let's see what happens."
-  },
-  {
-    name: 'Arushi',
-    role: 'Treasurer',
-    image: '/arushi.webp',
-    quote: 'Who wishes to fight must first count the cost.'
-  }
+const TENURE = '2026-27';
+
+// Placeholders: replace the name, quote and photo from Admin > Team once the people are confirmed.
+const PLACEHOLDER = { image: null as string | null, quote: '"Your quote goes here."' };
+
+const coreTeam2026: { name: string; role: string; image: string | null; quote: string }[] = [
+  { name: 'Santhosh V', role: 'Chairperson', image: '/santhosh.jpg', quote: '' },
+  { name: 'Hemasri Chamarthi', role: 'Vice Chairperson', image: '/hemasri.jpg', quote: '' },
+  { name: 'Daksha Boredekar', role: 'General Secretary', image: '/daksha.jpg', quote: '' },
+  { name: '"Treasurer Name"', role: 'Treasurer', ...PLACEHOLDER },
 ];
 
-const coreTeam2026: { name: string; role: string; image: string; quote: string; }[] = [
-  {
-    name: 'Sibhi',
-    role: 'Chairperson',
-    image: '/sibhi.webp',
-    quote: 'Click Me!!!'
-  },
-  {
-    name: 'Goutham P',
-    role: 'Vice Chairperson',
-    image: '/goutham.webp',
-    quote: 'SKY IS THE LIMIT'
-  },
-  {
-    name: 'Ilangkumaran',
-    role: 'General Secretary',
-    image: '/ilangkumaran.webp',
-    quote: "Big ideas don't need noise, they need action."
-  },
-  {
-    name: 'Neyalakshmi',
-    role: 'Treasurer',
-    image: '/neya.webp',
-    quote: 'PEACE!'
-  },
-  {
-    name: 'Sarweshwari',
-    role: 'Women in SSCS (Chairperson)',
-    image: '/sarweshwari.png',
-    quote: 'Empowering women in circuits.'
-  },
-  {
-    name: 'Shree Devi',
-    role: 'Women in SSCS (Vice-Chairperson)',
-    image: '/shreedevi.png',
-    quote: 'Breaking barriers.'
-  }
-];
-
-const leads2025 = [
-  {
-    name: 'Shivaranjani',
-    role: 'Technical Lead',
-    image: '/shivaranjani.webp',
-    quote: "Life's a circuit—I'm still meeting setup and hold."
-  },
-  {
-    name: 'Harshan',
-    role: 'Technical Lead',
-    image: '/harshan.webp',
-    quote: 'Observe. Plan. Execute.'
-  },
-  {
-    name: 'Ilangkumaran',
-    role: 'Operations Lead',
-    image: '/ilangkumaran.webp',
-    quote: "Big ideas don't need noise, they need action."
-  },
-  {
-    name: 'Sibhi S',
-    role: 'Operations Lead',
-    image: '/sibhi.webp',
-    quote: 'Click Me!!!'
-  },
-  {
-    name: 'Neyalakshmi',
-    role: 'Editorial Lead',
-    image: '/neya.webp',
-    quote: 'PEACE!'
-  },
-  {
-    name: 'Goutham P',
-    role: 'Editorial Lead',
-    image: '/goutham.webp',
-    quote: 'SKY IS THE LIMIT'
-  },
-  {
-    name: 'Priyadarshini',
-    role: 'Design Lead',
-    image: '/priyadharshini.webp',
-    quote: 'LOST IN A PASTEL SKY'
-  },
-  {
-    name: 'Midhun P',
-    role: 'Associate Design Lead',
-    image: '/midhun.webp',
-    quote: 'COOL TONE WARM CORE'
-  }
-];
-
-const leads2026 = [
-  { name: 'S Jai Akaash', role: 'Technical Lead', image: '/jai.png', quote: '' },
-  { name: 'Pranav J', role: 'Associate Technical Lead', image: '/pranav.png', quote: '' },
-  { name: 'Hitesh V S', role: 'Associate Technical Lead', image: '/hitesh.png', quote: '' },
-  { name: 'M Varshinee', role: 'Management Lead', image: '/varshinee.png', quote: '' },
-  { name: 'Adriza Banerji', role: 'Associate Management Lead', image: '/adriza.png', quote: '' },
-  { name: 'C S Tejasvini', role: 'Event Operations Lead', image: '/tejasvini.png', quote: '' },
-  { name: 'Aariya Manikandan', role: 'Associate Event Operations Lead', image: '/aariya.png', quote: '' },
-  { name: 'Rohith M', role: 'Creative Lead', image: '/rohith.png', quote: '' },
-  { name: 'Tharun S', role: 'Associate Creative Lead', image: '/tharun.png', quote: '' },
-  { name: 'Anjana Varma', role: 'Outreach & Partnerships Lead', image: '/anjana.png', quote: '' },
-  { name: 'Karthikeyan D', role: 'Associate Outreach & Partnerships Lead', image: '/karthikeyan.png', quote: '' },
-  { name: 'P Midhun', role: 'Human Resource Lead', image: '/midhun.webp', quote: 'COOL TONE WARM CORE' },
-  { name: 'K Srishtithaa', role: 'Associate Human Resource Lead', image: '/srishtithaa.png', quote: '' }
+const leads2026: { name: string; role: string; image: string | null; quote: string }[] = [
+  { name: '"Technical Lead Name"', role: 'Technical Lead', ...PLACEHOLDER },
+  { name: '"Associate Technical Lead Name"', role: 'Associate Technical Lead', ...PLACEHOLDER },
+  { name: '"Management Lead Name"', role: 'Management Lead', ...PLACEHOLDER },
+  { name: '"Associate Management Lead Name"', role: 'Associate Management Lead', ...PLACEHOLDER },
+  { name: '"Event Operations Lead Name"', role: 'Event Operations Lead', ...PLACEHOLDER },
+  { name: '"Associate Event Operations Lead Name"', role: 'Associate Event Operations Lead', ...PLACEHOLDER },
+  { name: '"Creative Lead Name"', role: 'Creative Lead', ...PLACEHOLDER },
+  { name: '"Associate Creative Lead Name"', role: 'Associate Creative Lead', ...PLACEHOLDER },
+  { name: '"Outreach Lead Name"', role: 'Outreach & Partnerships Lead', ...PLACEHOLDER },
+  { name: '"Associate Outreach Lead Name"', role: 'Associate Outreach & Partnerships Lead', ...PLACEHOLDER },
+  { name: '"HR Lead Name"', role: 'Human Resource Lead', ...PLACEHOLDER },
+  { name: '"Associate HR Lead Name"', role: 'Associate Human Resource Lead', ...PLACEHOLDER },
 ];
 
 // Used if the database can't be reached (e.g. before the website_team
 // migration has been run), so the page is never empty.
 const FALLBACK: TeamMember[] = [
     ...coordinators.map(c => ({ ...c, quote: c.description, section: 'faculty' as const, tenure: null })),
-    ...coreTeam2025.map(m => ({ ...m, section: 'core' as const, tenure: '2025-26' })),
-    ...leads2025.map(m => ({ ...m, section: 'lead' as const, tenure: '2025-26' })),
-    ...coreTeam2026.map(m => ({ ...m, section: 'core' as const, tenure: '2026-27' })),
-    ...leads2026.map(m => ({ ...m, section: 'lead' as const, tenure: '2026-27' })),
+    ...coreTeam2026.map(m => ({ ...m, section: 'core' as const, tenure: TENURE })),
+    ...leads2026.map(m => ({ ...m, section: 'lead' as const, tenure: TENURE })),
 ].map((m, i) => ({ id: `fallback-${i}`, sort_order: i, name: m.name, role: m.role, quote: m.quote || null, image: m.image, image2: null, section: m.section, tenure: m.tenure }));
 
 const Team = () => {
@@ -266,8 +153,9 @@ const Team = () => {
     }, [isHoveringSibhi]);
 
     return (
-        <div className="min-h-screen relative text-foreground bg-[#050505] overflow-hidden">
+        <div className="min-h-screen relative text-foreground bg-background overflow-hidden">
             <TechGridBackground />
+<Navigation />
             
             {/* Sibhi Mode Background Pulse */}
             <AnimatePresence>
@@ -301,24 +189,24 @@ const Team = () => {
                 )}
             </AnimatePresence>
             
-            <div className="container mx-auto px-6 py-12 relative z-10">
+            <div className="container mx-auto px-6 pt-28 pb-16 relative z-10">
                 <div className="max-w-6xl mx-auto">
-                    <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-all mb-12 px-6 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl group text-sm">
+                    <Link to="/" className="group inline-flex items-center text-[13px] font-medium text-muted-foreground hover:text-primary transition-colors mb-12">
                         <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
                         Back to Home
                     </Link>
 
-                    <div className="text-center mb-16">
+                    <div className="mb-12">
                         <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="mb-4"
                         >
-                            <span className="text-[10px] text-primary tracking-[0.4em] uppercase font-bold px-4 py-1 rounded-full border border-primary/20 bg-primary/5">
+                            <span className="inline-flex items-center font-mono text-[11px] font-normal tracking-[0.3em] text-[#0B1726] uppercase">
                                 Leadership
-                            </span>
+                            <span className="ml-4 inline-block h-px w-14 bg-primary" /></span>
                         </motion.div>
-                        <h1 className="font-heading text-[1.75rem] leading-tight sm:text-4xl md:text-5xl font-bold tracking-tight">
+                        <h1 className="font-display text-[36px] md:text-[48px] font-extrabold uppercase leading-[1.02] tracking-tight text-[#0B1726]">
                             <RevealText text="Faculty Coordinators" />
                         </h1>
                     </div>
@@ -333,15 +221,15 @@ const Team = () => {
                             >
                                 <HolographicCard className="p-8 text-center h-full">
                                     <div className="flex flex-col items-center">
-                                        <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 text-primary relative overflow-hidden border border-primary/20 mx-auto">
+                                        <div className="w-24 h-24 rounded-md bg-primary/10 flex items-center justify-center mb-6 text-primary relative overflow-hidden border border-primary/20 mx-auto">
                                             <FlipPhoto member={coord} />
                                         </div>
 
                                         <div className="mb-4">
-                                            <span className="inline-block text-[10px] text-primary font-bold tracking-[0.3em] uppercase mb-2 px-4 py-1 rounded-full bg-primary/10 border border-primary/20">
+                                            <span className="inline-block text-[10px] text-primary font-bold tracking-[0.3em] uppercase mb-2 px-4 py-1 rounded-[3px] bg-primary/10 border border-primary/20">
                                                 {coord.role}
                                             </span>
-                                            <h2 className="font-heading text-2xl md:text-3xl font-bold text-white mb-4">
+                                            <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-4">
                                                 {coord.name}
                                             </h2>
                                         </div>
@@ -363,11 +251,11 @@ const Team = () => {
                             viewport={{ once: true }}
                             className="mb-4"
                         >
-                            <span className="text-[10px] text-primary tracking-[0.4em] uppercase font-bold px-4 py-1 rounded-full border border-primary/20 bg-primary/5">
+                            <span className="inline-flex items-center font-mono text-[11px] font-normal tracking-[0.3em] text-[#0B1726] uppercase">
                                 Leadership
-                            </span>
+                            <span className="ml-4 inline-block h-px w-14 bg-primary" /></span>
                         </motion.div>
-                        <h1 className="font-heading text-[1.75rem] leading-tight sm:text-4xl md:text-5xl font-bold tracking-tight mb-8">
+                        <h1 className="font-display text-[36px] md:text-[48px] font-extrabold uppercase leading-[1.02] tracking-tight text-[#0B1726] mb-8">
                             <RevealText text="Board" />
                         </h1>
                         <div className="flex flex-wrap justify-center gap-4">
@@ -375,7 +263,7 @@ const Team = () => {
                                 <button
                                     key={t}
                                     onClick={() => setCoreTeamYear(t)}
-                                    className={`px-6 py-2 rounded-full text-sm font-bold tracking-widest uppercase transition-all ${year === t ? 'bg-primary text-white' : 'bg-white/5 border border-white/10 text-muted-foreground hover:text-white hover:border-white/30'}`}
+                                    className={`px-6 py-2 rounded-[3px] text-sm font-bold tracking-widest uppercase transition-all ${year === t ? 'bg-primary text-white' : 'bg-white border border-white/10 text-muted-foreground hover:text-white hover:border-white/30'}`}
                                 >
                                     AY {t}
                                 </button>
@@ -399,7 +287,7 @@ const Team = () => {
                                 className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.33%-16px)]"
                             >
                                 <HolographicCard className="p-6 text-center h-full flex flex-col items-center">
-                                    <div className="w-24 h-24 rounded-2xl bg-white/5 grid place-items-center mb-6 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors mx-auto">
+                                    <div className="w-24 h-24 rounded-md bg-white grid place-items-center mb-6 relative overflow-hidden border border-border group-hover:border-primary/30 transition-colors mx-auto">
                                         <FlipPhoto member={member} />
                                     </div>
 
@@ -407,7 +295,7 @@ const Team = () => {
                                         <span className="inline-block text-[10px] text-primary font-bold tracking-[0.2em] uppercase mb-2">
                                             {member.role}
                                         </span>
-                                        <h2 className="font-heading text-xl font-bold text-white mb-3">
+                                        <h2 className="font-heading text-xl font-bold text-foreground mb-3">
                                             {member.name}
                                         </h2>
                                         {member.quote && (
@@ -429,11 +317,11 @@ const Team = () => {
                             viewport={{ once: true }}
                             className="mb-4"
                         >
-                            <span className="text-[10px] text-primary tracking-[0.4em] uppercase font-bold px-4 py-1 rounded-full border border-primary/20 bg-primary/5">
+                            <span className="inline-flex items-center font-mono text-[11px] font-normal tracking-[0.3em] text-[#0B1726] uppercase">
                                 Expertise
-                            </span>
+                            <span className="ml-4 inline-block h-px w-14 bg-primary" /></span>
                         </motion.div>
-                        <h1 className="font-heading text-[1.75rem] leading-tight sm:text-4xl md:text-5xl font-bold tracking-tight">
+                        <h1 className="font-display text-[36px] md:text-[48px] font-extrabold uppercase leading-[1.02] tracking-tight text-[#0B1726]">
                             <RevealText text="Leads" />
                         </h1>
                     </div>
@@ -451,13 +339,13 @@ const Team = () => {
                                     className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.33%-16px)]"
                                 >
                                     <HolographicCard 
-                                        className={`p-6 text-center h-full flex flex-col items-center cursor-pointer transition-all duration-500 ${isSibhi && isSibhiMode ? 'border-primary shadow-[0_0_30px_rgba(220,20,60,0.3)]' : ''}`}
+                                        className={`p-6 text-center h-full flex flex-col items-center cursor-pointer transition-all duration-500 ${isSibhi && isSibhiMode ? 'border-primary shadow-[0_0_30px_rgba(49,135,232,0.3)]' : ''}`}
                                         onClick={() => isSibhi && setClicks(c => c + 1)}
                                         onMouseEnter={() => isSibhi && setIsHoveringSibhi(true)}
                                         onMouseLeave={() => isSibhi && setIsHoveringSibhi(false)}
                                     >
                                         <div 
-                                            className="w-20 h-20 rounded-2xl bg-white/5 grid place-items-center mb-6 relative overflow-hidden border border-white/10 group-hover:border-primary/30 transition-colors mx-auto"
+                                            className="w-20 h-20 rounded-md bg-white grid place-items-center mb-6 relative overflow-hidden border border-border group-hover:border-primary/30 transition-colors mx-auto"
                                         >
                                             <FlipPhoto member={member} />
                                             
@@ -487,7 +375,7 @@ const Team = () => {
                                             <span className="inline-block text-[10px] text-primary font-bold tracking-[0.2em] uppercase mb-2">
                                                 {member.role}
                                             </span>
-                                            <h2 className="font-heading text-lg font-bold text-white mb-3">
+                                            <h2 className="font-heading text-lg font-bold text-foreground mb-3">
                                                 {member.name}
                                             </h2>
                                             {member.quote && (

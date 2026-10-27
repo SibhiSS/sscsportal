@@ -81,7 +81,7 @@ export default function CalendarPage() {
       <div className="top">
         <div>
           <h1>Club calendar</h1>
-          <div className="sub">Events, academic dates and venue availability for IEEE SSCS VIT Chennai.</div>
+          <div className="sub">Events, academic dates and venue availability for AI Club VIT Chennai.</div>
         </div>
       </div>
 
@@ -131,7 +131,7 @@ export default function CalendarPage() {
                 if (!inPerson) badge = <span className="vdot online" title="Online event — no venue needed" />;
                 else {
                   const ok = ourBookingsOn(bookings, iso).length > 0;
-                  badge = <span className={`vdot ${ok ? 'ok' : 'no'}`} title={ok ? 'Venue booked by SSCS' : 'No venue booked by SSCS yet'} />;
+                  badge = <span className={`vdot ${ok ? 'ok' : 'no'}`} title={ok ? 'Venue booked by AI Club' : 'No venue booked by AI Club yet'} />;
                 }
               }
 
@@ -188,7 +188,7 @@ export default function CalendarPage() {
           </div>
           <div className="legend">
             <span><span className="swatch" style={{ background: 'rgba(194,67,75,.3)', border: '1px solid rgba(224,101,108,.5)' }} />Planned club event</span>
-            <span><span className="vdot ok" />SSCS venue booked</span>
+            <span><span className="vdot ok" />AI Club venue booked</span>
             <span><span className="vdot no" />No venue booked yet</span>
             <span><span className="vdot online" />Online event</span>
             <span><span className="swatch" style={{ background: 'repeating-linear-gradient(135deg,rgba(255,255,255,.3) 0 2px,transparent 2px 5px)', border: '1px solid var(--line-2)' }} />Slanted lines = no events</span>
@@ -323,7 +323,7 @@ function DayDetail({ iso, readOnly, showVenues, venueFilter, onAdd, onEdit, onDe
           {e.t === 'event' && e.online && <div className="vstat online"><span className="ic" />Online event — no venue needed</div>}
           {e.t === 'event' && !e.online && (ourToday.length
             ? <div className="vstat ok"><span className="ic" />Venue booked: {ourToday.map(b => `${venueName(venues, b.venue_id)} · ${fmtTime(b.from_time)}–${fmtTime(b.to_time)}`).join(', ')}</div>
-            : <div className="vstat no"><span className="ic" />No venue booked by SSCS for this day yet</div>)}
+            : <div className="vstat no"><span className="ic" />No venue booked by AI Club for this day yet</div>)}
           <div className="meta"><span>{fmtRange(e.s, e.e)}</span><span>{dayCount(e.s, e.e) === 1 ? '1 day' : `${dayCount(e.s, e.e)} days`}</span></div>
           {!readOnly && (
             <div className="acts">
@@ -348,7 +348,7 @@ function DayDetail({ iso, readOnly, showVenues, venueFilter, onAdd, onEdit, onDe
                 {x.bl.map(b => (
                   <div key={b.id} className="bkrow">
                     <span className="bk-time">{fmtTime(b.from_time)} – {fmtTime(b.to_time)}</span>
-                    {b.is_ours && <span className="ourtag">SSCS</span>}
+                    {b.is_ours && <span className="ourtag">AI Club</span>}
                     <div className="bk-title" title={b.event_name}>{b.event_name}</div>
                     {(b.booked_by || b.phone) && (
                       <div className="bk-by">{b.booked_by}{b.phone && <> · <a className="tel" href={`tel:${b.phone}`}>{b.phone}</a></>}</div>

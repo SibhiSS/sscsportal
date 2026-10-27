@@ -74,6 +74,11 @@ export interface ClubEvent {
   website_cover: string | null;
   website_gallery: string[];
   website_link: string | null;
+  /** Shows in the home page's Upcoming events strip (needs the website_upcoming migration). */
+  website_upcoming?: boolean;
+  website_poster?: string | null;
+  website_register_url?: string | null;
+  website_time?: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -96,6 +101,11 @@ export interface WebsiteEvent {
   cover: string | null;
   gallery: string[];
   link: string | null;
+  /** Missing until the upcoming-events migration has run. */
+  upcoming?: boolean;
+  poster?: string | null;
+  register_url?: string | null;
+  time?: string | null;
 }
 
 export type MemberCalendarKind = 'event' | 'holiday' | 'blocked' | 'exam' | 'buffer' | 'noclass' | 'vacation';

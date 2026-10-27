@@ -7,6 +7,7 @@ import HolographicCard from '@/components/ui/HolographicCard';
 import LogoSpinner from '@/components/ui/LogoSpinner';
 import ScrambleText from '@/components/fx/ScrambleText';
 import TechGridBackground from '@/components/ui/TechGridBackground';
+import Navigation from '@/components/Navigation';
 import MiniCalendar from '@/components/MiniCalendar';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -24,15 +25,16 @@ const addMonths = (iso: string, n: number) => {
 
 const STATUS = {
   pending:  { label: 'Waiting for a decision', icon: Clock,        cls: 'text-yellow-200 border-yellow-300/30 bg-yellow-300/5' },
-  accepted: { label: 'Accepted',               icon: CheckCircle2, cls: 'text-emerald-200 border-emerald-400/30 bg-emerald-400/5' },
-  rejected: { label: 'Not taken up',           icon: XCircle,      cls: 'text-red-200 border-red-400/30 bg-red-400/5' },
+  accepted: { label: 'Accepted',               icon: CheckCircle2, cls: 'text-primary border-emerald-400/30 bg-emerald-400/5' },
+  rejected: { label: 'Not taken up',           icon: XCircle,      cls: 'text-destructive border-red-400/30 bg-red-400/5' },
 } as const;
 
-const inputCls = 'w-full rounded-xl bg-white/[0.04] border border-white/10 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50';
+const inputCls = 'w-full rounded-xl bg-white border border-border px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50';
 
 const Centered = ({ children }: { children: React.ReactNode }) => (
-  <div className="min-h-screen relative bg-[#050505] flex items-center justify-center p-6">
+  <div className="min-h-screen relative bg-background flex items-center justify-center p-6">
     <TechGridBackground />
+<Navigation />
     <HolographicCard className="relative z-10 p-8 max-w-md w-full text-center">{children}</HolographicCard>
   </div>
 );
@@ -114,7 +116,7 @@ const Proposals = () => {
   };
 
   if (authLoading || (user && status === 'loading')) {
-    return <div className="min-h-screen bg-black flex items-center justify-center"><LogoSpinner size="md" /></div>;
+    return <div className="min-h-screen bg-background flex items-center justify-center"><LogoSpinner size="md" /></div>;
   }
 
   if (!user) {
@@ -123,7 +125,7 @@ const Proposals = () => {
         <Lightbulb className="w-14 h-14 text-primary mx-auto mb-4" />
         <h1 className="text-2xl font-bold mb-2">Propose an Event</h1>
         <p className="text-muted-foreground mb-6">Sign in with your VIT Google account to propose an event to the club.</p>
-        {authError && <p className="text-sm text-red-400 mb-4">{authError}</p>}
+        {authError && <p className="text-sm text-destructive mb-4">{authError}</p>}
         <div className="space-y-3">
           <Button onClick={signInWithGoogle} className="w-full"><LogIn className="w-4 h-4 mr-2" /> Sign in with Google</Button>
           <Button asChild variant="outline" className="w-full"><Link to="/">Return Home</Link></Button>
@@ -159,25 +161,26 @@ const Proposals = () => {
   const isAdmin = user.role === 'admin' || user.role === 'super_admin';
 
   return (
-    <div className="min-h-screen relative text-foreground bg-[#050505]">
+    <div className="min-h-screen relative text-foreground bg-background">
       <TechGridBackground />
-      <div className="container mx-auto px-4 md:px-6 py-12 relative z-10">
+<Navigation />
+      <div className="container mx-auto px-4 md:px-6 pt-28 pb-16 relative z-10">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-wrap gap-3 mb-10">
-            <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors px-6 py-1.5 rounded-full bg-white/5 border border-white/10 group text-sm">
+            <Link to="/" className="group inline-flex items-center text-[13px] font-medium text-muted-foreground hover:text-primary transition-colors">
               <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" /> Back to Home
             </Link>
             {isAdmin && (
-              <Link to="/admin/proposals" className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors px-6 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm">
+              <Link to="/admin/proposals" className="group inline-flex items-center text-[13px] font-medium text-muted-foreground hover:text-primary transition-colors">
                 All proposals (admin)
               </Link>
             )}
           </div>
 
-          <div className="text-center mb-10">
-            <span className="text-[10px] text-primary tracking-[0.4em] uppercase font-bold px-4 py-1 rounded-full border border-primary/20 bg-primary/5">Members & admins</span>
-            <h1 className="font-heading text-[1.75rem] leading-tight sm:text-4xl md:text-5xl font-bold tracking-tight mt-4"><ScrambleText text="Propose an Event" /></h1>
-            <p className="text-sm text-muted-foreground mt-3 max-w-xl mx-auto">
+          <div className="mb-10">
+            <span className="inline-flex items-center font-mono text-[11px] font-normal tracking-[0.3em] text-[#0B1726] uppercase">Members & admins<span className="ml-4 inline-block h-px w-14 bg-primary" /></span>
+            <h1 className="font-display text-[36px] md:text-[48px] font-extrabold uppercase leading-[1.02] tracking-tight text-[#0B1726] mt-4"><ScrambleText text="Propose an Event" /></h1>
+            <p className="text-sm text-muted-foreground mt-3 max-w-xl">
               Have an idea? Tell us what it is, what it needs and when it could happen. A super admin reviews every proposal.
             </p>
           </div>
@@ -207,7 +210,7 @@ const Proposals = () => {
                   <span className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
                     Expected date {!form.boardDecides && form.start && <span className="normal-case tracking-normal font-semibold text-foreground ml-1">· {fmtDayRange(form.start, form.end || form.start)}</span>}
                   </span>
-                  <label className="flex items-start gap-3 mb-3 p-3 rounded-xl border border-white/10 bg-white/[0.02] cursor-pointer select-none hover:border-white/20 transition-colors">
+                  <label className="flex items-start gap-3 mb-3 p-3 rounded-xl border border-border bg-muted/40 cursor-pointer select-none hover:border-primary/30 transition-colors">
                     <input type="checkbox" className="w-4 h-4 mt-0.5 accent-[hsl(var(--primary))]" checked={form.boardDecides}
                       onChange={e => setForm(f => ({ ...f, boardDecides: e.target.checked }))} />
                     <span className="text-sm">
@@ -236,7 +239,7 @@ const Proposals = () => {
                   {!form.online && (
                     <div>
                       <label htmlFor="pVenue" className="sr-only">Preferred venue</label>
-                      <select id="pVenue" className={`${inputCls} [color-scheme:dark] [&>option]:bg-[#141416] [&>option]:text-white`} value={form.venueId} onChange={e => setForm(f => ({ ...f, venueId: e.target.value }))}>
+                      <select id="pVenue" className={`${inputCls} [&>option]:bg-white [&>option]:text-foreground`} value={form.venueId} onChange={e => setForm(f => ({ ...f, venueId: e.target.value }))}>
                         <option value="">Preferred venue: no preference</option>
                         {venues.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                       </select>
@@ -255,7 +258,7 @@ const Proposals = () => {
                   {mine.map(p => {
                     const st = STATUS[p.status];
                     return (
-                      <li key={p.id} className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                      <li key={p.id} className="rounded-xl border border-border bg-muted/40 p-3">
                         <div className="flex items-start justify-between gap-2">
                           <b className="text-sm">{p.title}</b>
                           <span className="text-[10px] text-muted-foreground whitespace-nowrap">{p.expected_start ? fmtDayRange(p.expected_start, p.expected_end ?? p.expected_start) : 'Board decides'}</span>
@@ -265,7 +268,7 @@ const Proposals = () => {
                         </span>
                         {p.review_note && <p className="text-xs text-muted-foreground mt-2">“{p.review_note}”</p>}
                         {p.status === 'pending' && (
-                          <button className="block text-xs text-muted-foreground hover:text-red-300 mt-2" onClick={() => withdraw(p)}>Withdraw</button>
+                          <button className="block text-xs text-muted-foreground hover:text-destructive mt-2" onClick={() => withdraw(p)}>Withdraw</button>
                         )}
                       </li>
                     );

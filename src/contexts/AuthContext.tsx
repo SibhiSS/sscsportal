@@ -2,7 +2,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { supabase } from '@/lib/supabase';
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
-type Role = 'super_admin' | 'admin' | 'external' | 'member';
+type Role = 'super_admin' | 'admin' | 'external' | 'interviewer' | 'member';
 
 interface User {
   email: string;
@@ -102,17 +102,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.error('[Auth] Admin role lookup failed:', adminLookupError.message);
         }
 
-        // Only super_admin/admin/external carry privileges. Anything else in the table
-        // (legacy 'interviewer'/'viewer' rows) or no row at all is a plain member.
+        // Only super_admin/admin/external/interviewer carry privileges. Anything else in
+        // the table (legacy 'viewer' rows) or no row at all is a plain member.
         const dbRole = adminData?.role;
         const role: Role =
-          dbRole === 'super_admin' || dbRole === 'admin' || dbRole === 'external' ? dbRole
+          dbRole === 'super_admin' || dbRole === 'admin' || dbRole === 'external' || dbRole === 'interviewer' ? dbRole
           : isHardcodedAdmin ? 'super_admin'
           : 'member';
 
         // Anyone a super admin added to the panel may use any Google account
         // (external users are often from outside VIT); everyone else needs a VIT one.
-        if (role === 'member' && !isVitStudent && !isVitStaff) {
+        // The "Allow any Google account" switch in Admin > Settings > Features lifts this for testing.
+        const openSignin = role === 'member' && !isVitStudent && !isVitStaff
+          ? !!(await supabase.rpc('open_signin_enabled')).data
+          : false;
+        if (role === 'member' && !isVitStudent && !isVitStaff && !openSignin) {
           await supabase.auth.signOut();
           alert('Access Restricted: Please sign in with your VIT email address (@vitstudent.ac.in).');
           setUser(null);

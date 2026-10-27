@@ -1,148 +1,58 @@
-import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import HolographicCard from '@/components/ui/HolographicCard';
-import ScrambleText from '@/components/fx/ScrambleText';
-import WordReveal from '@/components/fx/WordReveal';
-import { useLeaderboard } from '@/hooks/use-leaderboard';
-import { fetchWebsiteEvents } from '@/lib/club';
+import { Code2, Users, Lightbulb, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-const MANIFESTO =
-  'We are the IEEE Solid-State Circuits Society student chapter at VIT Chennai. We learn circuits by building them: ' +
-  'workshops, competitions and late nights in the lab, from a first op-amp to a first chip.';
-
-const MISSION = [
-  'Organize technical workshops on IC design',
-  'Facilitate research in solid-state circuits',
-  'Connect students with industry professionals',
-  'Promote participation in global design contests',
+// Learn and Collaborate share the "people" glyph in the design; Collaborate's is the bolder group.
+const PILLARS = [
+  { icon: Users, title: 'Learn', text: 'Gain hands-on experience' },
+  { icon: Code2, title: 'Build', text: 'Work on real projects' },
+  { icon: Users, title: 'Collaborate', text: 'Meet like-minded peers' },
+  { icon: Lightbulb, title: 'Create Impact', text: 'Use AI for real-world problems' },
 ];
 
-const fadeUp = (delay = 0) => ({
-  initial: { opacity: 0, y: 20 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true },
-  transition: { delay },
-});
-
-/** Live numbers from public data: the leaderboard and published events. */
-function useClubStats() {
-  const { rows, loading } = useLeaderboard();
-  const [events, setEvents] = useState<number | null>(null);
-  useEffect(() => {
-    let active = true;
-    fetchWebsiteEvents().then(e => { if (active) setEvents(e.length); }).catch(() => {});
-    return () => { active = false; };
-  }, []);
-  const members = loading ? null : rows.length || null;
-  const points = loading ? null : rows.reduce((sum, r) => sum + r.total_points, 0) || null;
-  return { members, points, events: events || null };
-}
-
-const Stat = ({ value, label }: { value: number | null; label: string }) => (
-  <div>
-    <div className="font-heading text-3xl md:text-4xl font-bold text-foreground tabular-nums">
-      {value === null ? '—' : value.toLocaleString('en-IN')}
-    </div>
-    <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground mt-1">{label}</div>
-  </div>
-);
-
 const AboutSection = () => {
-  const stats = useClubStats();
-
   return (
-    <section id="about" className="py-16 md:py-24 relative">
-      <div className="container mx-auto px-6">
-        {/* Section Header */}
-        <motion.div className="text-center mb-16" {...fadeUp()}>
-          <span className="text-xs text-primary tracking-widest uppercase mb-2 block">
-            About Us
-          </span>
-          <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground">
-            <ScrambleText text="About the Club" />
+    <section id="about" className="relative bg-[#EBF1FA] py-12 lg:py-0">
+      <div className="mx-auto grid max-w-[1246px] gap-10 px-6 lg:h-[248px] lg:grid-cols-[462px_1fr] lg:items-center lg:gap-0 lg:px-0">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="lg:py-5"
+        >
+          <p className="flex items-center font-mono text-[11px] tracking-[0.3em] text-[#0B1726]">
+            WHO WE ARE <span className="ml-4 inline-block h-px w-16 bg-primary" />
+          </p>
+          <h2 className="mt-5 font-display text-[30px] font-extrabold uppercase leading-[31px] tracking-tight text-[#0B1726]">
+            A community <br />
+            for <span className="text-primary">what’s next.</span>
           </h2>
-          <div className="max-w-6xl mx-auto px-4 mt-6">
-            <p className="font-heading text-xs md:text-base text-muted-foreground border-l-2 border-primary/50 pl-4 py-2 bg-primary/5 rounded-r-lg text-left">
-              <span className="text-primary font-bold">IEEE SSCS</span> <span className="mx-2">→</span>
-              IEEE Solid-State Circuits Society Student Branch Chapter
-            </p>
-          </div>
+          <p className="mt-4 max-w-[340px] text-[15px] leading-[22px] text-muted-foreground">
+            We organize workshops, talks, hackathons and collaborative projects to learn, build and create impact with AI.
+          </p>
+          <Link to="/team" className="mt-5 inline-flex items-center gap-2 text-[14px] font-medium text-primary hover:underline">
+            Learn More <ArrowRight className="h-4 w-4" />
+          </Link>
         </motion.div>
 
-        {/* Bento grid */}
-        <div className="grid gap-6 md:grid-cols-3 max-w-6xl mx-auto">
-          {/* Manifesto */}
-          <motion.div className="md:col-span-2" {...fadeUp()}>
-            <HolographicCard className="p-8 md:p-10 h-full flex flex-col justify-center">
-              <span className="text-xs font-mono text-primary uppercase tracking-[0.2em] mb-5">Who we are</span>
-              <WordReveal
-                text={MANIFESTO}
-                className="font-heading text-xl md:text-2xl leading-relaxed text-foreground"
-              />
-            </HolographicCard>
-          </motion.div>
-
-          {/* Live numbers */}
-          <motion.div {...fadeUp(0.1)}>
-            <HolographicCard className="p-8 h-full flex flex-col justify-between gap-6">
-              <span className="text-xs font-mono text-primary uppercase tracking-[0.2em]">By the numbers</span>
-              <Stat value={stats.members} label="Members ranked" />
-              <Stat value={stats.points} label="Points earned" />
-              <Stat value={stats.events} label="Events run" />
-            </HolographicCard>
-          </motion.div>
-
-          {/* Vision */}
-          <motion.div {...fadeUp(0.1)}>
-            <HolographicCard className="p-8 h-full">
-              <div className="flex flex-col gap-2 mb-6">
-                <span className="text-xs font-mono text-primary uppercase tracking-[0.2em]">01.</span>
-                <h3 className="font-heading text-2xl font-bold text-foreground">Our Vision</h3>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 lg:h-[180px] lg:grid-cols-4 lg:items-start lg:border-l lg:border-border lg:pt-0">
+          {PILLARS.map((p, i) => (
+            <motion.div
+              key={`${p.title}-${i}`}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: i * 0.08 }}
+              className="flex flex-col items-center text-center"
+            >
+              <div className="mb-4 flex h-[76px] w-[76px] items-center justify-center rounded-full bg-white/70 text-primary shadow-[0_6px_20px_-10px_rgba(49,135,232,0.35)]">
+                <p.icon className="h-8 w-8" strokeWidth={1.5} />
               </div>
-              <p className="text-muted-foreground leading-relaxed text-base">
-                To be the leading global community for solid-state circuit experts,
-                advancing the field through innovation in integrated circuit design,
-                fabrication, and applications for the benefit of humanity.
-              </p>
-            </HolographicCard>
-          </motion.div>
-
-          {/* Mission */}
-          <motion.div {...fadeUp(0.2)}>
-            <HolographicCard className="p-8 h-full">
-              <div className="flex flex-col gap-2 mb-6">
-                <span className="text-xs font-mono text-primary uppercase tracking-[0.2em]">02.</span>
-                <h3 className="font-heading text-2xl font-bold text-foreground">Our Mission</h3>
-              </div>
-              <ul className="text-muted-foreground space-y-3">
-                {MISSION.map(item => (
-                  <li key={item} className="flex items-start gap-2">
-                    <span className="text-primary mt-1.5">•</span>
-                    <span className="text-base">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </HolographicCard>
-          </motion.div>
-
-          {/* The team */}
-          <motion.div {...fadeUp(0.3)}>
-            <HolographicCard className="h-full overflow-hidden p-0 flex flex-col">
-              <div className="relative flex-1 min-h-[220px]">
-                <img
-                  src="/team-photo.jpg"
-                  alt="IEEE SSCS VIT Chennai members at Kamaraj Auditorium"
-                  loading="lazy"
-                  className="absolute inset-0 h-full w-full object-cover object-[50%_60%]"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-              </div>
-              <div className="px-6 py-4 border-t border-white/5">
-                <span className="text-xs font-mono text-primary uppercase tracking-[0.2em]">03.</span>
-                <p className="font-heading text-lg font-bold text-foreground">The people</p>
-              </div>
-            </HolographicCard>
-          </motion.div>
+              <h3 className="font-heading text-base font-bold text-[#0B1726]">{p.title}</h3>
+              <p className="mt-2 max-w-[160px] text-[15px] leading-[22px] text-muted-foreground">{p.text}</p>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>

@@ -90,7 +90,7 @@ const TechGridBackground = () => {
     ), []);
 
     return (
-        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none bg-[#020202]">
+        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none bg-[#F4F8FD]">
             {styleTag}
 
             {/* 1. Animated Blobs — CSS animation (compositor thread) */}
@@ -108,8 +108,8 @@ const TechGridBackground = () => {
                 className="absolute inset-0 opacity-[0.15]"
                 style={{
                     backgroundImage: `
-                        linear-gradient(to right, rgba(220, 20, 60, 0.1) 1px, transparent 1px),
-                        linear-gradient(to bottom, rgba(220, 20, 60, 0.1) 1px, transparent 1px)
+                        linear-gradient(to right, rgba(49,135,232, 0.1) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(49,135,232, 0.1) 1px, transparent 1px)
                     `,
                     backgroundSize: '50px 50px',
                     maskImage: 'radial-gradient(circle at 50% 50%, black, transparent 90%)'
@@ -161,7 +161,7 @@ const TechGridBackground = () => {
             <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
-                    background: 'radial-gradient(circle at center, transparent 0%, rgba(5, 5, 5, 0.4) 100%)'
+                    background: 'radial-gradient(circle at center, transparent 0%, rgba(244, 248, 253, 0.6) 100%)'
                 }}
             />
         </div>

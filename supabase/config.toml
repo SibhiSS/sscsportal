@@ -1,3 +1,12 @@
-# No edge functions are deployed from this repo any more.
+# Edge functions: only send-email (the recruitment mail queue) is deployed from this repo.
 # Database changes live in supabase/migrations/ and are run by hand in the
 # Supabase SQL editor, in filename order.
+
+[functions.send-email]
+# OFF, not a mistake. Every action in index.ts checks its own caller instead
+# (see the file's header comment): a real Supabase user JWT for "send", an
+# is_any_admin() user for "enqueue", and either an admin or the pg_cron secret
+# for "process". The platform-level JWT gate that verify_jwt=true would enforce
+# has no way to let the cron sweep through — it carries no user session at all,
+# by design — so it has to be off here and enforced in code instead.
+verify_jwt = false

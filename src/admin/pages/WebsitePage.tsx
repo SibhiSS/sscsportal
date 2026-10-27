@@ -17,6 +17,9 @@ type Draft = {
   link: string;
   cover: string | null;
   gallery: string[];
+  poster: string | null;
+  registerUrl: string;
+  time: string;
 };
 
 const toDraft = (e: ClubEvent): Draft => ({
@@ -26,6 +29,9 @@ const toDraft = (e: ClubEvent): Draft => ({
   link: e.website_link ?? '',
   cover: e.website_cover,
   gallery: [...e.website_gallery],
+  poster: e.website_poster ?? null,
+  registerUrl: e.website_register_url ?? '',
+  time: e.website_time ?? '',
 });
 
 export default function WebsitePage() {
@@ -61,6 +67,13 @@ export default function WebsitePage() {
     e.website_published
       ? patch(e, { website_published: false, website_featured: false, website_feature_order: null }, `"${e.title}" is off the website.`)
       : patch(e, { website_published: true }, `"${e.title}" is on the website.`);
+
+  // The home page's Upcoming events strip shows only events switched on here.
+  const toggleUpcoming = (e: ClubEvent) =>
+    patch(e, e.website_upcoming
+      ? { website_upcoming: false }
+      : { website_upcoming: true, website_published: true },
+    e.website_upcoming ? `"${e.title}" is off the Upcoming events strip.` : `"${e.title}" is in the Upcoming events strip.`);
 
   const toggleFeatured = (e: ClubEvent) => {
     if (!e.website_featured && featuredCount >= HOME_EVENT_SLOTS) {
@@ -100,16 +113,16 @@ export default function WebsitePage() {
     setEditing(null); setDraft(null); setUploaded([]);
   };
 
-  const upload = async (files: FileList | null, kind: 'cover' | 'gallery') => {
+  const upload = async (files: FileList | null, kind: 'cover' | 'gallery' | 'poster') => {
     if (!files?.length || !editing || !draft) return;
-    const list = kind === 'cover' ? [files[0]] : Array.from(files).slice(0, MAX_GALLERY - draft.gallery.length);
+    const list = kind !== 'gallery' ? [files[0]] : Array.from(files).slice(0, MAX_GALLERY - draft.gallery.length);
     if (!list.length) { toast.error(`A gallery holds up to ${MAX_GALLERY} photos.`); return; }
     setUploading(true);
     try {
       const paths: string[] = [];
       for (const f of list) paths.push(await uploadSiteImage(editing.id, f));
       setUploaded(u => [...u, ...paths]);
-      setDraft(d => d && (kind === 'cover' ? { ...d, cover: paths[0] } : { ...d, gallery: [...d.gallery, ...paths] }));
+      setDraft(d => d && (kind === 'cover' ? { ...d, cover: paths[0] } : kind === 'poster' ? { ...d, poster: paths[0] } : { ...d, gallery: [...d.gallery, ...paths] }));
     } catch (err) { toast.error(errMsg(err)); }
     finally { setUploading(false); }
   };
@@ -119,6 +132,8 @@ export default function WebsitePage() {
     if (!editing || !draft) return;
     const link = draft.link.trim();
     if (link && !/^https?:\/\//i.test(link)) { toast.error('The link should start with https://'); return; }
+    const registerUrl = draft.registerUrl.trim();
+    if (registerUrl && !/^https?:\/\//i.test(registerUrl)) { toast.error('The registration link should start with https://'); return; }
     setSaving(true);
     try {
       await updateEvent(editing.id, {
@@ -128,10 +143,13 @@ export default function WebsitePage() {
         website_link: link || null,
         website_cover: draft.cover,
         website_gallery: draft.gallery,
+        website_poster: draft.poster,
+        website_register_url: registerUrl || null,
+        website_time: draft.time.trim() || null,
       });
       // Images that were on the event before and aren't any more.
-      const kept = new Set([draft.cover, ...draft.gallery]);
-      await removeSiteImages([editing.website_cover, ...editing.website_gallery].filter(r => r && !kept.has(r)));
+      const kept = new Set([draft.cover, draft.poster, ...draft.gallery]);
+      await removeSiteImages([editing.website_cover, editing.website_poster, ...editing.website_gallery].filter(r => r && !kept.has(r)));
       await reload('events');
       toast.success('Website details saved.');
       setEditing(null); setDraft(null); setUploaded([]);
@@ -145,7 +163,7 @@ export default function WebsitePage() {
         <div>
           <h1>Website</h1>
           <div className="sub">
-            Choose which events appear on the public site. The home page shows the next upcoming published event,
+            Choose which events appear on the public site. Switch "Upcoming strip" on to show an event, its poster and a Register button in the home page's Upcoming events section; with none switched on, that section is hidden. The home page shows the next upcoming published event,
             then up to {HOME_EVENT_SLOTS} featured past events (or the latest {HOME_EVENT_SLOTS} when none are featured).
           </div>
         </div>
@@ -207,7 +225,7 @@ export default function WebsitePage() {
         </div>
         <div className="tbl-wrap">
           <table>
-            <thead><tr><th>Event</th><th>Date</th><th>On website</th><th>Featured</th><th className="hide-sm">Details</th><th /></tr></thead>
+            <thead><tr><th>Event</th><th>Date</th><th>On website</th><th>Featured</th><th>Upcoming strip</th><th className="hide-sm">Details</th><th /></tr></thead>
             <tbody>
               {rows.length ? rows.map(e => {
                 const missing = [!e.website_blurb && 'blurb', !e.website_cover && 'cover'].filter(Boolean);
@@ -227,6 +245,12 @@ export default function WebsitePage() {
                         <span className="track"><span className="knob" /></span>
                       </label>
                     </td>
+                    <td>
+                      <label className="switch" title="Show in the home page's Upcoming events strip">
+                        <input type="checkbox" checked={!!e.website_upcoming} disabled={busy === e.id} onChange={() => toggleUpcoming(e)} />
+                        <span className="track"><span className="knob" /></span>
+                      </label>
+                    </td>
                     <td className="hide-sm">
                       {missing.length
                         ? <span className="tag pending">No {missing.join(' or ')}</span>
@@ -235,7 +259,7 @@ export default function WebsitePage() {
                     <td className="acts"><button className="mini-btn" onClick={() => openEditor(e)}>Edit</button></td>
                   </tr>
                 );
-              }) : <tr><td colSpan={6} className="muted">No events match.</td></tr>}
+              }) : <tr><td colSpan={7} className="muted">No events match.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -266,6 +290,29 @@ export default function WebsitePage() {
             <div className="frow"><label htmlFor="wsLink">Link</label>
               <input id="wsLink" type="url" maxLength={500} value={draft.link} placeholder="https://www.linkedin.com/posts/…"
                 onChange={e => setDraft(d => d && ({ ...d, link: e.target.value }))} /></div>
+
+            <div className="frow"><label htmlFor="wsTime">Time</label>
+              <input id="wsTime" maxLength={60} value={draft.time} placeholder="5:00 PM - 7:00 PM"
+                onChange={e => setDraft(d => d && ({ ...d, time: e.target.value }))} /></div>
+
+            <div className="frow"><label htmlFor="wsRegister">Register link</label>
+              <input id="wsRegister" type="url" maxLength={500} value={draft.registerUrl} placeholder="https://forms.gle/… (shows a Register button)"
+                onChange={e => setDraft(d => d && ({ ...d, registerUrl: e.target.value }))} /></div>
+
+            <div className="frow"><label>Poster</label>
+              <div className="ws-images">
+                {draft.poster && (
+                  <div className="ws-img">
+                    <img src={siteMediaUrl(draft.poster) ?? ''} alt="Poster" />
+                    <button type="button" className="ws-x" aria-label="Remove poster" onClick={() => setDraft(d => d && ({ ...d, poster: null }))}>×</button>
+                  </div>
+                )}
+                <label className="mini-btn ws-pick">
+                  {draft.poster ? 'Replace' : 'Upload poster'}
+                  <input type="file" accept="image/*" hidden disabled={uploading} onChange={e => { upload(e.target.files, 'poster'); e.target.value = ''; }} />
+                </label>
+              </div>
+            </div>
 
             <div className="frow"><label>Cover</label>
               <div className="ws-images">

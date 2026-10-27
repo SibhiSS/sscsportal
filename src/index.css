@@ -4,35 +4,35 @@
 
 @layer base {
   :root {
-    /* IEEE SSCS Red Theme */
-    --background: 0 0% 4%;
-    --foreground: 0 0% 98%;
+    /* AI CLUB NIS-01 theme: Off White base, Deep Navy sections, Electric Blue accent */
+    --background:213 49% 98%;
+    --foreground:213 54% 10%;
     
     /* SSCS Red */
-    --primary: 345 85% 45%;
-    --primary-foreground: 0 0% 100%;
+    --primary:212 81% 56%;
+    --primary-foreground:0 0% 100%;
     
     /* Deep Maroon */
-    --secondary: 345 85% 25%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary:213 54% 10%;
+    --secondary-foreground:0 0% 100%;
     
     /* Bright Accent */
-    --accent: 345 85% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent:212 81% 56%;
+    --accent-foreground:0 0% 100%;
     
     /* UI Colors */
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 65%;
+    --muted:213 35% 94%;
+    --muted-foreground:213 14% 40%;
     
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 98%;
+    --card:0 0% 100%;
+    --card-foreground:213 54% 10%;
     
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 98%;
+    --popover:0 0% 100%;
+    --popover-foreground:213 54% 10%;
     
-    --border: 0 0% 15%;
-    --input: 0 0% 12%;
-    --ring: 345 85% 45%;
+    --border:213 30% 88%;
+    --input:213 30% 90%;
+    --ring:212 81% 56%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -40,9 +40,9 @@
     --radius: 0.75rem;
     
     /* Sidebar */
-    --sidebar-background: 0 0% 6%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 345 85% 45%;
+    --sidebar-background:213 54% 10%;
+    --sidebar-foreground:0 0% 100%;
+    --sidebar-primary: 212 81% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 345 85% 25%;
     --sidebar-accent-foreground: 0 0% 100%;
@@ -62,7 +62,7 @@
   }
   
   html {
-    background-color: #020202;
+    background-color: #F7F9FC;
     /* iOS Safari ignores overflow-x on <body>; clipping on <html> stops anything
        wider than the screen from zooming the whole page out. */
     overflow-x: hidden;
@@ -81,6 +81,10 @@
     body, a, button, [role="button"], input, textarea {
       cursor: none !important;
     }
+    /* Admin pages (body.adm-body, set in App.tsx) use the normal cursor. */
+    body.adm-body, body.adm-body a, body.adm-body button, body.adm-body [role="button"], body.adm-body input, body.adm-body textarea {
+      cursor: default !important;
+    }
   }
 
   input, textarea, [contenteditable="true"] {
@@ -96,10 +100,10 @@
     width: 100%;
     height: 100%;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    opacity: 0.05;
+    opacity: 0.025;
     pointer-events: none;
     z-index: 9999;
-    mix-blend-mode: overlay;
+    mix-blend-mode: multiply;
   }
 
   /* Watermark Background */
@@ -111,7 +115,7 @@
     transform: translate(-50%, -50%);
     width: 60vw;
     height: 60vh;
-    background-image: url('/bg.png');
+    background-image: url('/brand/aic-logo-icon.png');
     background-repeat: no-repeat;
     background-position: center;
     background-size: contain;

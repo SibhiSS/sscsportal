@@ -36,12 +36,12 @@ const POWER_DROUGHT = 5;     // seconds without a drop before the next broken ti
 const MAX_CAPSULES = 4;      // on screen at once, so a 27-electron storm doesn't bury the gate
 
 // The site's crimson family, used everywhere colour shows up.
-const ACCENT = '#dc143c';
-const PALETTE = ['#dc143c', '#ff3b5c', '#ff6b81', '#ff8a65', '#ffb199', '#ff4d9a'];
+const ACCENT = '#3187E8';
+const PALETTE = ['#3187E8', '#ff3b5c', '#ff6b81', '#ff8a65', '#ffb199', '#ff4d9a'];
 // Fever runs hotter: crimson through magenta, orange and gold.
 const FEVER_PALETTE = ['#ff1744', '#f50057', '#ff4081', '#ff6e40', '#ffab40', '#ffd166'];
 const POWER_COLOR: Record<PowerKind, string> = {
-  wide: '#ff6b81', laser: '#dc143c', multi: '#ffb199', pierce: '#ff8a65', blast: '#ffd166', double: '#ff4d9a',
+  wide: '#ff6b81', laser: '#3187E8', multi: '#ffb199', pierce: '#ff8a65', blast: '#ffd166', double: '#ff4d9a',
 };
 const TRAIL_COLOR = '#ff4d6d';
 
@@ -669,7 +669,7 @@ const ElectronBreakout = ({ onScore, onCombo, onExit }: ElectronBreakoutProps) =
         const p = 1 - feverTitle / 1.8;
         const size = Math.round((W < 600 ? 30 : 68) * (0.85 + 0.15 * Math.min(1, p * 5)));
         ctx.globalAlpha = Math.min(1, feverTitle / 0.4);
-        ctx.font = `900 ${size}px Michroma, ui-sans-serif, sans-serif`;
+        ctx.font = `900 ${size}px Space Grotesk, ui-sans-serif, sans-serif`;
         const text = 'FEVER MODE';
         const total = ctx.measureText(text).width;
         let x = W / 2 - total / 2;

@@ -40,7 +40,7 @@ export function BroadcastCard({ b, mode, position, onAck, onClose }: CardProps) 
         ? <div className="bc-body bc-dim">Your message appears here.</div>
         : <BroadcastBody text={b.body} />}
       <div className="bc-card-foot">
-        <span className="bc-meta">IEEE SSCS · {when(b.starts_at)}{position && position.total > 1 ? ` · ${position.total - 1} more after this` : ''}</span>
+        <span className="bc-meta">AI Club · {when(b.starts_at)}{position && position.total > 1 ? ` · ${position.total - 1} more after this` : ''}</span>
         {mode === 'reader'
           ? <button ref={ack} className="bc-btn" onClick={onClose}>Close</button>
           : <button ref={ack} className="bc-btn" onClick={onAck} disabled={mode === 'preview'}>Got it</button>}

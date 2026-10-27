@@ -50,7 +50,7 @@ const AsciiReveal = ({ src, focusY = 0.6, className = '' }: AsciiRevealProps) =>
 
     const primary = () => {
       const v = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
-      return v ? `hsl(${v})` : '#dc143c';
+      return v ? `hsl(${v})` : '#3187E8';
     };
 
     /** "object-fit: cover" crop of the photo for the current canvas size. */

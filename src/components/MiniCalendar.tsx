@@ -43,13 +43,13 @@ export default function MiniCalendar({ items, start, end, onChange, min }: Props
   const shownItems = useMemo(() => (shown ? on(shown) : []), [shown, items]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3 md:p-4">
+    <div className="rounded-2xl border border-foreground/10 bg-white/[0.02] p-3 md:p-4">
       <div className="flex items-center justify-between mb-2">
-        <button type="button" className="p-1.5 rounded-full hover:bg-white/5 disabled:opacity-30" disabled={!canGoBack} onClick={() => move(-1)} aria-label="Previous month">
+        <button type="button" className="p-1.5 rounded-full hover:bg-white/70 disabled:opacity-30" disabled={!canGoBack} onClick={() => move(-1)} aria-label="Previous month">
           <ChevronLeft className="w-4 h-4" />
         </button>
         <span className="text-sm font-semibold">{new Date(y, m, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</span>
-        <button type="button" className="p-1.5 rounded-full hover:bg-white/5" onClick={() => move(1)} aria-label="Next month">
+        <button type="button" className="p-1.5 rounded-full hover:bg-white/70" onClick={() => move(1)} aria-label="Next month">
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
@@ -73,7 +73,7 @@ export default function MiniCalendar({ items, start, end, onChange, min }: Props
               onClick={() => pick(d)}
               onMouseEnter={() => setHover(d)}
               className={`h-10 rounded-md text-xs flex flex-col items-center justify-center gap-0.5 transition-colors disabled:opacity-25 disabled:cursor-not-allowed
-                ${edge ? 'bg-primary text-white' : inRange ? 'bg-primary/25 text-white' : 'hover:bg-white/10 text-foreground'}`}
+                ${edge ? 'bg-primary text-white' : inRange ? 'bg-primary/25 text-white' : 'hover:bg-white/70 text-foreground'}`}
               aria-label={`${fmtDay(d)}${its.length ? `: ${its.map(it => it.title).join(', ')}` : ''}`}
               aria-pressed={!!inRange}
             >

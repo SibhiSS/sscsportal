@@ -1,16 +1,14 @@
 import Navigation from '@/components/Navigation';
 import TechGridBackground from '@/components/ui/TechGridBackground';
 import HeroSection from '@/components/sections/HeroSection';
-import Marquee from '@/components/fx/Marquee';
 import AboutSection from '@/components/sections/AboutSection';
+import UpcomingEventsSection from '@/components/sections/UpcomingEventsSection';
 import DomainsSection from '@/components/sections/DomainsSection';
 import EventsSection from '@/components/sections/EventsSection';
 import LeaderboardSection from '@/components/sections/LeaderboardSection';
 import MembershipSection from '@/components/sections/MembershipSection';
-import ContactSection from '@/components/sections/ContactSection';
+import JoinSection from '@/components/sections/JoinSection';
 import SiteFooter from '@/components/SiteFooter';
-
-const PERKS = ['Real Hardware', 'Any Simulator', 'No Hierarchy', 'Tape-out Dreams', 'Ship Circuits', 'Free Workshops', 'Late-night Debugging'];
 
 const Index = () => {
   return (
@@ -20,13 +18,13 @@ const Index = () => {
         <Navigation />
         <main>
           <HeroSection />
-          <Marquee items={PERKS} />
           <AboutSection />
+          <UpcomingEventsSection />
           <DomainsSection />
           <EventsSection />
           <LeaderboardSection />
           <MembershipSection />
-          <ContactSection />
+          <JoinSection />
         </main>
         <SiteFooter />
       </div>

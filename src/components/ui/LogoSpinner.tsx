@@ -21,8 +21,8 @@ const LogoSpinner = ({ size = 'md', className }: LogoSpinnerProps) => {
     
     // Each pin flashes sequentially in a clockwise loop
     const getPinAnimation = (index: number) => ({
-        backgroundColor: ['#27272a', '#dc143c', '#27272a'],
-        boxShadow: ['0 0 0px rgba(220,20,60,0)', '0 0 6px rgba(220,20,60,0.8)', '0 0 0px rgba(220,20,60,0)'],
+        backgroundColor: ['#27272a', '#3187E8', '#27272a'],
+        boxShadow: ['0 0 0px rgba(49,135,232,0)', '0 0 6px rgba(49,135,232,0.8)', '0 0 0px rgba(49,135,232,0)'],
         transition: {
             duration: 1.2,
             repeat: Infinity,
@@ -62,17 +62,17 @@ const LogoSpinner = ({ size = 'md', className }: LogoSpinnerProps) => {
 
                 {/* Core */}
                 <motion.div 
-                    className="relative z-10 w-full h-full bg-[#050505] border border-primary/30 rounded-[2px] flex items-center justify-center overflow-hidden"
+                    className="relative z-10 w-full h-full bg-background border border-primary/30 rounded-[2px] flex items-center justify-center overflow-hidden"
                     animate={{
-                        borderColor: ['rgba(220,20,60,0.2)', 'rgba(220,20,60,0.8)', 'rgba(220,20,60,0.2)'],
-                        boxShadow: ['0 0 2px rgba(220,20,60,0.1)', '0 0 12px rgba(220,20,60,0.5)', '0 0 2px rgba(220,20,60,0.1)']
+                        borderColor: ['rgba(49,135,232,0.2)', 'rgba(49,135,232,0.8)', 'rgba(49,135,232,0.2)'],
+                        boxShadow: ['0 0 2px rgba(49,135,232,0.1)', '0 0 12px rgba(49,135,232,0.5)', '0 0 2px rgba(49,135,232,0.1)']
                     }}
                     transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
                 >
                     {/* Size sm is too small for the logo to look good, so only show it on md+ */}
                     {size !== 'sm' && (
                         <img
-                            src="/logo.png"
+                            src="/brand/aic-logo-icon.png"
                             alt="Loading"
                             className="w-[70%] h-[70%] object-contain opacity-80"
                         />

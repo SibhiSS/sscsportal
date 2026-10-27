@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 600" role="img" aria-label="Half brain with circuit lines">
+  <defs>
+    <radialGradient id="brainFill" cx="40%" cy="38%" r="70%">
+      <stop offset="0%" stop-color="#F4F7FB"/>
+      <stop offset="55%" stop-color="#B9C4D1"/>
+      <stop offset="100%" stop-color="#7D8CA0"/>
+    </radialGradient>
+    <clipPath id="leftHalf"><rect x="0" y="0" width="318" height="600"/></clipPath>
+  </defs>
+
+  <!-- Soft arc behind the brain -->
+  <path d="M120 96 C40 170 30 430 150 520" fill="none" stroke="#DCE7F5" stroke-width="18" stroke-linecap="round"/>
+
+  <!-- Left hemisphere: rounded brain silhouette with lobes -->
+  <g clip-path="url(#leftHalf)">
+    <path d="M300 92 C250 40 170 42 146 96 C92 92 60 140 76 196 C30 226 34 300 84 318 C82 378 130 424 186 412 C212 456 278 462 300 420 Z" fill="url(#brainFill)"/>
+    <g fill="none" stroke="#7D8CA0" stroke-width="5" stroke-linecap="round" opacity="0.7">
+      <path d="M170 110 C188 140 176 170 206 190"/>
+      <path d="M118 150 C140 170 128 200 160 226"/>
+      <path d="M96 268 C122 264 136 286 150 320"/>
+      <path d="M170 262 C196 252 218 276 226 310"/>
+      <path d="M124 364 C152 366 170 386 176 412"/>
+      <path d="M236 190 C246 222 268 236 280 264"/>
+    </g>
+  </g>
+
+  <!-- Divider -->
+  <line x1="318" y1="30" x2="318" y2="560" stroke="#3187E8" stroke-width="2" opacity="0.6"/>
+
+  <!-- Right hemisphere: blue circuit traces with nodes -->
+  <g fill="none" stroke="#3187E8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M322 74 H364 L392 102 V126"/>
+    <path d="M322 112 H350 L378 140 H404 L420 156 V188"/>
+    <path d="M322 150 H372 L402 180 V214 L436 248 V290"/>
+    <path d="M322 196 H352 L372 216 H400"/>
+    <path d="M322 248 H386 L420 282 V316 L448 344 V392"/>
+    <path d="M322 300 H356 L386 330 H414"/>
+    <path d="M322 352 H372 L392 372 V420 L430 458 V506"/>
+    <path d="M322 402 H350"/>
+    <path d="M322 466 H364 L392 494 H418"/>
+  </g>
+  <g fill="#3187E8">
+    <circle cx="392" cy="126" r="6"/>
+    <circle cx="420" cy="188" r="6"/>
+    <circle cx="436" cy="290" r="6"/>
+    <circle cx="400" cy="214" r="4"/>
+    <circle cx="448" cy="392" r="6"/>
+    <circle cx="414" cy="330" r="4"/>
+    <circle cx="430" cy="506" r="8"/>
+    <circle cx="418" cy="494" r="4"/>
+  </g>
+  <g fill="none" stroke="#3187E8" stroke-width="3">
+    <circle cx="482" cy="176" r="10"/>
+    <circle cx="520" cy="258" r="10"/>
+    <circle cx="476" cy="356" r="6"/>
+  </g>
+  <!-- Faint grey secondary nodes -->
+  <g fill="#C8D1DC">
+    <circle cx="520" cy="110" r="7"/>
+    <circle cx="560" cy="318" r="6"/>
+    <circle cx="548" cy="470" r="6"/>
+  </g>
+</svg>

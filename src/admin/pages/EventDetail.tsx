@@ -391,7 +391,6 @@ export default function EventDetail() {
             )}
             <p className="note-sm" style={{ marginTop: 10, marginBottom: 0 }}>
               Ticks itself when a booking marked “ours” exists for this venue and date.
-              {isSuper && <> <Link className="linkbtn" to="/admin/venues">Venue bookings</Link></>}
             </p>
           </div>
         )}

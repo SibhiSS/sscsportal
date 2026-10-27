@@ -173,18 +173,18 @@ export default function GridMakerPage() {
     c.width = W; c.height = H;
     const ctx = c.getContext('2d');
     if (!ctx) return;
-    ctx.strokeStyle = 'rgba(220,20,60,0.9)';
+    ctx.strokeStyle = 'rgba(49,135,232,0.9)';
     ctx.lineWidth = 6;
     for (let i = 1; i < COLS; i++) { ctx.beginPath(); ctx.moveTo(i * tile.w, 0); ctx.lineTo(i * tile.w, H); ctx.stroke(); }
     for (let j = 1; j < rows; j++) { ctx.beginPath(); ctx.moveTo(0, j * tile.h); ctx.lineTo(W, j * tile.h); ctx.stroke(); }
     // Safe margin: keep text ~60px away from tile edges so it is not cut by the gaps between posts.
     ctx.setLineDash([24, 18]);
-    ctx.strokeStyle = 'rgba(220,20,60,0.45)';
+    ctx.strokeStyle = 'rgba(49,135,232,0.45)';
     ctx.lineWidth = 3;
     const m = 60;
     for (let r = 0; r < rows; r++) for (let col = 0; col < COLS; col++) ctx.strokeRect(col * tile.w + m, r * tile.h + m, tile.w - 2 * m, tile.h - 2 * m);
     ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(220,20,60,0.9)';
+    ctx.fillStyle = 'rgba(49,135,232,0.9)';
     ctx.font = 'bold 64px sans-serif';
     for (let r = 0; r < rows; r++) for (let col = 0; col < COLS; col++) ctx.fillText(`#${postNo(r, col)}`, col * tile.w + m + 10, r * tile.h + m + 70);
     c.toBlob(b => {

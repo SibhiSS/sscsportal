@@ -14,11 +14,22 @@ export default {
       },
     },
     extend: {
+      // NIS-01 accent scale (Electric Blue #3187E8 = 500). Purple, pink, red and
+      // emerald classes used across the site are mapped onto it so one brand colour
+      // carries every accent.
+      colors: {
+        purple: { 50: "#EEF5FF", 100: "#DCEBFF", 200: "#B9D7FF", 300: "#8FC1FF", 400: "#69ACFF", 500: "#3187E8", 600: "#2370CC", 700: "#1A5AA6", 800: "#144882", 900: "#0F3A6B", 950: "#0B1726" },
+        pink: { 300: "#8FC1FF", 400: "#69ACFF", 500: "#3187E8", 600: "#2370CC" },
+        red: { 300: "#8FC1FF", 400: "#69ACFF", 500: "#3187E8", 600: "#2370CC" },
+        emerald: { 300: "#8FC1FF", 400: "#69ACFF", 500: "#3187E8", 600: "#2370CC", 700: "#1A5AA6" },
+      },
       fontFamily: {
-        heading: ['Michroma', 'sans-serif'],
-        subheading: ['Orbitron', 'sans-serif'],
-        body: ['Raleway', 'sans-serif'],
-        sans: ['Raleway', 'sans-serif'],
+        heading: ['"Space Grotesk"', 'sans-serif'],
+        display: ['"Saira Semi Condensed"', '"Space Grotesk"', 'sans-serif'],
+        subheading: ['"Space Grotesk"', 'sans-serif'],
+        body: ['Inter', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       colors: {
         border: "hsl(var(--border))",

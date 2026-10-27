@@ -99,8 +99,8 @@ const CustomCursor = () => {
                         </feMerge>
                     </filter>
                     <linearGradient id="shortTraceGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(220, 20, 60, 0)" />
-                        <stop offset="80%" stopColor="rgba(220, 20, 60, 1)" />
+                        <stop offset="0%" stopColor="rgba(49,135,232, 0)" />
+                        <stop offset="80%" stopColor="rgba(49,135,232, 1)" />
                         <stop offset="100%" stopColor="rgba(255, 255, 255, 1)" />
                     </linearGradient>
                 </defs>
@@ -125,7 +125,7 @@ const CustomCursor = () => {
                     translateX: '-50%',
                     translateY: '-50%',
                 }}
-                className="absolute h-1 w-1 bg-primary/80 shadow-[0_0_4px_rgba(220,20,60,0.6)]"
+                className="absolute h-1 w-1 bg-primary/80 shadow-[0_0_4px_rgba(49,135,232,0.6)]"
             />
 
             {/* Active Core Cursor */}

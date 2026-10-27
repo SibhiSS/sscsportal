@@ -5,6 +5,7 @@ import { ArrowLeft, Search, Trophy } from 'lucide-react';
 import HolographicCard from '@/components/ui/HolographicCard';
 import ScrambleText from '@/components/fx/ScrambleText';
 import TechGridBackground from '@/components/ui/TechGridBackground';
+import Navigation from '@/components/Navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeaderboard } from '@/hooks/use-leaderboard';
 import { fetchMyMember } from '@/lib/club';
@@ -20,11 +21,11 @@ const PodiumCard = ({ row, isMe, index }: { row: LeaderboardRow; isMe: boolean; 
   >
     <HolographicCard className={`p-6 text-center h-full ${isMe ? 'border-primary/60' : ''}`}>
       <div className="flex flex-col items-center gap-2">
-        <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 grid place-items-center">
+        <div className="w-12 h-12 rounded-md bg-primary/10 border border-primary/20 grid place-items-center">
           <Trophy className={`w-5 h-5 ${row.rank === 1 ? 'text-primary' : 'text-primary/60'}`} />
         </div>
         <span className="text-[10px] text-primary font-bold tracking-[0.3em] uppercase">Rank {row.rank}</span>
-        <h2 className="font-heading text-xl font-bold text-white break-words">{row.full_name}</h2>
+        <h2 className="font-heading text-xl font-bold text-foreground break-words">{row.full_name}</h2>
         {row.department && <p className="text-xs text-muted-foreground">{row.department}</p>}
         <p className="font-heading text-3xl font-bold tabular-nums text-foreground mt-2">
           {row.total_points}
@@ -74,31 +75,32 @@ const Leaderboard = () => {
   const me = myId ? rows.find(r => r.member_id === myId) : undefined;
 
   return (
-    <div className="min-h-screen relative text-foreground bg-[#050505] overflow-hidden">
+    <div className="min-h-screen relative text-foreground bg-background overflow-hidden">
       <TechGridBackground />
+<Navigation />
 
-      <div className="container mx-auto px-4 sm:px-6 py-12 relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 pt-28 pb-16 relative z-10">
         <div className="max-w-5xl mx-auto">
-          <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary transition-all mb-12 px-6 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl group text-sm">
+          <Link to="/" className="group inline-flex items-center text-[13px] font-medium text-muted-foreground hover:text-primary transition-colors mb-12">
             <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
             Back to Home
           </Link>
 
-          <div className="text-center mb-12">
+          <div className="mb-10">
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
-              <span className="text-[10px] text-primary tracking-[0.4em] uppercase font-bold px-4 py-1 rounded-full border border-primary/20 bg-primary/5">
+              <span className="inline-flex items-center font-mono text-[11px] font-normal tracking-[0.3em] text-[#0B1726] uppercase">
                 Recognition
-              </span>
+              <span className="ml-4 inline-block h-px w-14 bg-primary" /></span>
             </motion.div>
-            <h1 className="font-heading text-[1.75rem] leading-tight sm:text-4xl md:text-5xl font-bold tracking-tight">
+            <h1 className="font-display text-[36px] md:text-[48px] font-extrabold uppercase leading-[1.02] tracking-tight text-[#0B1726]">
               <ScrambleText text="Leaderboard" />
             </h1>
             <p className="text-sm text-muted-foreground mt-4">
               Points come from event roles and approved contributions. Leads aren't ranked.
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
+            <div className="flex flex-wrap items-center gap-3 mt-4">
               {me && (
-                <span className="px-4 py-1 rounded-full bg-primary/15 border border-primary/40 text-primary text-xs font-bold tracking-widest uppercase">
+                <span className="px-4 py-1 rounded-[3px] bg-primary/15 border border-primary/40 text-primary text-xs font-bold tracking-widest uppercase">
                   You're #{me.rank}
                 </span>
               )}
@@ -113,7 +115,7 @@ const Leaderboard = () => {
           {loading ? (
             <div className="space-y-3" aria-busy="true">
               {Array.from({ length: 6 }, (_, i) => (
-                <div key={i} className="h-14 rounded-2xl bg-white/[0.04] animate-pulse" />
+                <div key={i} className="h-14 rounded-md bg-white animate-pulse" />
               ))}
             </div>
           ) : error ? (
@@ -141,7 +143,7 @@ const Leaderboard = () => {
                     onChange={e => setQuery(e.target.value)}
                     placeholder="Search by name"
                     aria-label="Search by name"
-                    className="w-full rounded-full bg-white/5 border border-white/10 pl-11 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+                    className="w-full rounded-md bg-white border border-border pl-11 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
                   />
                 </label>
                 {departments.length > 2 && (
@@ -150,10 +152,10 @@ const Leaderboard = () => {
                       <button
                         key={d}
                         onClick={() => setDepartment(d)}
-                        className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase transition-all ${
+                        className={`px-4 py-1.5 rounded-[3px] text-xs font-bold tracking-widest uppercase transition-all ${
                           department === d
                             ? 'bg-primary text-white'
-                            : 'bg-white/5 border border-white/10 text-muted-foreground hover:text-white hover:border-white/30'
+                            : 'bg-white border border-border text-muted-foreground hover:text-foreground hover:border-primary/40'
                         }`}
                       >
                         {d}
@@ -175,7 +177,7 @@ const Leaderboard = () => {
                         <th className="text-right font-medium px-3 py-3 hidden md:table-cell">Contributions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-foreground/5">
                       {table.map(row => {
                         const isMe = row.member_id === myId;
                         return (
